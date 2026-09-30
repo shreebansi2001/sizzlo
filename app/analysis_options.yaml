@@ -1,0 +1,8 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    deprecated_member_use: ignore
+    use_super_parameters: ignore
+    constant_identifier_names: ignore
+    unnecessary_underscores: ignore
