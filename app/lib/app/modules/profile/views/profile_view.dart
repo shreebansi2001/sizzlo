@@ -6,6 +6,7 @@ import '../../home/controllers/home_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../controllers/navigation_controller.dart';
+import '../../../data/models/member_model.dart';
 
 class ProfileView extends GetView<ProfileController> {
   final bool isTab;
@@ -45,48 +46,48 @@ class ProfileView extends GetView<ProfileController> {
                 ),
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             children: [
-              // User Header matching Image 1
+              // User Header
               _buildUserHeader(m, isSub),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-              // 3 Stats in a Row matching Image 1
+              // 3 Stats in a Row
               _buildThreeStatsRow(m, isSub),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-              // Subscription Banner matching Image 1
+              // Subscription Banner
               _buildSubscriptionBanner(m, isSub),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-              // List of 8 Options matching Image 1
+              // List of Options
               _buildMenuList(m, isSub),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 14),
 
-              // Logout Button matching Image 1
+              // Logout Button
               GestureDetector(
                 onTap: controller.logout,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 28),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 22),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEF4444).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 18),
+                      Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 16),
                       SizedBox(width: 8),
                       Text(
                         'Logout',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFFEF4444),
                         ),
@@ -96,8 +97,8 @@ class ProfileView extends GetView<ProfileController> {
                 ),
               ),
 
-              // Generous breathing room so content never gets overlapped by floating bottom nav
-              SizedBox(height: isTab ? 140 : 40),
+              // Breathing room for floating bottom nav
+              SizedBox(height: isTab ? 80 : 20),
             ],
           ),
         ),
@@ -105,150 +106,171 @@ class ProfileView extends GetView<ProfileController> {
     });
   }
 
-  Widget _buildUserHeader(dynamic m, bool isSub) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF131715),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
-      child: Row(
-        children: [
-          // Circular Avatar "R" with bronze tone
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              color: const Color(0xFF4A301D),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFF8F582E),
-                width: 1.5,
-              ),
-            ),
-            child: const Center(
-              child: Text(
-                'R',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFDF9E5B),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Rahul Mehta',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '+91 98250 12345 · rahul.mehta@yanki.in',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.45),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF281C10),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF6B4520)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star, size: 11, color: Color(0xFFDF9E5B)),
-                      const SizedBox(width: 4),
-                      Text(
-                        isSub ? 'VIP SUBSCRIBER' : 'STANDARD GUEST',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          letterSpacing: 1.0,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFDF9E5B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildUserHeader(MemberModel m, bool isSub) {
+    final avatarLetter = (m.fullName.trim().isNotEmpty)
+        ? m.fullName.trim()[0].toUpperCase()
+        : 'V';
+    final displayName = (m.fullName.trim().isNotEmpty)
+        ? m.fullName
+        : 'VIP Guest';
+    final displayContact = (m.email.isNotEmpty)
+        ? '${m.mobile} · ${m.email}'
+        : m.mobile;
 
-  Widget _buildThreeStatsRow(dynamic m, bool isSub) {
-    return Row(
-      children: [
-        _statBox('SAVED', isSub ? '₹24,500' : '₹0'),
-        const SizedBox(width: 10),
-        _statBox('COUPONS', isSub ? '5/12' : '0/0'),
-        const SizedBox(width: 10),
-        _statBox('POINTS', '1,25,000'),
-      ],
-    );
-  }
-
-  Widget _statBox(String label, String value) {
-    return Expanded(
+    return GestureDetector(
+      onTap: () => Get.toNamed(AppRoutes.PERSONAL_INFO),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF131715),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.06)),
         ),
-        child: Column(
+        child: Row(
           children: [
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-                color: Colors.white.withOpacity(0.5),
+            // Circular Avatar with initial
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A301D),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF8F582E),
+                  width: 1.5,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  avatarLetter,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFDF9E5B),
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFDF9E5B),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayName,
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    displayContact,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.white.withOpacity(0.45),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF281C10),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF6B4520)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, size: 10, color: Color(0xFFDF9E5B)),
+                        const SizedBox(width: 4),
+                        Text(
+                          isSub ? (m.membershipType.isNotEmpty ? m.membershipType : 'VIP SUBSCRIBER') : 'STANDARD GUEST',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            letterSpacing: 1.0,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFDF9E5B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
+            Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.3), size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSubscriptionBanner(dynamic m, bool isSub) {
+  Widget _buildThreeStatsRow(MemberModel m, bool isSub) {
+    return Row(
+      children: [
+        _statBox('SAVED', '₹${m.totalSavings}', () => Get.toNamed(AppRoutes.SAVINGS_SUMMARY)),
+        const SizedBox(width: 8),
+        _statBox('COUPONS', '${m.couponsUsed}/${m.couponsTotal}', () => Get.toNamed(AppRoutes.COUPON_SUMMARY)),
+        const SizedBox(width: 8),
+        _statBox('POINTS', '${m.loyaltyPoints}', () {
+          if (Get.isRegistered<NavigationController>()) {
+            Get.find<NavigationController>().changeTab(2);
+          }
+        }),
+      ],
+    );
+  }
+
+  Widget _statBox(String label, String value, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF131715),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: Colors.white.withOpacity(0.5),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFDF9E5B),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionBanner(MemberModel m, bool isSub) {
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.PLANS),
+      onTap: () => Get.toNamed(AppRoutes.SUBSCRIPTION_DETAILS),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: BoxDecoration(
           color: const Color(0xFF131715),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
         child: Row(
@@ -261,26 +283,26 @@ class ProfileView extends GetView<ProfileController> {
                   Text(
                     'SUBSCRIPTION',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
+                      fontSize: 9.5,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 1.8,
+                      letterSpacing: 1.5,
                       color: AppColors.gold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    isSub ? 'Valid till 20 Jun 2027' : 'Choose a plan · No active benefits',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isSub ? Colors.white : const Color(0xFFDF9E5B),
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
+                    isSub ? 'Valid till ${m.expiryDate}' : 'Choose a plan · No active benefits',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: isSub ? Colors.white : const Color(0xFFDF9E5B),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
                     isSub
-                        ? '365 days remaining · renew anytime to extend'
-                        : 'Tap to view 3 exclusive plans & unlock VIP perks',
+                        ? '${m.daysRemaining} days remaining · renew anytime to extend'
+                        : 'Tap to view exclusive plans & unlock VIP perks',
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.white.withOpacity(0.45),
@@ -290,15 +312,15 @@ class ProfileView extends GetView<ProfileController> {
               ),
             ),
             Container(
-              width: 38,
-              height: 38,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.05),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 isSub ? Icons.sync_rounded : Icons.arrow_forward_ios_rounded,
-                size: 18,
+                size: 15,
                 color: const Color(0xFFDF9E5B),
               ),
             ),
@@ -308,39 +330,35 @@ class ProfileView extends GetView<ProfileController> {
     );
   }
 
-  Widget _buildMenuList(dynamic m, bool isSub) {
+  Widget _buildMenuList(MemberModel m, bool isSub) {
     final items = [
       {
         'title': 'Personal Information',
         'subtitle': 'Name, mobile, email, address',
         'icon': Icons.person_outline_rounded,
-        'action': () {},
+        'action': () => Get.toNamed(AppRoutes.PERSONAL_INFO),
       },
       {
         'title': 'Subscription Details',
-        'subtitle': isSub ? 'VIP SUBSCRIBER · YSM-2024-04821' : 'No active subscription · Tap to join',
+        'subtitle': isSub ? '${m.membershipType} · ${m.membershipId}' : 'No active subscription · Tap to join',
         'icon': Icons.workspace_premium_outlined,
-        'action': () => Get.toNamed(AppRoutes.PLANS),
+        'action': () => Get.toNamed(AppRoutes.SUBSCRIPTION_DETAILS),
       },
       {
         'title': 'Coupon Summary',
-        'subtitle': isSub ? '7 active · 5 used' : '0 active vouchers',
+        'subtitle': isSub ? '${m.couponsLeft} active · ${m.couponsUsed} used' : '0 active vouchers',
         'icon': Icons.confirmation_number_outlined,
-        'action': () {
-          if (Get.isRegistered<NavigationController>()) {
-            Get.find<NavigationController>().changeTab(1);
-          }
-        },
+        'action': () => Get.toNamed(AppRoutes.COUPON_SUMMARY),
       },
       {
         'title': 'Savings Summary',
-        'subtitle': isSub ? '₹24,500 saved lifetime' : '₹0 saved',
+        'subtitle': isSub ? '₹${m.totalSavings} saved lifetime' : '₹0 saved',
         'icon': Icons.savings_outlined,
-        'action': () {},
+        'action': () => Get.toNamed(AppRoutes.SAVINGS_SUMMARY),
       },
       {
         'title': 'Points Summary',
-        'subtitle': '1,25,000 pts · 5x weekend boost',
+        'subtitle': '${m.loyaltyPoints} pts available',
         'icon': Icons.stars_rounded,
         'action': () {
           if (Get.isRegistered<NavigationController>()) {
@@ -352,87 +370,92 @@ class ProfileView extends GetView<ProfileController> {
         'title': 'Transaction History',
         'subtitle': 'Visits, deliveries, banquets',
         'icon': Icons.receipt_long_outlined,
-        'action': () {},
+        'action': () => Get.toNamed(AppRoutes.TRANSACTION_HISTORY),
       },
       {
-        'title': 'Support',
+        'title': 'Support & Concierge',
         'subtitle': '24/7 concierge · WhatsApp',
         'icon': Icons.headset_mic_outlined,
-        'action': () {},
+        'action': () => Get.toNamed(AppRoutes.SUPPORT),
       },
       {
         'title': 'Terms & Conditions',
         'subtitle': 'Subscription agreement',
         'icon': Icons.description_outlined,
-        'action': () {},
+        'action': () => Get.toNamed(AppRoutes.TERMS),
       },
     ];
 
     return Material(
       color: const Color(0xFF131715),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.06)),
         ),
         child: Column(
-        children: List.generate(items.length, (index) {
-          final it = items[index];
-          final isLast = index == items.length - 1;
-          return Column(
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                leading: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    shape: BoxShape.circle,
+          children: List.generate(items.length, (index) {
+            final it = items[index];
+            final isLast = index == items.length - 1;
+            return Column(
+              children: [
+                ListTile(
+                  dense: true,
+                  visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                  minLeadingWidth: 0,
+                  horizontalTitleGap: 12,
+                  minVerticalPadding: 4,
+                  leading: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.06),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      it['icon'] as IconData,
+                      size: 16,
+                      color: const Color(0xFFDF9E5B),
+                    ),
                   ),
-                  child: Icon(
-                    it['icon'] as IconData,
+                  title: Text(
+                    it['title'] as String,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                  subtitle: Text(
+                    it['subtitle'] as String,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withOpacity(0.4),
+                    ),
+                  ),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
                     size: 18,
-                    color: const Color(0xFFDF9E5B),
+                    color: Colors.white.withOpacity(0.3),
                   ),
+                  onTap: it['action'] as VoidCallback,
                 ),
-                title: Text(
-                  it['title'] as String,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withOpacity(0.9),
+                if (!isLast)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 58,
+                    endIndent: 14,
+                    color: Colors.white.withOpacity(0.04),
                   ),
-                ),
-                subtitle: Text(
-                  it['subtitle'] as String,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withOpacity(0.4),
-                  ),
-                ),
-                trailing: Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: Colors.white.withOpacity(0.3),
-                ),
-                onTap: it['action'] as VoidCallback,
-              ),
-              if (!isLast)
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  indent: 68,
-                  endIndent: 16,
-                  color: Colors.white.withOpacity(0.04),
-                ),
-            ],
-          );
-        }),
+              ],
+            );
+          }),
+        ),
       ),
-    ),
     );
   }
 }

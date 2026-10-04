@@ -31,8 +31,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (memberProfileRepository.count() > 0) return;
-        initData();
+        // No dummy data seeding - database starts clean with zeros
     }
 
     public void resetAllData() {
@@ -44,30 +43,12 @@ public class DataInitializer implements CommandLineRunner {
         activityLogRepository.deleteAll();
         memberProfileRepository.deleteAll();
         outletRepository.deleteAll();
-        initData();
+        // No re-seeding - database stays clean
     }
 
+    // All seed methods below are disabled but kept for reference
     private void initData() {
-        // 1. Seed Outlets
-        seedOutlets();
-
-        // 2. Seed Primary Member Profile (Rahul Mehta) + CRM Customers
-        seedMembers();
-
-        // 3. Seed Coupons
-        seedCoupons();
-
-        // 4. Seed Reservations
-        seedReservations();
-
-        // 5. Seed Loyalty Transactions
-        seedLoyaltyTransactions();
-
-        // 6. Seed Floor Tables & Waitlist
-        seedFloorTables();
-
-        // 7. Seed Activity Logs
-        seedActivityLogs();
+        // DISABLED - no dummy data
     }
 
     private void seedOutlets() {

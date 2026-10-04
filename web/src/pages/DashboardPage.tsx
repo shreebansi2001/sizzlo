@@ -37,15 +37,7 @@ interface DashboardPageProps {
   reservations?: Reservation[];
 }
 
-const couponMix = [
-  { name: "Dining 50%", value: 4280 },
-  { name: "Birthday Special", value: 1840 },
-  { name: "Banquet Offers", value: 1240 },
-  { name: "Dough by Yanki", value: 2640 },
-  { name: "Anniversary Meal", value: 980 },
-];
-
-const palette = ["#FF8A00", "#C9A24D", "#3B82F6", "#10B981", "#EC4899"];
+const defaultPalette = ["#FF8A00", "#C9A24D", "#3B82F6", "#10B981", "#EC4899", "#8B5CF6"];
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   kpis: initialKpis,
@@ -57,6 +49,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [revenueSeries, setRevenueSeries] = useState<RevenuePoint[]>(initialRevenue || fallbackRevenueSeries);
   const [outlets, setOutlets] = useState<Outlet[]>(initialOutlets || fallbackOutlets);
   const [reservations, setReservations] = useState<Reservation[]>(initialReservations || fallbackReservations);
+  const [couponMix, setCouponMix] = useState<{ name: string; value: number }[]>([]);
   const [chartPeriod, setChartPeriod] = useState<'Daily' | 'Monthly' | 'Annually'>('Monthly');
 
   useEffect(() => {
@@ -79,6 +72,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         }
       })
       .catch(() => {});
+
+    axios.get('/api/coupons')
+      .then(res => {
+        if (res.data?.success && res.data.data?.length) {
+          const mapped = res.data.data.map((c: any) => ({
+            name: c.name,
+            value: ((c.totalCount || 3) - (c.leftCount || 0)) * 420 + (c.leftCount || 1) * 180,
+          }));
+          setCouponMix(mapped);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -93,8 +98,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             style={{ width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 4px 16px rgba(255, 138, 0, 0.4))' }} 
           />
           <div>
-            <h1 className="page-title">Good morning, Amit</h1>
-            <p className="page-subtitle">Here's how Yanki Sizzlerr is performing across all outlets today.</p>
+            <h1 className="page-title">Executive Operations Hub</h1>
+            <p className="page-subtitle">Live real-time telemetry across all Yanki hospitality outlets & patron activities.</p>
           </div>
         </div>
 
@@ -208,7 +213,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   paddingAngle={3}
                 >
                   {couponMix.map((_, i) => (
-                    <Cell key={i} fill={palette[i % palette.length]} />
+                    <Cell key={i} fill={defaultPalette[i % defaultPalette.length]} />
                   ))}
                 </Pie>
                 <Tooltip 
@@ -227,7 +232,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             {couponMix.map((c, i) => (
               <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: palette[i % palette.length] }} />
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: defaultPalette[i % defaultPalette.length] }} />
                   {c.name}
                 </span>
                 <strong style={{ color: 'var(--text-main)' }}>{c.value.toLocaleString()}</strong>

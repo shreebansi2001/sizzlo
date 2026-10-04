@@ -1,12 +1,25 @@
-import React from 'react';
-import { Sparkles, ArrowRight, Zap, Lightbulb } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, Zap, Lightbulb } from 'lucide-react';
+import axios from 'axios';
 import { AIInsight } from '../types';
 
 interface InsightsPageProps {
-  insights: AIInsight[];
+  insights?: AIInsight[];
 }
 
-export const InsightsPage: React.FC<InsightsPageProps> = ({ insights }) => {
+export const InsightsPage: React.FC<InsightsPageProps> = ({ insights: initialInsights }) => {
+  const [insights, setInsights] = useState<AIInsight[]>(initialInsights || []);
+
+  useEffect(() => {
+    axios.get('/api/admin/dashboard')
+      .then(res => {
+        if (res.data?.success && res.data.data?.aiInsights) {
+          setInsights(res.data.data.aiInsights);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
@@ -21,11 +34,11 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ insights }) => {
             <div
               key={idx}
               style={{
-                background: 'white',
+                background: 'var(--surface)',
                 borderRadius: 20,
-                border: isGold ? '1px solid rgba(232, 184, 74, 0.4)' : '1px solid var(--border)',
+                border: isGold ? '1px solid rgba(201, 162, 77, 0.4)' : '1px solid var(--border)',
                 padding: 24,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                boxShadow: 'var(--shadow-card)',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
@@ -37,17 +50,19 @@ export const InsightsPage: React.FC<InsightsPageProps> = ({ insights }) => {
                     width: 32,
                     height: 32,
                     borderRadius: 8,
-                    background: isGold ? 'rgba(232, 184, 74, 0.15)' : 'rgba(0, 29, 74, 0.08)',
+                    background: isGold ? 'rgba(201, 162, 77, 0.15)' : 'rgba(255, 138, 0, 0.12)',
                     display: 'grid',
                     placeItems: 'center'
                   }}>
-                    {isGold ? <Zap size={16} color="#BF8E22" /> : <Lightbulb size={16} color="#001D4A" />}
+                    {isGold ? <Zap size={16} color="#C9A24D" /> : <Lightbulb size={16} color="#FF8A00" />}
                   </div>
                   <span className={`badge ${isGold ? 'badge-gold' : 'badge-royal'}`}>
                     AI Actionable
                   </span>
                 </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)', marginBottom: 6 }}>{item.title}</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: isGold ? 'var(--gold)' : 'var(--primary)', marginBottom: 6 }}>
+                  {item.title}
+                </h3>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>{item.body}</p>
               </div>
 

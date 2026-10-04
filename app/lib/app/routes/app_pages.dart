@@ -26,6 +26,13 @@ import '../modules/notifications/bindings/notifications_binding.dart';
 import '../modules/notifications/views/notifications_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
 import '../modules/profile/views/profile_view.dart';
+import '../modules/profile/views/subviews/personal_info_view.dart';
+import '../modules/profile/views/subviews/subscription_details_view.dart';
+import '../modules/profile/views/subviews/coupon_summary_view.dart';
+import '../modules/profile/views/subviews/savings_summary_view.dart';
+import '../modules/profile/views/subviews/transaction_history_view.dart';
+import '../modules/profile/views/subviews/support_view.dart';
+import '../modules/profile/views/subviews/terms_conditions_view.dart';
 
 class AppPages {
   static const INITIAL = AppRoutes.SPLASH;
@@ -99,6 +106,34 @@ class AppPages {
       name: AppRoutes.PROFILE,
       page: () => const ProfileView(),
       binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.PERSONAL_INFO,
+      page: () => const PersonalInfoView(),
+    ),
+    GetPage(
+      name: AppRoutes.SUBSCRIPTION_DETAILS,
+      page: () => const SubscriptionDetailsView(),
+    ),
+    GetPage(
+      name: AppRoutes.COUPON_SUMMARY,
+      page: () => const CouponSummaryView(),
+    ),
+    GetPage(
+      name: AppRoutes.SAVINGS_SUMMARY,
+      page: () => const SavingsSummaryView(),
+    ),
+    GetPage(
+      name: AppRoutes.TRANSACTION_HISTORY,
+      page: () => const TransactionHistoryView(),
+    ),
+    GetPage(
+      name: AppRoutes.SUPPORT,
+      page: () => const SupportView(),
+    ),
+    GetPage(
+      name: AppRoutes.TERMS,
+      page: () => const TermsConditionsView(),
     ),
   ];
 }

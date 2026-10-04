@@ -61,6 +61,24 @@ public class MemberProfile {
     @Column(name = "last_visit")
     private String lastVisit;
 
+    private String address;
+
+    private String gender;
+
+    private String birthday;
+
+    @Column(name = "spouse_name")
+    private String spouseName;
+
+    @Column(name = "spouse_birthday")
+    private String spouseBirthday;
+
+    @Column(name = "anniversary_date")
+    private String anniversaryDate;
+
+    @Column(name = "is_married")
+    private String isMarried;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -136,4 +154,25 @@ public class MemberProfile {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public String getBirthday() { return birthday; }
+    public void setBirthday(String birthday) { this.birthday = birthday; }
+
+    public String getSpouseName() { return spouseName; }
+    public void setSpouseName(String spouseName) { this.spouseName = spouseName; }
+
+    public String getSpouseBirthday() { return spouseBirthday; }
+    public void setSpouseBirthday(String spouseBirthday) { this.spouseBirthday = spouseBirthday; }
+
+    public String getAnniversaryDate() { return anniversaryDate; }
+    public void setAnniversaryDate(String anniversaryDate) { this.anniversaryDate = anniversaryDate; }
+
+    public String getIsMarried() { return isMarried; }
+    public void setIsMarried(String isMarried) { this.isMarried = isMarried; }
 }

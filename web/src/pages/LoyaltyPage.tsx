@@ -1,34 +1,58 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, Gift, RefreshCw, Award, ArrowUpRight } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-
-const distributionData = [
-  { name: '0 – 25k', value: 1840, color: '#3B82F6' },
-  { name: '25k – 75k', value: 1280, color: '#E8B84A' },
-  { name: '75k – 150k', value: 740, color: '#10B981' },
-  { name: '150k – 250k', value: 420, color: '#001D4A' },
-  { name: '250k+ (Renewal Ready)', value: 302, color: '#8B5CF6' },
-];
-
-const topLoyaltyMembers = [
-  { rank: 1, name: 'Kabir Joshi', id: 'YSM-2024-04005', points: '215,000', tier: 'Connoisseur', renewals: 2 },
-  { rank: 2, name: 'Priya Shah', id: 'YSM-2024-04002', points: '198,000', tier: 'Connoisseur', renewals: 1 },
-  { rank: 3, name: 'Sneha Iyer', id: 'YSM-2024-04004', points: '145,000', tier: 'Gourmet', renewals: 1 },
-  { rank: 4, name: 'Rahul Mehta', id: 'YSM-2024-04821', points: '125,000', tier: 'Gourmet', renewals: 0 },
-  { rank: 5, name: 'Arjun Patel', id: 'YSM-2024-04003', points: '89,000', tier: 'Privilege', renewals: 0 },
-];
+import axios from 'axios';
+import { Member } from '../types';
 
 export const LoyaltyPage: React.FC = () => {
+  const [members, setMembers] = useState<Member[]>([]);
+
+  useEffect(() => {
+    axios.get('/api/members')
+      .then(res => {
+        if (res.data?.success && res.data.data) {
+          setMembers(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const totalPoints = members.reduce((sum, m) => sum + (m.loyaltyPoints || 0), 0);
+  const avgPoints = members.length > 0 ? Math.round(totalPoints / members.length) : 0;
+  const renewalsEarned = members.filter(m => (m.loyaltyPoints || 0) >= (m.loyaltyGoal || 250000)).length;
+
+  const topLoyaltyMembers = [...members]
+    .sort((a, b) => (b.loyaltyPoints || 0) - (a.loyaltyPoints || 0))
+    .slice(0, 5)
+    .map((m, i) => ({
+      rank: i + 1,
+      name: m.fullName,
+      id: m.membershipId,
+      points: (m.loyaltyPoints || 0).toLocaleString(),
+      tier: m.membershipType,
+      renewals: (m.loyaltyPoints || 0) >= 250000 ? 1 : 0,
+    }));
+
+  const distributionData = [
+    { name: '0 – 25k', value: members.filter(m => (m.loyaltyPoints || 0) < 25000).length, color: '#3B82F6' },
+    { name: '25k – 75k', value: members.filter(m => (m.loyaltyPoints || 0) >= 25000 && (m.loyaltyPoints || 0) < 75000).length, color: '#E8B84A' },
+    { name: '75k – 150k', value: members.filter(m => (m.loyaltyPoints || 0) >= 75000 && (m.loyaltyPoints || 0) < 150000).length, color: '#10B981' },
+    { name: '150k – 250k', value: members.filter(m => (m.loyaltyPoints || 0) >= 150000 && (m.loyaltyPoints || 0) < 250000).length, color: '#001D4A' },
+    { name: '250k+ (Goal Met)', value: renewalsEarned, color: '#8B5CF6' },
+  ];
+
+  const dynamicKpis = [
+    { label: 'TOTAL POINTS ISSUED', val: totalPoints.toLocaleString('en-IN'), sub: `Across ${members.length} VIP accounts`, icon: Sparkles },
+    { label: 'AVG POINTS / MEMBER', val: avgPoints.toLocaleString('en-IN'), sub: 'Healthy engagement index', icon: Award },
+    { label: 'FREE RENEWALS EARNED', val: `${renewalsEarned} Members`, sub: 'Achieved 250,000 pts goal', icon: RefreshCw },
+    { label: 'TOP BALANCE', val: topLoyaltyMembers[0]?.points || '0', sub: topLoyaltyMembers[0]?.name || 'Leader', icon: Gift },
+  ];
+
   return (
     <div>
       {/* 4 Metric Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        {[
-          { label: 'TOTAL POINTS ISSUED', val: '4,82,00,000', sub: 'Across dining & delivery', icon: Sparkles },
-          { label: 'REDEEMED POINTS', val: '1,24,80,000', sub: '+18% redemption rate', icon: Gift, delta: '+18%' },
-          { label: 'FREE RENEWALS EARNED', val: '142 Members', sub: 'Achieved 250,000 pts goal', icon: RefreshCw },
-          { label: 'AVG POINTS / MEMBER', val: '94,250', sub: 'Healthy engagement index', icon: Award },
-        ].map((s) => {
+        {dynamicKpis.map((s) => {
           const Icon = s.icon;
           return (
             <div key={s.label} className="kpi-card">
@@ -49,11 +73,11 @@ export const LoyaltyPage: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: 24 }}>
         {/* Pie Chart Card */}
         <div style={{
-          background: 'white',
+          background: 'var(--surface)',
           borderRadius: 20,
           border: '1px solid var(--border)',
           padding: 24,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+          boxShadow: 'var(--shadow-card)'
         }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Points Balance Distribution</h3>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Categorization by patron point accumulation</p>
@@ -76,7 +100,7 @@ export const LoyaltyPage: React.FC = () => {
                 </Pie>
                 <Tooltip
                   formatter={(value: any) => [`${value} members`, 'Count']}
-                  contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0' }}
+                  contentStyle={{ background: 'var(--surface-alt)', borderRadius: 12, border: '1px solid var(--border)', color: 'var(--text-main)' }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -97,11 +121,11 @@ export const LoyaltyPage: React.FC = () => {
 
         {/* Top Members Leaderboard */}
         <div style={{
-          background: 'white',
+          background: 'var(--surface)',
           borderRadius: 20,
           border: '1px solid var(--border)',
           overflow: 'hidden',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+          boxShadow: 'var(--shadow-card)'
         }}>
           <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>

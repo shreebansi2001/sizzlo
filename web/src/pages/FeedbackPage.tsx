@@ -39,11 +39,11 @@ export const FeedbackPage: React.FC<FeedbackPageProps> = ({ feedbacks }) => {
 
       {/* Feedback Records Table */}
       <div style={{
-        background: 'white',
+        background: 'var(--surface)',
         borderRadius: 20,
         border: '1px solid var(--border)',
         overflow: 'hidden',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+        boxShadow: 'var(--shadow-card)'
       }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Subscriber Reviews &amp; Hospitality Feedback</h3>

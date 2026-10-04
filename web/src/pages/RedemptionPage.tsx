@@ -16,12 +16,7 @@ export const RedemptionPage: React.FC = () => {
   const [result, setResult] = useState<'idle' | 'valid' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmModal, setConfirmModal] = useState(false);
-  const [recentList, setRecentList] = useState<RecentItem[]>([
-    { id: 1, actorName: 'Priya Shah', actionType: 'REDEMPTION', description: 'C-01 · 50% Dining Discount', outletName: 'Navrangpura', timeAgo: '2m ago' },
-    { id: 2, actorName: 'Kabir Joshi', actionType: 'REDEMPTION', description: 'C-02 · Subscriber Birthday Cake', outletName: 'Navrangpura', timeAgo: '6m ago' },
-    { id: 3, actorName: 'Ananya Rao', actionType: 'REDEMPTION', description: 'C-05 · Dough BOGO Pizza', outletName: 'CG Road', timeAgo: '14m ago' },
-    { id: 4, actorName: 'Aditya Verma', actionType: 'REDEMPTION', description: 'C-01 · 50% Dining Discount', outletName: 'Shilaj', timeAgo: '26m ago' },
-  ]);
+  const [recentList, setRecentList] = useState<RecentItem[]>([]);
 
   useEffect(() => {
     // Fetch recent from backend
@@ -72,12 +67,12 @@ export const RedemptionPage: React.FC = () => {
   };
 
   const handleConfirm = () => {
-    axios.post('/api/redemption/confirm', { code, subscriber: 'Rahul Mehta' })
+    axios.post('/api/redemption/confirm', { code })
       .then(() => {
         setResult('success');
         setConfirmModal(false);
         setRecentList(prev => [
-          { id: Date.now(), actorName: 'Rahul Mehta', actionType: 'REDEMPTION', description: `${code} · 50% Dining Discount`, outletName: 'Navrangpura', timeAgo: 'Just now' },
+          { id: Date.now(), actorName: 'Patron', actionType: 'REDEMPTION', description: `${code} · Redeemed`, outletName: 'Counter', timeAgo: 'Just now' },
           ...prev
         ]);
       })
@@ -185,10 +180,10 @@ export const RedemptionPage: React.FC = () => {
                     Verified Patron
                   </span>
                   <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, color: 'var(--text-main)', marginTop: 4 }}>
-                    Rahul Mehta
+                    Patron
                   </h2>
                   <p style={{ fontSize: 12, color: 'var(--gold)', marginTop: 2 }}>
-                    ID · YSM-2024-04821
+                    Verified via Code
                   </p>
                 </div>
                 <span className="badge badge-gold" style={{ padding: '6px 14px', fontSize: 12 }}>
@@ -276,7 +271,7 @@ export const RedemptionPage: React.FC = () => {
             </div>
             
             <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              You are about to redeem <strong>50% Dining Discount</strong> for patron <strong>Rahul Mehta</strong>. This action will deduct 1 voucher from their annual quota and cannot be undone.
+              You are about to redeem this voucher for the verified patron. This action will deduct 1 voucher from their annual quota and cannot be undone.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>

@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
+import '../../../data/services/api_service.dart';
+import '../../home/controllers/home_controller.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({Key? key}) : super(key: key);
@@ -25,6 +27,7 @@ class _RegisterViewState extends State<RegisterView> {
   DateTime? _anniversaryDate;
   String _isMarried = 'No'; // 'Yes' or 'No'
   String _errorMessage = '';
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -35,7 +38,7 @@ class _RegisterViewState extends State<RegisterView> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submit() async {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
 
@@ -55,12 +58,48 @@ class _RegisterViewState extends State<RegisterView> {
 
     setState(() {
       _errorMessage = '';
+      _isLoading = true;
     });
 
-    // Navigate to Login with registered flag, or directly to Verify
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final regData = {
+      'fullName': name,
+      'mobile': phone,
+      'address': _addressController.text.trim(),
+      'gender': _selectedGender ?? '',
+      'birthday': _birthday != null ? dateFormat.format(_birthday!) : '',
+      'isMarried': _isMarried,
+      'spouseName': _spouseNameController.text.trim(),
+      'spouseBirthday': _spouseBirthday != null ? dateFormat.format(_spouseBirthday!) : '',
+      'anniversaryDate': _anniversaryDate != null ? dateFormat.format(_anniversaryDate!) : '',
+    };
+
+    final apiService = ApiService();
+    final result = await apiService.registerMember(regData);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result['member'] != null) {
+      if (Get.isRegistered<HomeController>()) {
+        Get.find<HomeController>().member.value = result['member'];
+        Get.find<HomeController>().loadDashboardData();
+      }
+    }
+
+    Get.snackbar(
+      'Account Created!',
+      'VIP account activated for $name',
+      backgroundColor: const Color(0xFF0E3B32),
+      colorText: const Color(0xFFE8B84A),
+      duration: const Duration(seconds: 3),
+    );
+
+    // Proceed to OTP verification
     Get.offNamed(
-      AppRoutes.LOGIN,
-      arguments: {'registered': true, 'phone': phone},
+      AppRoutes.VERIFY,
+      arguments: {'phone': phone, 'registered': true},
     );
   }
 
@@ -598,7 +637,7 @@ class _RegisterViewState extends State<RegisterView> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _submit,
+                        onPressed: _isLoading ? null : _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.flame,
                           foregroundColor: const Color(0xFF070A09),
@@ -607,25 +646,34 @@ class _RegisterViewState extends State<RegisterView> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.save_rounded,
-                              size: 18,
-                              color: Color(0xFF070A09),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Save & Continue',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF070A09),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Color(0xFF070A09),
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.save_rounded,
+                                    size: 18,
+                                    color: Color(0xFF070A09),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Save & Continue',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF070A09),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
                   ],

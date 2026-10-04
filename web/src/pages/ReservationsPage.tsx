@@ -33,22 +33,22 @@ interface ReservationsPageProps {
 }
 
 const peakHoursData = [
-  { h: '12 PM', v: 8 },
-  { h: '1 PM', v: 22 },
-  { h: '2 PM', v: 14 },
-  { h: '7 PM', v: 38 },
-  { h: '8 PM', v: 64 },
-  { h: '9 PM', v: 58 },
-  { h: '10 PM', v: 24 }
+  { h: '12 PM', v: 0 },
+  { h: '1 PM', v: 0 },
+  { h: '2 PM', v: 0 },
+  { h: '7 PM', v: 0 },
+  { h: '8 PM', v: 0 },
+  { h: '9 PM', v: 0 },
+  { h: '10 PM', v: 0 }
 ];
 
 const kpiStats = [
-  { k: 'Total Reservations', v: '1,245', icon: Calendar, delta: '+14% vs last week' },
-  { k: 'VIP Bookings', v: '412', icon: Crown, delta: '33% VIP share' },
-  { k: 'Peak Hour', v: '8 PM', icon: Clock, delta: '64 covers avg' },
-  { k: 'Popular Outlet', v: 'Signature', icon: MapPin, delta: '48% bookings' },
-  { k: 'Avg Guests', v: '4.2', icon: Users, delta: 'Family & Couples' },
-  { k: 'Cancellation Rate', v: '6.4%', icon: TrendingUp, delta: '-1.8% optimized' }
+  { k: 'Total Reservations', v: '0', icon: Calendar, delta: '0%' },
+  { k: 'VIP Bookings', v: '0', icon: Crown, delta: '0% VIP share' },
+  { k: 'Peak Hour', v: '--', icon: Clock, delta: 'No data' },
+  { k: 'Popular Outlet', v: '--', icon: MapPin, delta: 'No data' },
+  { k: 'Avg Guests', v: '0', icon: Users, delta: 'No data' },
+  { k: 'Cancellation Rate', v: '0%', icon: TrendingUp, delta: 'No data' }
 ];
 
 interface UpcomingItem {
@@ -127,6 +127,15 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     return matchesOutlet && matchesStatus && matchesSearch;
   });
 
+  const dynamicKpiStats = [
+    { k: 'Total Reservations', v: `${upcomingList.length}`, icon: Calendar, delta: 'Live in-system bookings' },
+    { k: 'VIP Bookings', v: `${upcomingList.filter(u => u.vip).length}`, icon: Crown, delta: `${upcomingList.length ? Math.round((upcomingList.filter(u => u.vip).length / upcomingList.length) * 100) : 0}% VIP share` },
+    { k: 'Peak Hour', v: '8 PM', icon: Clock, delta: 'Dinner peak rush' },
+    { k: 'Popular Outlet', v: 'Yanki Sizzlerr', icon: MapPin, delta: 'Top destination' },
+    { k: 'Avg Party Size', v: `${(upcomingList.reduce((sum, r) => sum + (r.guests || 2), 0) / (upcomingList.length || 1)).toFixed(1)}`, icon: Users, delta: 'Guests per table' },
+    { k: 'Confirmed', v: `${upcomingList.filter(u => u.status === 'Confirmed').length}`, icon: TrendingUp, delta: 'Ready for seating' }
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* 6 Top Metric Cards */}
@@ -135,11 +144,11 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
         gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
         gap: 16 
       }}>
-        {kpiStats.map((item) => {
+        {dynamicKpiStats.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.k} className="kpi-card" style={{ padding: '16px 18px' }}>
-              <div className="kpi-header" style={{ marginBottom: 8 }}>
+            <div key={item.k} className="kpi-card" style={{ padding: '16px 18px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="kpi-header" style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="kpi-label" style={{ fontSize: 10.5, letterSpacing: '0.08em' }}>
                   {item.k}
                 </span>
@@ -167,11 +176,11 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
       }}>
         {/* Peak Hours Today Chart Card */}
         <div style={{
-          background: 'white',
+          background: 'var(--surface)',
           borderRadius: 20,
           border: '1px solid var(--border)',
           padding: 24,
-          boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+          boxShadow: 'var(--shadow-card)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between'
@@ -187,7 +196,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--flame)' }} />
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--primary)' }} />
                 <span>Covers Booked</span>
               </div>
             </div>
@@ -195,16 +204,16 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             <div style={{ height: 260, width: '100%', minHeight: 260 }}>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={peakHoursData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid stroke="#EAEAEA" strokeDasharray="3 3" vertical={false} />
+                  <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" strokeDasharray="3 3" vertical={false} />
                   <XAxis 
                     dataKey="h" 
-                    stroke="#8BA19A" 
+                    stroke="var(--text-muted)" 
                     fontSize={11} 
                     tickLine={false} 
                     axisLine={{ stroke: 'var(--border)' }} 
                   />
                   <YAxis 
-                    stroke="#8BA19A" 
+                    stroke="var(--text-muted)" 
                     fontSize={12} 
                     tickLine={false} 
                     axisLine={{ stroke: 'var(--border)' }} 
@@ -212,9 +221,11 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                   <Tooltip 
                     cursor={{ fill: 'rgba(255, 138, 0, 0.08)' }}
                     contentStyle={{ 
+                      background: 'var(--surface-raised)',
                       borderRadius: 12, 
                       border: '1px solid var(--border)', 
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                      color: 'var(--text-main)',
                       fontSize: 12 
                     }}
                     formatter={(value: any) => [`${value} Guests`, 'Reservations']}
@@ -235,7 +246,8 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             justifyContent: 'space-between', 
             padding: '14px 18px', 
             borderRadius: 14, 
-            background: 'var(--background)', 
+            background: 'var(--surface-alt)', 
+            border: '1px solid var(--border-subtle)',
             marginTop: 16,
             fontSize: 12 
           }}>
@@ -245,18 +257,18 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             </div>
             <div>
               <span style={{ color: 'var(--text-muted)' }}>Recommended Staffing: </span>
-              <strong style={{ color: 'var(--flame-dark)' }}>Peak Capacity (Full Brigade)</strong>
+              <strong style={{ color: 'var(--gold)' }}>Peak Capacity (Full Brigade)</strong>
             </div>
           </div>
         </div>
 
         {/* Upcoming Fast-List Card */}
         <div style={{
-          background: 'white',
+          background: 'var(--surface)',
           borderRadius: 20,
           border: '1px solid var(--border)',
           padding: 24,
-          boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+          boxShadow: 'var(--shadow-card)',
           display: 'flex',
           flexDirection: 'column'
         }}>
@@ -347,7 +359,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                         fontSize: 11,
                         fontWeight: 600,
                         borderRadius: 8,
-                        background: 'white',
+                        background: 'var(--surface-alt)',
                         border: '1px solid var(--border)',
                         color: 'var(--success)',
                         cursor: 'pointer',
@@ -369,7 +381,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                         borderRadius: 8,
                         background: 'var(--primary)',
                         border: 'none',
-                        color: 'white',
+                        color: '#070A09',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -387,7 +399,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                         fontSize: 11,
                         fontWeight: 600,
                         borderRadius: 8,
-                        background: 'white',
+                        background: 'var(--surface-alt)',
                         border: '1px solid var(--border)',
                         color: 'var(--danger)',
                         cursor: 'pointer',
@@ -408,11 +420,11 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
 
       {/* Live Table & Host Station Pipeline */}
       <div style={{
-        background: 'white',
+        background: 'var(--surface)',
         borderRadius: 20,
         border: '1px solid var(--border)',
         padding: 24,
-        boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+        boxShadow: 'var(--shadow-card)'
       }}>
         {/* Header & Filter Controls */}
         <div style={{ 
@@ -462,7 +474,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             </div>
 
             {/* Venue Filter Pills */}
-            <div style={{ display: 'flex', gap: 6, background: 'var(--background)', padding: 3, borderRadius: 10 }}>
+            <div style={{ display: 'flex', gap: 6, background: 'var(--surface-alt)', padding: 4, borderRadius: 10, border: '1px solid var(--border)' }}>
               {['All', 'Yanki Sizzlerr', 'House of Yanki', 'Dough by Yanki'].map((outlet) => (
                 <button
                   key={outlet}
@@ -472,10 +484,10 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                     borderRadius: 8,
                     fontSize: 11,
                     fontWeight: selectedOutlet === outlet ? 700 : 500,
-                    background: selectedOutlet === outlet ? 'white' : 'transparent',
-                    color: selectedOutlet === outlet ? 'var(--primary)' : 'var(--text-muted)',
+                    background: selectedOutlet === outlet ? 'var(--primary)' : 'transparent',
+                    color: selectedOutlet === outlet ? '#070A09' : 'var(--text-muted)',
                     border: 'none',
-                    boxShadow: selectedOutlet === outlet ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+                    boxShadow: selectedOutlet === outlet ? '0 1px 4px rgba(0,0,0,0.4)' : 'none',
                     cursor: 'pointer'
                   }}
                 >
@@ -591,7 +603,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                             fontSize: 11,
                             fontWeight: 600,
                             borderRadius: 8,
-                            background: 'white',
+                            background: 'var(--surface-alt)',
                             border: '1px solid var(--border)',
                             color: 'var(--success)',
                             cursor: 'pointer',
@@ -613,7 +625,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                             borderRadius: 8,
                             background: 'var(--primary)',
                             border: 'none',
-                            color: 'white',
+                            color: '#070A09',
                             cursor: 'pointer'
                           }}
                         >
@@ -628,7 +640,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                             fontSize: 11,
                             fontWeight: 600,
                             borderRadius: 8,
-                            background: 'white',
+                            background: 'var(--surface-alt)',
                             border: '1px solid var(--border)',
                             color: 'var(--danger)',
                             cursor: 'pointer',

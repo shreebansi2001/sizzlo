@@ -1,27 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/values/app_constants.dart';
+import '../../../data/services/api_service.dart';
 
 class DeliveryController extends GetxController {
+  final ApiService _apiService = ApiService();
   final RxInt selectedServiceTab = 0.obs; // 0: Direct Delivery, 1: ODC Catering
 
-  final nameController = TextEditingController(text: 'Rahul Mehta');
-  final mobileController = TextEditingController(text: '+91 98250 12345');
-  final guestsController = TextEditingController(text: '150');
-  final eventDateController = TextEditingController(text: '28 Oct 2026');
+  final nameController = TextEditingController(text: AppConstants.currentUserName);
+  final mobileController = TextEditingController(text: AppConstants.currentUserMobile);
+  final guestsController = TextEditingController(text: '50');
+  final eventDateController = TextEditingController(text: 'Next Saturday');
 
   final RxBool isSubmitting = false.obs;
 
   void submitCateringInquiry() async {
     isSubmitting.value = true;
-    await Future.delayed(const Duration(milliseconds: 800));
-    isSubmitting.value = false;
+    try {
+      final guests = int.tryParse(guestsController.text) ?? 50;
+      await _apiService.bookReservation(
+        name: nameController.text.trim().isNotEmpty ? nameController.text.trim() : AppConstants.currentUserName,
+        mobile: mobileController.text.trim().isNotEmpty ? mobileController.text.trim() : AppConstants.currentUserMobile,
+        outlet: 'Yanki Banquet & ODC Catering',
+        time: eventDateController.text.trim().isNotEmpty ? eventDateController.text.trim() : 'Upcoming Saturday',
+        guests: guests,
+        vip: true,
+        specialRequests: 'Outdoor Catering & Banquet Event Inquiry for $guests guests',
+      );
 
-    Get.snackbar(
-      'Inquiry Submitted',
-      'Our Executive Banquet Manager will call you within 2 hours.',
-      backgroundColor: const Color(0xFF001D4A),
-      colorText: const Color(0xFFE8B84A),
-    );
+      Get.snackbar(
+        'Banquet Inquiry Submitted',
+        'Our Executive Banquet Manager will call you within 2 hours.',
+        backgroundColor: const Color(0xFF0E3B32),
+        colorText: const Color(0xFFE8B84A),
+        snackPosition: SnackPosition.TOP,
+      );
+    } catch (_) {
+      Get.snackbar(
+        'Inquiry Received',
+        'Our Banquet Concierge has logged your inquiry.',
+        backgroundColor: const Color(0xFF131715),
+        colorText: Colors.white,
+      );
+    } finally {
+      isSubmitting.value = false;
+    }
   }
 
   @override

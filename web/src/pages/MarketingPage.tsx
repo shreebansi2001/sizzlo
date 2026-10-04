@@ -46,14 +46,14 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
 
           return (
             <div key={c.name} style={{
-              background: 'white',
+              background: 'var(--surface)',
               borderRadius: 20,
               border: '1px solid var(--border)',
               padding: 24,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+              boxShadow: 'var(--shadow-card)'
             }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -61,11 +61,11 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
                     width: 44,
                     height: 44,
                     borderRadius: 12,
-                    background: isWhatsApp ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 29, 74, 0.08)',
+                    background: isWhatsApp ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 138, 0, 0.12)',
                     display: 'grid',
                     placeItems: 'center'
                   }}>
-                    <Icon size={22} color={isWhatsApp ? '#059669' : 'var(--primary)'} />
+                    <Icon size={22} color={isWhatsApp ? '#10B981' : 'var(--primary)'} />
                   </div>
                   <div>
                     <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>{c.name}</h3>
@@ -74,7 +74,7 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 14, borderTop: '1px solid #F1F5F9' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 14, borderTop: '1px solid var(--border)' }}>
                 <div>
                   <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                     Open Rate
@@ -96,11 +96,11 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
 
       {/* Automated Campaigns List */}
       <div style={{
-        background: 'white',
+        background: 'var(--surface)',
         borderRadius: 20,
         border: '1px solid var(--border)',
         padding: 24,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+        boxShadow: 'var(--shadow-card)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
@@ -110,8 +110,8 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
           <span style={{
             fontSize: 11,
             fontWeight: 700,
-            background: 'rgba(232, 184, 74, 0.2)',
-            color: 'var(--gold-dark)',
+            background: 'rgba(201, 162, 77, 0.15)',
+            color: 'var(--gold)',
             padding: '4px 12px',
             borderRadius: 20
           }}>
@@ -132,19 +132,20 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
                 gap: 16,
                 padding: '16px 20px',
                 borderRadius: 16,
-                background: 'var(--background)',
+                background: 'var(--surface-alt)',
                 border: '1px solid var(--border)'
               }}>
                 <div style={{
                   width: 44,
                   height: 44,
                   borderRadius: 12,
-                  background: 'white',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
                   display: 'grid',
                   placeItems: 'center',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                 }}>
-                  <Icon size={20} color="var(--gold-dark)" />
+                  <Icon size={20} color="var(--gold)" />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
@@ -154,7 +155,7 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
                       letterSpacing: 1.5,
                       padding: '2px 6px',
                       borderRadius: 4,
-                      background: 'rgba(0, 29, 74, 0.08)',
+                      background: 'rgba(255, 138, 0, 0.15)',
                       color: 'var(--primary)'
                     }}>
                       {p.tag}
@@ -166,8 +167,9 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
                 <button
                   onClick={() => setBroadcastNotice(`Edited automated journey for: ${p.name}`)}
                   style={{
-                    background: 'white',
+                    background: 'var(--surface)',
                     border: '1px solid var(--border)',
+                    color: 'var(--text-main)',
                     padding: '8px 14px',
                     borderRadius: 8,
                     fontSize: 12,

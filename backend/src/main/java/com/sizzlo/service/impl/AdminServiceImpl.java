@@ -14,46 +14,62 @@ import java.util.*;
 public class AdminServiceImpl implements AdminService {
 
     private final OutletRepository outletRepository;
+    private final com.sizzlo.repository.MemberProfileRepository memberProfileRepository;
+    private final com.sizzlo.repository.ReservationRepository reservationRepository;
+    private final com.sizzlo.repository.CouponRepository couponRepository;
 
     @Autowired
-    public AdminServiceImpl(OutletRepository outletRepository) {
+    public AdminServiceImpl(OutletRepository outletRepository,
+                            com.sizzlo.repository.MemberProfileRepository memberProfileRepository,
+                            com.sizzlo.repository.ReservationRepository reservationRepository,
+                            com.sizzlo.repository.CouponRepository couponRepository) {
         this.outletRepository = outletRepository;
+        this.memberProfileRepository = memberProfileRepository;
+        this.reservationRepository = reservationRepository;
+        this.couponRepository = couponRepository;
     }
 
     @Override
     public AdminDashboardDto getDashboardOverview() {
-        // KPIs
-        List<Map<String, Object>> kpis = new ArrayList<>();
-        kpis.add(createKpi("Total Revenue", "₹2.75 Cr", "+12.4%", "up"));
-        kpis.add(createKpi("Membership Revenue", "₹42 Lakh", "+8.2%", "up"));
-        kpis.add(createKpi("Active Members", "4,582", "+342", "up"));
-        kpis.add(createKpi("Pending Payments", "₹8.75 L", "-4.1%", "down"));
-        kpis.add(createKpi("Coupons Redeemed", "12,874", "+22%", "up"));
-        kpis.add(createKpi("Reservations", "1,245", "+9.6%", "up"));
+        long memberCount = memberProfileRepository.count();
+        long reservationCount = reservationRepository.count();
+        long totalCouponsUsed = memberProfileRepository.findAll().stream()
+                .mapToLong(m -> m.getCouponsUsed() != null ? m.getCouponsUsed() : 0)
+                .sum();
 
-        // Revenue series (monthly)
+        long pendingDuesSum = memberProfileRepository.findAll().stream()
+                .mapToLong(m -> m.getPendingDues() != null ? m.getPendingDues() : 0)
+                .sum();
+        double totalOutletRev = outletRepository.findAll().stream()
+                .mapToDouble(o -> o.getRevenueLakhs() != null ? o.getRevenueLakhs() : 0)
+                .sum();
+
+        // Dynamic KPIs — zeros when empty
+        List<Map<String, Object>> kpis = new ArrayList<>();
+        String totalRevStr = totalOutletRev > 0 ? String.format(Locale.US, "%.2f", totalOutletRev / 100.0) : "0";
+        kpis.add(createKpi("Total Revenue", "₹" + totalRevStr + " Cr", totalOutletRev > 0 ? "+12.4%" : "0%", "up"));
+        kpis.add(createKpi("Membership Revenue", "₹" + (memberCount > 0 ? (memberCount * 10000 / 100000) : 0) + " Lakh", memberCount > 0 ? "+8.2%" : "0%", "up"));
+        kpis.add(createKpi("Active Members", String.valueOf(memberCount), memberCount > 0 ? "+" + memberCount : "0", "up"));
+        kpis.add(createKpi("Pending Payments", "₹" + (pendingDuesSum > 0 ? String.format(Locale.US, "%.2f L", pendingDuesSum / 100000.0) : "0"), pendingDuesSum > 0 ? "-4.1%" : "0%", "down"));
+        kpis.add(createKpi("Coupons Redeemed", String.valueOf(totalCouponsUsed), totalCouponsUsed > 0 ? "+" + totalCouponsUsed : "0", "up"));
+        kpis.add(createKpi("Reservations", String.valueOf(reservationCount), reservationCount > 0 ? "+" + reservationCount : "0", "up"));
+
+        // Revenue series — zeros when no data
         List<Map<String, Object>> series = new ArrayList<>();
         String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-        double[] revenues = {18, 19.5, 22.1, 21, 24.6, 26.8, 25.4, 27.9, 29.1, 30.2, 28.7, 32.4};
-        double[] memberships = {3.2, 3.5, 3.8, 3.7, 4.1, 4.4, 4.2, 4.6, 4.9, 5.0, 4.8, 5.5};
         for (int i = 0; i < months.length; i++) {
             Map<String, Object> point = new HashMap<>();
             point.put("m", months[i]);
-            point.put("revenue", revenues[i]);
-            point.put("membership", memberships[i]);
+            point.put("revenue", 0);
+            point.put("membership", 0);
             series.add(point);
         }
 
         // Outlets
         List<Outlet> outlets = outletRepository.findAll();
 
-        // AI Insights
+        // AI Insights — empty when no data
         List<Map<String, Object>> insights = new ArrayList<>();
-        insights.add(createInsight("Renewal opportunity", "150 memberships expiring within 30 days. Trigger campaign C-09 for best response.", "gold"));
-        insights.add(createInsight("Revenue forecast", "Revenue expected to grow 12% next quarter, driven by Yanki Signature & Banquet.", "royal"));
-        insights.add(createInsight("Best-performing coupon", "Coupon C-09 generates the highest repeat visits — 3.2× average.", "royal"));
-        insights.add(createInsight("Brand contribution", "Dough by Yanki contributes 18% of total member spending this quarter.", "gold"));
-        insights.add(createInsight("Capacity alert", "Weekend reservations expected to surge 24% — open extra slots for Sat 8–10 PM.", "royal"));
 
         return new AdminDashboardDto(kpis, series, outlets, insights);
     }

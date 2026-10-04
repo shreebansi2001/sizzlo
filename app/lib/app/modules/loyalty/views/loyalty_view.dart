@@ -10,6 +10,23 @@ class LoyaltyView extends GetView<LoyaltyController> {
 
   const LoyaltyView({Key? key, this.isTab = false}) : super(key: key);
 
+  String _formatNumber(int number) {
+    final isNegative = number < 0;
+    final abs = number.abs();
+    final str = abs.toString();
+    if (str.length <= 3) return (isNegative ? '-' : '') + str;
+    
+    final last3 = str.substring(str.length - 3);
+    String remaining = str.substring(0, str.length - 3);
+    String result = '';
+    while (remaining.length > 2) {
+      result = ',${remaining.substring(remaining.length - 2)}$result';
+      remaining = remaining.substring(0, remaining.length - 2);
+    }
+    result = '$remaining$result,$last3';
+    return (isNegative ? '-' : '') + result;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!Get.isRegistered<LoyaltyController>()) {
@@ -36,63 +53,84 @@ class LoyaltyView extends GetView<LoyaltyController> {
                 onPressed: () => Get.back(),
               ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Loyalty Hero Card matching Image 2
-            _buildBalanceHeroCard(),
+      body: Obx(() {
+        if (controller.isLoading.value && controller.transactions.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.gold),
+          );
+        }
 
-            const SizedBox(height: 16),
-
-            // 3 Stat Tiles in a row matching Image 2
-            _buildThreeStatsRow(),
-
-            const SizedBox(height: 24),
-
-            // Recent Activity Section Header with +22% vs last month
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return RefreshIndicator(
+          color: AppColors.gold,
+          backgroundColor: const Color(0xFF131715),
+          onRefresh: () async {
+            controller.loadLoyaltyData();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Recent activity',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.gold,
-                  ),
-                ),
+                // Loyalty Hero Card
+                _buildBalanceHeroCard(),
+
+                const SizedBox(height: 16),
+
+                // 3 Stat Tiles in a row
+                _buildThreeStatsRow(),
+
+                const SizedBox(height: 24),
+
+                // Recent Activity Section Header
                 Row(
-                  children: const [
-                    Icon(Icons.trending_up, size: 16, color: Color(0xFF4EE3B8)),
-                    SizedBox(width: 4),
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
                     Text(
-                      '+22% vs last month',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF4EE3B8),
+                      'Recent activity',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.gold,
                       ),
+                    ),
+                    Row(
+                      children: const [
+                        Icon(Icons.trending_up, size: 16, color: Color(0xFF4EE3B8)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Live Wallet Sync',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF4EE3B8),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 12),
+
+                // Activity List
+                _buildActivityList(),
+
+                SizedBox(height: isTab ? 135 : 30),
               ],
             ),
-
-            const SizedBox(height: 12),
-
-            // Activity List matching Image 2
-            _buildActivityList(),
-
-            SizedBox(height: isTab ? 135 : 30),
-          ],
-        ),
-      ),
+          ),
+        );
+      }),
     );
   }
 
   Widget _buildBalanceHeroCard() {
+    final m = controller.member.value;
+    final currentPoints = m.loyaltyPoints;
+    final goalPoints = m.loyaltyGoal > 0 ? m.loyaltyGoal : 250000;
+    final progressPercent = ((currentPoints / goalPoints) * 100).toInt().clamp(0, 100);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -141,7 +179,7 @@ class LoyaltyView extends GetView<LoyaltyController> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '1,25,000',
+                      _formatNumber(currentPoints),
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 34,
                         fontWeight: FontWeight.bold,
@@ -186,7 +224,7 @@ class LoyaltyView extends GetView<LoyaltyController> {
 
           const SizedBox(height: 18),
 
-          // 50% Circular Progress Box matching Image 2
+          // Dynamic Circular Progress Box
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -198,18 +236,18 @@ class LoyaltyView extends GetView<LoyaltyController> {
             ),
             child: Row(
               children: [
-                // 50% circular indicator
+                // Dynamic percentage circular indicator
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.gold, width: 2.5),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      '50%',
-                      style: TextStyle(
+                      '$progressPercent%',
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -223,7 +261,7 @@ class LoyaltyView extends GetView<LoyaltyController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'NEXT REWARD AT 2,50,000 PTS',
+                        'NEXT REWARD AT ${_formatNumber(goalPoints)} PTS',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -258,13 +296,30 @@ class LoyaltyView extends GetView<LoyaltyController> {
   }
 
   Widget _buildThreeStatsRow() {
+    final m = controller.member.value;
+    final txs = controller.transactions;
+
+    // Calculate dynamic stats
+    int redeemedTotal = 0;
+    int earnedTotal = 0;
+    for (final t in txs) {
+      if (t.points < 0 || t.type == 'REDEEM') {
+        redeemedTotal += t.points.abs();
+      } else {
+        earnedTotal += t.points;
+      }
+    }
+
+    final lifetimePoints = m.loyaltyPoints + redeemedTotal;
+    final thisMonthEarned = earnedTotal;
+
     return Row(
       children: [
-        _statTile('THIS MONTH', '+4,840'),
+        _statTile('THIS MONTH', '+${_formatNumber(thisMonthEarned)}'),
         const SizedBox(width: 10),
-        _statTile('LIFETIME', '3,12,840'),
+        _statTile('LIFETIME', _formatNumber(lifetimePoints > 0 ? lifetimePoints : m.loyaltyPoints)),
         const SizedBox(width: 10),
-        _statTile('REDEEMED', '48,200'),
+        _statTile('REDEEMED', _formatNumber(redeemedTotal)),
       ],
     );
   }
@@ -305,46 +360,61 @@ class LoyaltyView extends GetView<LoyaltyController> {
   }
 
   Widget _buildActivityList() {
-    final activities = [
-      {
-        'title': 'Yanki Signature · Dinner',
-        'date': '12 Jun 2026',
-        'points': '+2,840',
-        'icon': Icons.restaurant,
-      },
-      {
-        'title': 'Delivery Order #28741',
-        'date': '08 Jun 2026',
-        'points': '+420',
-        'icon': Icons.lunch_dining_rounded,
-      },
-      {
-        'title': 'Banquet Booking — Anniversary',
-        'date': '01 Jun 2026',
-        'points': '+12,000',
-        'icon': Icons.celebration,
-      },
-      {
-        'title': 'ODC Order — Family Function',
-        'date': '20 May 2026',
-        'points': '+6,800',
-        'icon': Icons.local_shipping_outlined,
-      },
-      {
-        'title': 'Dough by Yanki · Lunch',
-        'date': '14 May 2026',
-        'points': '+940',
-        'icon': Icons.local_pizza_outlined,
-      },
-    ];
+    final transactions = controller.transactions;
+
+    if (transactions.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: const Color(0xFF131715),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.stars_rounded, size: 40, color: Color(0xFFDF9E5B)),
+            const SizedBox(height: 12),
+            Text(
+              'No Loyalty Transactions Yet',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withOpacity(0.8),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Earn loyalty points automatically when dining at any Yanki venue.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.4)),
+            ),
+          ],
+        ),
+      );
+    }
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: activities.length,
+      itemCount: transactions.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        final a = activities[index];
+        final t = transactions[index];
+        final isRedeem = t.points < 0 || t.type == 'REDEEM';
+        
+        IconData icon = Icons.restaurant;
+        final lower = t.title.toLowerCase();
+        if (lower.contains('banquet') || lower.contains('anniversary')) {
+          icon = Icons.celebration;
+        } else if (lower.contains('delivery') || lower.contains('order')) {
+          icon = Icons.lunch_dining_rounded;
+        } else if (lower.contains('bonus') || lower.contains('vip')) {
+          icon = Icons.stars_rounded;
+        }
+
+        final pointsText = '${t.points > 0 ? '+' : ''}${_formatNumber(t.points)}';
+
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
@@ -358,12 +428,14 @@ class LoyaltyView extends GetView<LoyaltyController> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.06),
+                  color: isRedeem 
+                      ? Colors.red.withOpacity(0.12)
+                      : Colors.white.withOpacity(0.06),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  a['icon'] as IconData,
-                  color: const Color(0xFFDF9E5B),
+                  icon,
+                  color: isRedeem ? const Color(0xFFEF4444) : const Color(0xFFDF9E5B),
                   size: 20,
                 ),
               ),
@@ -373,7 +445,7 @@ class LoyaltyView extends GetView<LoyaltyController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      a['title'] as String,
+                      t.title,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -382,7 +454,7 @@ class LoyaltyView extends GetView<LoyaltyController> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      a['date'] as String,
+                      '${t.time.contains('T') ? t.time.split('T')[0] : t.time} · ${t.outletName}',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.white.withOpacity(0.4),
@@ -392,11 +464,11 @@ class LoyaltyView extends GetView<LoyaltyController> {
                 ),
               ),
               Text(
-                a['points'] as String,
+                pointsText,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFDF9E5B),
+                  color: isRedeem ? const Color(0xFFEF4444) : const Color(0xFFDF9E5B),
                 ),
               ),
             ],

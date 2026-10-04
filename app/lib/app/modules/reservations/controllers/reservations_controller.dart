@@ -76,7 +76,7 @@ class ReservationsController extends GetxController {
     isSubmitting.value = true;
     try {
       final success = await _apiService.bookReservation(
-        name: 'Rahul Mehta',
+        name: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : 'VIP Guest',
         mobile: AppConstants.currentUserMobile,
         outlet: selectedOutlet.value,
         time: 'Today, ${selectedTimeSlot.value}',

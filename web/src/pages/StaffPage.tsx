@@ -46,11 +46,11 @@ export const StaffPage: React.FC<StaffPageProps> = ({ roles }) => {
 
       {/* Permissions Matrix */}
       <div style={{
-        background: 'white',
+        background: 'var(--surface)',
         borderRadius: 20,
         border: '1px solid var(--border)',
         overflow: 'hidden',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+        boxShadow: 'var(--shadow-card)'
       }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>

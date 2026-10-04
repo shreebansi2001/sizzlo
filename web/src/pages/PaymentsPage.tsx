@@ -1,14 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, MessageCircle, Phone, Check, Link as LinkIcon, AlertTriangle } from 'lucide-react';
-import { PendingPayment } from '../types';
+import axios from 'axios';
+import { PendingPayment, Member } from '../types';
 
 interface PaymentsPageProps {
-  payments: PendingPayment[];
+  payments?: PendingPayment[];
 }
 
-export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments }) => {
-  const [paymentList, setPaymentList] = useState<PendingPayment[]>(payments);
+export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPayments }) => {
+  const [paymentList, setPaymentList] = useState<PendingPayment[]>(initialPayments || []);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    axios.get('/api/members')
+      .then(res => {
+        if (res.data?.success && res.data.data) {
+          const duesMembers = res.data.data
+            .filter((m: Member) => (m.pendingDues && m.pendingDues > 0) || m.status === 'Renewal Due')
+            .map((m: Member) => ({
+              id: m.membershipId,
+              name: m.fullName,
+              mobile: m.mobile,
+              pending: m.pendingDues > 0 ? m.pendingDues : 10000,
+              dueDate: m.expiryDate,
+              reminder: 'Ready to send',
+            }));
+          setPaymentList(duesMembers);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const totalOutstanding = paymentList.reduce((sum, p) => sum + p.pending, 0);
 
@@ -50,8 +71,8 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments }) => {
         {[
           { label: 'TOTAL OUTSTANDING', val: `₹${(totalOutstanding / 1000).toFixed(0)},000`, sub: `${paymentList.length} accounts pending` },
           { label: 'OVERDUE (30D+)', val: `₹${Math.round(totalOutstanding * 0.4 / 1000)},000`, sub: 'Requires immediate follow-up' },
-          { label: 'RECOVERED THIS MONTH', val: '₹2,84,000', sub: '+14% vs last cycle' },
-          { label: 'AVG COLLECTION DURATION', val: '4.2 Days', sub: 'Industry best benchmark' },
+          { label: 'RECOVERED THIS MONTH', val: '₹0', sub: 'No recovery data yet' },
+          { label: 'AVG COLLECTION DURATION', val: '0 Days', sub: 'No data' },
         ].map((m) => (
           <div key={m.label} className="kpi-card">
             <span className="kpi-label">{m.label}</span>
@@ -63,11 +84,11 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments }) => {
 
       {/* Data Table */}
       <div style={{
-        background: 'white',
+        background: 'var(--surface)',
         borderRadius: 20,
         border: '1px solid var(--border)',
         overflow: 'hidden',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+        boxShadow: 'var(--shadow-card)'
       }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -77,7 +98,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments }) => {
           <span style={{
             fontSize: 12,
             fontWeight: 700,
-            background: 'rgba(239, 68, 68, 0.1)',
+            background: 'rgba(239, 68, 68, 0.15)',
             color: 'var(--danger)',
             padding: '4px 10px',
             borderRadius: 20
@@ -114,7 +135,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments }) => {
                     <span style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      background: 'rgba(0, 29, 74, 0.08)',
+                      background: 'rgba(255, 138, 0, 0.15)',
                       color: 'var(--primary)',
                       padding: '3px 8px',
                       borderRadius: 6
@@ -138,8 +159,9 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments }) => {
                         onClick={() => handleAction(p.name, 'Email reminder')}
                         title="Send Email"
                         style={{
-                          background: 'white',
+                          background: 'var(--surface-alt)',
                           border: '1px solid var(--border)',
+                          color: 'var(--text-main)',
                           padding: '6px 10px',
                           borderRadius: 8,
                           cursor: 'pointer',
@@ -157,9 +179,9 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments }) => {
                         onClick={() => handleAction(p.name, 'WhatsApp nudge')}
                         title="WhatsApp Reminder"
                         style={{
-                          background: 'rgba(16, 185, 129, 0.1)',
+                          background: 'rgba(16, 185, 129, 0.15)',
                           border: '1px solid rgba(16, 185, 129, 0.3)',
-                          color: '#059669',
+                          color: '#10B981',
                           padding: '6px 10px',
                           borderRadius: 8,
                           cursor: 'pointer',
@@ -177,8 +199,9 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments }) => {
                         onClick={() => handleAction(p.name, 'Payment link copy')}
                         title="Copy Payment Link"
                         style={{
-                          background: 'white',
+                          background: 'var(--surface-alt)',
                           border: '1px solid var(--border)',
+                          color: 'var(--text-main)',
                           padding: '6px 10px',
                           borderRadius: 8,
                           cursor: 'pointer',
@@ -197,7 +220,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments }) => {
                         title="Mark Paid"
                         style={{
                           background: 'var(--primary)',
-                          color: 'white',
+                          color: '#070A09',
                           border: 'none',
                           padding: '6px 12px',
                           borderRadius: 8,

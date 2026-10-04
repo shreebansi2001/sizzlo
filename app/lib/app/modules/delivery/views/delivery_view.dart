@@ -146,26 +146,26 @@ class DeliveryView extends GetView<DeliveryController> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF131715),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.goldBg,
+              color: AppColors.gold.withOpacity(0.12),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: AppColors.goldDark, size: 24),
+            child: Icon(icon, color: AppColors.gold, size: 24),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
                 const SizedBox(height: 2),
                 Text(desc, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                 const SizedBox(height: 4),
@@ -183,7 +183,7 @@ class DeliveryView extends GetView<DeliveryController> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF131715),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.gold.withOpacity(0.3)),
       ),

@@ -98,11 +98,11 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons, onRefresh }) 
           <div 
             key={c.id} 
             style={{
-              background: 'white',
+              background: 'var(--surface)',
               borderRadius: 18,
-              border: c.color === 'gold' ? '1px solid rgba(232, 184, 74, 0.4)' : '1px solid var(--border)',
+              border: c.color === 'gold' ? '1px solid rgba(201, 162, 77, 0.4)' : '1px solid var(--border)',
               padding: 20,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+              boxShadow: 'var(--shadow-card)',
               position: 'relative',
               overflow: 'hidden'
             }}
@@ -151,48 +151,49 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons, onRefresh }) 
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.5)',
+          background: 'rgba(0,0,0,0.7)',
           display: 'grid',
           placeItems: 'center',
           zIndex: 100,
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--surface)',
             width: 440,
             borderRadius: 20,
             padding: 28,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            border: '1px solid var(--border)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
           }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Create New Voucher</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14, color: 'var(--text-main)' }}>Create New Voucher</h3>
             <form onSubmit={handleCreateCoupon}>
               <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Voucher Code</label>
+                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6, color: 'var(--text-muted)' }}>Voucher Code</label>
                 <input 
                   type="text" 
                   placeholder="e.g. C-09" 
                   value={newCode} 
                   onChange={(e) => setNewCode(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
                   required
                 />
               </div>
               <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Title & Discount</label>
+                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6, color: 'var(--text-muted)' }}>Title & Discount</label>
                 <input 
                   type="text" 
                   placeholder="e.g. 40% Chef Tasting Menu" 
                   value={newName} 
                   onChange={(e) => setNewName(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
                   required
                 />
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Applicable Venue</label>
+                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6, color: 'var(--text-muted)' }}>Applicable Venue</label>
                 <select 
                   value={newOutlet} 
                   onChange={(e) => setNewOutlet(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'white' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
                 >
                   <option value="All Yanki Outlets">All Yanki Outlets</option>
                   <option value="Yanki Signature">Yanki Signature</option>

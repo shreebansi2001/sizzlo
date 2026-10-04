@@ -7,6 +7,7 @@ import com.sizzlo.entity.MemberProfile;
 import java.util.List;
 
 public interface MemberService {
+    AuthResponse register(com.sizzlo.dto.RegisterRequest request);
     AuthResponse loginWithOtp(String mobile, String otp);
     MemberProfile getProfileByMembershipId(String membershipId);
     MemberProfile getProfileByMobile(String mobile);

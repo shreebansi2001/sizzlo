@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/values/app_constants.dart';
 
 class MemberModel {
   final String id;
@@ -18,6 +19,13 @@ class MemberModel {
   final int daysRemaining;
   final String status;
   final String planId; // 'none', 'classic', 'signature', 'elite'
+  final String address;
+  final String gender;
+  final String birthday;
+  final String spouseName;
+  final String spouseBirthday;
+  final String anniversaryDate;
+  final String isMarried;
 
   MemberModel({
     required this.id,
@@ -37,10 +45,17 @@ class MemberModel {
     required this.daysRemaining,
     required this.status,
     this.planId = 'none',
+    this.address = '',
+    this.gender = '',
+    this.birthday = '',
+    this.spouseName = '',
+    this.spouseBirthday = '',
+    this.anniversaryDate = '',
+    this.isMarried = 'No',
   });
 
   bool get isSubscriber => planId.isNotEmpty && planId != 'none';
-  int get couponsLeft => couponsTotal - couponsUsed;
+  int get couponsLeft => (couponsTotal - couponsUsed).clamp(0, 999);
   double get loyaltyProgress => (loyaltyGoal > 0) ? (loyaltyPoints / loyaltyGoal).clamp(0.0, 1.0) : 0.0;
 
   LinearGradient get headerGradient {
@@ -64,7 +79,6 @@ class MemberModel {
           end: Alignment.bottomRight,
         );
       default:
-        // Warm dark obsidian/charcoal banner for non-subscribers (Image 3)
         return const LinearGradient(
           colors: [Color(0xFF1E1915), Color(0xFF120F0D), Color(0xFF0A0908)],
           begin: Alignment.topLeft,
@@ -146,24 +160,38 @@ class MemberModel {
   }
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
+    final rawName = (json['fullName'] ?? json['name'] ?? '').toString().trim();
+    final name = rawName.isNotEmpty ? rawName : AppConstants.currentUserName;
+    final parts = name.split(RegExp(r'\s+'));
+    final derivedFirst = parts.isNotEmpty ? parts.first : name;
+
     return MemberModel(
       id: json['id']?.toString() ?? '1',
-      fullName: json['fullName'] ?? 'Rahul Mehta',
-      firstName: json['firstName'] ?? 'Rahul',
-      membershipId: json['membershipId'] ?? 'YSM-2024-04821',
-      membershipType: json['membershipType'] ?? 'VIP MEMBER',
-      mobile: json['mobile'] ?? '+91 98250 12345',
-      email: json['email'] ?? 'rahul.mehta@yanki.in',
-      issuedDate: json['issuedDate']?.toString() ?? '20 Jun 2024',
-      expiryDate: json['expiryDate']?.toString() ?? '20 Jun 2027',
-      totalSavings: (json['totalSavings'] as num?)?.toInt() ?? 24500,
-      couponsUsed: (json['couponsUsed'] as num?)?.toInt() ?? 5,
+      fullName: name,
+      firstName: (json['firstName'] != null && json['firstName'].toString().trim().isNotEmpty)
+          ? json['firstName'].toString().trim()
+          : derivedFirst,
+      membershipId: json['membershipId']?.toString() ?? AppConstants.currentMembershipId,
+      membershipType: json['membershipType']?.toString() ?? 'VIP MEMBER',
+      mobile: json['mobile']?.toString() ?? AppConstants.currentUserMobile,
+      email: json['email']?.toString() ?? '',
+      issuedDate: json['issuedDate']?.toString() ?? 'Today',
+      expiryDate: json['expiryDate']?.toString() ?? '1 Year',
+      totalSavings: (json['totalSavings'] as num?)?.toInt() ?? 0,
+      couponsUsed: (json['couponsUsed'] as num?)?.toInt() ?? 0,
       couponsTotal: (json['couponsTotal'] as num?)?.toInt() ?? 12,
-      loyaltyPoints: (json['loyaltyPoints'] as num?)?.toInt() ?? 125000,
+      loyaltyPoints: (json['loyaltyPoints'] as num?)?.toInt() ?? 5000,
       loyaltyGoal: (json['loyaltyGoal'] as num?)?.toInt() ?? 250000,
       daysRemaining: (json['daysRemaining'] as num?)?.toInt() ?? 365,
-      status: json['status'] ?? 'Active',
-      planId: json['planId'] ?? 'signature',
+      status: json['status']?.toString() ?? 'Active',
+      planId: json['planId']?.toString() ?? 'signature',
+      address: json['address']?.toString() ?? '',
+      gender: json['gender']?.toString() ?? '',
+      birthday: json['birthday']?.toString() ?? '',
+      spouseName: json['spouseName']?.toString() ?? '',
+      spouseBirthday: json['spouseBirthday']?.toString() ?? '',
+      anniversaryDate: json['anniversaryDate']?.toString() ?? '',
+      isMarried: json['isMarried']?.toString() ?? 'No',
     );
   }
 
@@ -185,6 +213,13 @@ class MemberModel {
       'loyaltyGoal': loyaltyGoal,
       'status': status,
       'planId': planId,
+      'address': address,
+      'gender': gender,
+      'birthday': birthday,
+      'spouseName': spouseName,
+      'spouseBirthday': spouseBirthday,
+      'anniversaryDate': anniversaryDate,
+      'isMarried': isMarried,
     };
   }
 
@@ -206,6 +241,13 @@ class MemberModel {
     int? daysRemaining,
     String? status,
     String? planId,
+    String? address,
+    String? gender,
+    String? birthday,
+    String? spouseName,
+    String? spouseBirthday,
+    String? anniversaryDate,
+    String? isMarried,
   }) {
     return MemberModel(
       id: id ?? this.id,
@@ -225,28 +267,35 @@ class MemberModel {
       daysRemaining: daysRemaining ?? this.daysRemaining,
       status: status ?? this.status,
       planId: planId ?? this.planId,
+      address: address ?? this.address,
+      gender: gender ?? this.gender,
+      birthday: birthday ?? this.birthday,
+      spouseName: spouseName ?? this.spouseName,
+      spouseBirthday: spouseBirthday ?? this.spouseBirthday,
+      anniversaryDate: anniversaryDate ?? this.anniversaryDate,
+      isMarried: isMarried ?? this.isMarried,
     );
   }
 
   static MemberModel defaultProfile() {
     return MemberModel(
       id: '1',
-      fullName: 'Rahul Mehta',
-      firstName: 'Rahul',
-      membershipId: 'YSM-2024-04821',
+      fullName: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : 'VIP Guest',
+      firstName: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName.split(' ').first : 'Guest',
+      membershipId: AppConstants.currentMembershipId,
       membershipType: 'VIP MEMBER',
-      mobile: '+91 98250 12345',
-      email: 'rahul.mehta@yanki.in',
-      issuedDate: '20 Jun 2024',
-      expiryDate: '20 Jun 2027',
-      totalSavings: 24500,
-      couponsUsed: 5,
+      mobile: AppConstants.currentUserMobile,
+      email: AppConstants.currentUserEmail,
+      issuedDate: 'Today',
+      expiryDate: '1 Year',
+      totalSavings: 0,
+      couponsUsed: 0,
       couponsTotal: 12,
-      loyaltyPoints: 125000,
+      loyaltyPoints: 5000,
       loyaltyGoal: 250000,
       daysRemaining: 365,
       status: 'Active',
-      planId: 'signature', // Preview subscribed state
+      planId: 'signature',
     );
   }
 }

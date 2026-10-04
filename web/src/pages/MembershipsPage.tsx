@@ -1,31 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, BadgeCheck, AlertCircle, RefreshCw, Wallet, TrendingUp } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
-
-const forecastData = [
-  { m: 'Jun', renewed: 312, due: 150 },
-  { m: 'Jul', renewed: 280, due: 180 },
-  { m: 'Aug', renewed: 340, due: 210 },
-  { m: 'Sep', renewed: 360, due: 240 },
-  { m: 'Oct', renewed: 410, due: 280 },
-  { m: 'Nov', renewed: 460, due: 320 },
-];
-
-const stats = [
-  { k: 'Total Subscribers', v: '5,128', icon: Users },
-  { k: 'Active Members', v: '4,582', icon: BadgeCheck, delta: '+8.2%' },
-  { k: 'Expired', v: '412', icon: AlertCircle },
-  { k: 'Renewals Due (30d)', v: '150', icon: RefreshCw },
-  { k: 'Subscription Revenue', v: '₹42 Lakh', icon: Wallet, delta: '+12.4%' },
-  { k: 'Forecast (90d)', v: '₹68 Lakh', icon: TrendingUp, delta: '+18.0%' },
-];
+import axios from 'axios';
+import { Member } from '../types';
 
 export const MembershipsPage: React.FC = () => {
+  const [memberList, setMemberList] = useState<Member[]>([]);
+  const [membershipRev, setMembershipRev] = useState('₹1.10 Lakh');
+
+  useEffect(() => {
+    axios.get('/api/members')
+      .then(res => {
+        if (res.data?.success && res.data.data) {
+          setMemberList(res.data.data);
+        }
+      })
+      .catch(() => {});
+
+    axios.get('/api/admin/dashboard')
+      .then(res => {
+        if (res.data?.success && res.data.data?.kpis) {
+          const rev = res.data.data.kpis.find((k: any) => k.label.toLowerCase().includes('membership revenue'));
+          if (rev) setMembershipRev(rev.value);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const totalSubscribers = memberList.length;
+  const activeCount = memberList.filter(m => m.status === 'Active').length;
+  const renewalDueCount = memberList.filter(m => m.status === 'Renewal Due').length;
+  const expiredCount = memberList.filter(m => m.status === 'Expired').length;
+
+  const dynamicStats = [
+    { k: 'Total Subscribers', v: String(totalSubscribers), icon: Users },
+    { k: 'Active Members', v: String(activeCount), icon: BadgeCheck, delta: '+8.2%' },
+    { k: 'Expired', v: String(expiredCount), icon: AlertCircle },
+    { k: 'Renewals Due (30d)', v: String(renewalDueCount), icon: RefreshCw },
+    { k: 'Subscription Revenue', v: membershipRev, icon: Wallet, delta: '+12.4%' },
+    { k: 'Forecast Run-Rate', v: `₹${(totalSubscribers * 1.2).toFixed(1)} Lakh`, icon: TrendingUp, delta: '+18.0%' },
+  ];
+
+  const forecastData = [
+    { m: 'Jun', renewed: Math.round(totalSubscribers * 0.4), due: renewalDueCount },
+    { m: 'Jul', renewed: Math.round(totalSubscribers * 0.5), due: Math.round(renewalDueCount * 1.2) },
+    { m: 'Aug', renewed: Math.round(totalSubscribers * 0.6), due: Math.round(renewalDueCount * 1.1) },
+    { m: 'Sep', renewed: Math.round(totalSubscribers * 0.7), due: Math.round(renewalDueCount * 1.3) },
+    { m: 'Oct', renewed: Math.round(totalSubscribers * 0.8), due: Math.round(renewalDueCount * 1.2) },
+    { m: 'Nov', renewed: Math.round(totalSubscribers * 0.9), due: Math.round(renewalDueCount * 1.4) },
+  ];
+
   return (
     <div>
       {/* 6 Metric Cards */}
       <div className="kpi-grid">
-        {stats.map((s) => {
+        {dynamicStats.map((s) => {
           const Icon = s.icon;
           return (
             <div key={s.k} className="kpi-card">
@@ -48,11 +77,11 @@ export const MembershipsPage: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginTop: 24 }}>
         {/* Forecast Chart */}
         <div style={{
-          background: 'white',
+          background: 'var(--surface)',
           borderRadius: 20,
           border: '1px solid var(--border)',
           padding: 24,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+          boxShadow: 'var(--shadow-card)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
@@ -74,14 +103,14 @@ export const MembershipsPage: React.FC = () => {
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={forecastData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.08)" />
                 <XAxis dataKey="m" stroke="#94A3B8" fontSize={12} />
                 <YAxis stroke="#94A3B8" fontSize={12} />
                 <Tooltip
-                  contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', boxShadow: '0 8px 24px rgba(0,0,0,0.06)' }}
+                  contentStyle={{ background: 'var(--surface-alt)', borderRadius: 12, border: '1px solid var(--border)', color: 'var(--text-main)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}
                 />
-                <Line type="monotone" dataKey="renewed" stroke="#E8B84A" strokeWidth={3} dot={{ r: 4, fill: '#E8B84A' }} />
-                <Line type="monotone" dataKey="due" stroke="#001D4A" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3, fill: '#001D4A' }} />
+                <Line type="monotone" dataKey="renewed" stroke="#C9A24D" strokeWidth={3} dot={{ r: 4, fill: '#C9A24D' }} />
+                <Line type="monotone" dataKey="due" stroke="#FF8A00" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3, fill: '#FF8A00' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -89,13 +118,14 @@ export const MembershipsPage: React.FC = () => {
 
         {/* Tier Distribution */}
         <div style={{
-          background: 'white',
+          background: 'var(--surface)',
           borderRadius: 20,
           border: '1px solid var(--border)',
           padding: 24,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          boxShadow: 'var(--shadow-card)'
         }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)', marginBottom: 4 }}>Tier Breakdown</h3>
@@ -103,11 +133,11 @@ export const MembershipsPage: React.FC = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[
-                { name: 'Elite VIP Connoisseur', price: '₹14,999/yr', count: '1,842', pct: 40, color: 'var(--gold)' },
-                { name: 'Signature Gourmet', price: '₹9,999/yr', count: '1,920', pct: 42, color: 'var(--primary)' },
-                { name: 'Classic Privileges', price: '₹4,999/yr', count: '820', pct: 18, color: '#64748B' },
+                { name: 'Elite VIP Connoisseur', price: '₹14,999/yr', count: '0', pct: 0, color: 'var(--gold)' },
+                { name: 'Signature Gourmet', price: '₹9,999/yr', count: '0', pct: 0, color: 'var(--primary)' },
+                { name: 'Classic Privileges', price: '₹4,999/yr', count: '0', pct: 0, color: '#64748B' },
               ].map((tier) => (
-                <div key={tier.name} style={{ padding: '12px 14px', borderRadius: 14, background: 'var(--background)', border: '1px solid var(--border)' }}>
+                <div key={tier.name} style={{ padding: '12px 14px', borderRadius: 14, background: 'var(--surface-alt)', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>{tier.name}</span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: tier.color }}>{tier.count}</span>
@@ -116,7 +146,7 @@ export const MembershipsPage: React.FC = () => {
                     <span>{tier.price}</span>
                     <span>{tier.pct}% share</span>
                   </div>
-                  <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#E2E8F0', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'rgba(255, 255, 255, 0.1)', overflow: 'hidden' }}>
                     <div style={{ width: `${tier.pct}%`, height: '100%', background: tier.color, borderRadius: 3 }} />
                   </div>
                 </div>

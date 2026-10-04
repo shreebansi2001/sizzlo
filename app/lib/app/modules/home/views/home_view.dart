@@ -17,6 +17,7 @@ import '../../coupons/views/coupons_view.dart';
 import '../../loyalty/views/loyalty_view.dart';
 import '../../notifications/views/notifications_view.dart';
 import '../../profile/views/profile_view.dart';
+import '../../delivery/controllers/delivery_controller.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({Key? key}) : super(key: key);
@@ -220,6 +221,7 @@ class HomeView extends GetView<HomeController> {
 
                 // Key Stats Grid
                 GridView.count(
+                  padding: EdgeInsets.zero,
                   crossAxisCount: 2,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -230,7 +232,7 @@ class HomeView extends GetView<HomeController> {
                     StatCard(
                       label: 'Total Savings',
                       value: CurrencyFormatter.formatInr(controller.member.value.totalSavings),
-                      delta: '+₹4,200 this month',
+                      delta: '₹${(controller.member.value.totalSavings * 0.18).toInt()} this month',
                       icon: Icons.savings_outlined,
                       tone: StatTone.gold,
                     ),
@@ -244,7 +246,7 @@ class HomeView extends GetView<HomeController> {
                     StatCard(
                       label: 'Loyalty Points',
                       value: '${(controller.member.value.loyaltyPoints / 1000).toStringAsFixed(0)}K pts',
-                      delta: '50% to renewal reward',
+                      delta: '${((controller.member.value.loyaltyPoints / (controller.member.value.loyaltyGoal > 0 ? controller.member.value.loyaltyGoal : 250000)) * 100).toInt()}% to renewal reward',
                       icon: Icons.stars_outlined,
                       tone: StatTone.royal,
                     ),
@@ -276,7 +278,7 @@ class HomeView extends GetView<HomeController> {
           SectionHeader(
             title: 'Featured Coupons',
             actionLabel: 'View all',
-            onAction: () => Get.find<NavigationController>().changeTab(2),
+            onAction: () => Get.find<NavigationController>().changeTab(1),
           ),
           _buildFeaturedCoupons(),
 
@@ -316,11 +318,12 @@ class HomeView extends GetView<HomeController> {
       {'label': 'Coupons', 'icon': Icons.confirmation_number_outlined, 'tabIndex': 1},
       {'label': 'Reservations', 'icon': Icons.table_restaurant_outlined, 'route': AppRoutes.RESERVATIONS},
       {'label': 'Loyalty', 'icon': Icons.stars_rounded, 'tabIndex': 2},
-      {'label': 'Banquets', 'icon': Icons.celebration_outlined, 'tabIndex': 1},
-      {'label': 'ODC Catering', 'icon': Icons.local_shipping_outlined, 'route': AppRoutes.DELIVERY},
+      {'label': 'Banquets', 'icon': Icons.celebration_outlined, 'route': AppRoutes.DELIVERY, 'deliveryTab': 1},
+      {'label': 'ODC Catering', 'icon': Icons.local_shipping_outlined, 'route': AppRoutes.DELIVERY, 'deliveryTab': 1},
     ];
 
     return GridView.builder(
+      padding: EdgeInsets.zero,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -334,7 +337,12 @@ class HomeView extends GetView<HomeController> {
         final a = actions[index];
         return GestureDetector(
           onTap: () {
-            if (a['tabIndex'] != null) {
+            if (a['deliveryTab'] != null) {
+              if (Get.isRegistered<DeliveryController>()) {
+                Get.find<DeliveryController>().selectedServiceTab.value = a['deliveryTab'] as int;
+              }
+              Get.toNamed(a['route'] as String);
+            } else if (a['tabIndex'] != null) {
               Get.find<NavigationController>().changeTab(a['tabIndex'] as int);
             } else if (a['route'] != null) {
               Get.toNamed(a['route'] as String);
@@ -527,7 +535,7 @@ class HomeView extends GetView<HomeController> {
               child: const Icon(Icons.location_on_rounded, color: AppColors.flame, size: 24),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -545,14 +553,16 @@ class HomeView extends GetView<HomeController> {
                     'Visit your nearest Yanki outlet in Ahmedabad',
                     style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    '4 LOCATIONS AVAILABLE',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      color: AppColors.gold,
+                  const SizedBox(height: 4),
+                  Obx(
+                    () => Text(
+                      '${controller.outletsCount.value} LOCATIONS AVAILABLE',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                        color: AppColors.gold,
+                      ),
                     ),
                   ),
                 ],
@@ -725,32 +735,15 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _buildCustomerReviews() {
-    final reviews = [
-      {
-        'name': 'Priya Sharma',
-        'rating': 5.0,
-        'review': 'Absolutely loved the experience at Yanki. The subscription benefits and service were excellent!',
-        'date': '2 days ago'
-      },
-      {
-        'name': 'Arjun Patel',
-        'rating': 4.8,
-        'review': 'Great service and amazing offers. The VIP subscription is definitely worth it!',
-        'date': '5 days ago'
-      },
-      {
-        'name': 'Neha Mehta',
-        'rating': 5.0,
-        'review': 'Beautiful experience every time. The staff, offers and overall hospitality are fantastic.',
-        'date': '1 week ago'
-      },
-    ];
+    return Obx(() {
+      final reviews = controller.customerReviews;
+      if (reviews.isEmpty) return const SizedBox();
 
-    return SizedBox(
-      height: 135,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: reviews.length,
+      return SizedBox(
+        height: 135,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: reviews.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final r = reviews[index];
@@ -806,7 +799,8 @@ class HomeView extends GetView<HomeController> {
         },
       ),
     );
-  }
+  });
+}
 
   Widget _buildSocialMediaLinks() {
     return Row(

@@ -33,11 +33,11 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
           <div 
             key={outlet.id}
             style={{
-              background: 'white',
+              background: 'var(--surface)',
               borderRadius: 20,
               border: '1px solid var(--border)',
               padding: 24,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+              boxShadow: 'var(--shadow-card)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>

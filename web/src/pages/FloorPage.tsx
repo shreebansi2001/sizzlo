@@ -19,22 +19,11 @@ interface WaitlistEntry {
   status: string;
 }
 
-const initialTables: Table[] = Array.from({ length: 16 }, (_, i) => ({
-  id: i + 1,
-  tableNumber: i + 1,
-  seats: [2, 4, 4, 6][i % 4],
-  state: (['Available', 'Reserved', 'Occupied', 'Cleaning'] as const)[i % 4],
-  guest: i % 4 === 2 ? ['Rahul Mehta', 'Priya Shah', 'Kabir Joshi'][i % 3] : undefined,
-  premium: i === 3 || i === 11,
-}));
+const initialTables: Table[] = [];
 
 export const FloorPage: React.FC = () => {
   const [tables, setTables] = useState<Table[]>(initialTables);
-  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([
-    { id: 1, name: 'Mehta family', guests: 4, waitMinutes: 12, status: 'WAITING' },
-    { id: 2, name: 'Aarav Shah', guests: 2, waitMinutes: 7, status: 'WAITING' },
-    { id: 3, name: 'Desai', guests: 6, waitMinutes: 3, status: 'WAITING' },
-  ]);
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
   const [selectedTable, setSelectedTable] = useState<number | null>(null);
   const [selectedOutlet, setSelectedOutlet] = useState('Navrangpura');
   const [isAssigning, setIsAssigning] = useState(false);

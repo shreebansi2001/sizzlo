@@ -25,6 +25,17 @@ public class AuthController {
         this.memberService = memberService;
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody com.sizzlo.dto.RegisterRequest request) {
+        AuthResponse authResponse = memberService.register(request);
+        return ResponseEntity.ok(ApiResponse.success("Registration successful! VIP Account activated.", authResponse));
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<ApiResponse<AuthResponse>> signup(@Valid @RequestBody com.sizzlo.dto.RegisterRequest request) {
+        return register(request);
+    }
+
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<Map<String, String>>> requestOtp(@Valid @RequestBody LoginRequest request) {
         Map<String, String> response = new HashMap<>();

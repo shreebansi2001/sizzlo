@@ -62,11 +62,11 @@ export const EventsPage: React.FC<EventsPageProps> = ({ events }) => {
 
       {/* Main Table Card */}
       <div style={{
-        background: 'white',
+        background: 'var(--surface)',
         borderRadius: 20,
         border: '1px solid var(--border)',
         overflow: 'hidden',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+        boxShadow: 'var(--shadow-card)'
       }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -103,8 +103,8 @@ export const EventsPage: React.FC<EventsPageProps> = ({ events }) => {
                       fontWeight: 700,
                       padding: '3px 8px',
                       borderRadius: 6,
-                      background: e.type === 'Banquet' ? 'rgba(0, 29, 74, 0.08)' : 'rgba(232, 184, 74, 0.2)',
-                      color: e.type === 'Banquet' ? 'var(--primary)' : 'var(--gold-dark)'
+                      background: e.type === 'Banquet' ? 'rgba(255, 138, 0, 0.15)' : 'rgba(201, 162, 77, 0.2)',
+                      color: e.type === 'Banquet' ? 'var(--primary)' : 'var(--gold)'
                     }}>
                       {e.type}
                     </span>
@@ -123,8 +123,8 @@ export const EventsPage: React.FC<EventsPageProps> = ({ events }) => {
                       fontWeight: 700,
                       padding: '3px 8px',
                       borderRadius: 20,
-                      background: e.status === 'Confirmed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                      color: e.status === 'Confirmed' ? '#059669' : '#D97706'
+                      background: e.status === 'Confirmed' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                      color: e.status === 'Confirmed' ? '#10B981' : '#F59E0B'
                     }}>
                       {e.status === 'Confirmed' ? <CheckCircle size={12} /> : <Clock size={12} />}
                       {e.status}
@@ -142,18 +142,20 @@ export const EventsPage: React.FC<EventsPageProps> = ({ events }) => {
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.5)',
+          background: 'rgba(0,0,0,0.65)',
+          backdropFilter: 'blur(4px)',
           display: 'grid',
           placeItems: 'center',
           zIndex: 100
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--surface)',
             borderRadius: 20,
             padding: 32,
             width: '100%',
             maxWidth: 480,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+            border: '1px solid var(--border)',
+            boxShadow: 'var(--shadow-card)'
           }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--primary)', marginBottom: 6 }}>
               Create Banquet / ODC Inquiry
@@ -164,61 +166,61 @@ export const EventsPage: React.FC<EventsPageProps> = ({ events }) => {
 
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Event Title &amp; Host</label>
+                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Event Title &amp; Host</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Wedding Reception — Shah Family"
                   value={newEvent.name}
                   onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)' }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Concept</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Concept</label>
                   <select
                     value={newEvent.type}
                     onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as any })}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)' }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
                   >
                     <option value="Banquet">Banquet Hall</option>
                     <option value="ODC">Outdoor Catering (ODC)</option>
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Event Date</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Event Date</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. 15 Nov 2026"
                     value={newEvent.date}
                     onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)' }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
                   />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Guest Count</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Guest Count</label>
                   <input
                     type="number"
                     required
                     value={newEvent.guests}
                     onChange={(e) => setNewEvent({ ...newEvent, guests: Number(e.target.value) })}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)' }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Estimated Value (₹)</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Estimated Value (₹)</label>
                   <input
                     type="number"
                     required
                     value={newEvent.value}
                     onChange={(e) => setNewEvent({ ...newEvent, value: Number(e.target.value) })}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)' }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
                   />
                 </div>
               </div>
@@ -227,7 +229,7 @@ export const EventsPage: React.FC<EventsPageProps> = ({ events }) => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid var(--border)', background: 'white', cursor: 'pointer' }}
+                  style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>

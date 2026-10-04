@@ -28,11 +28,17 @@ class NotificationsView extends GetView<NotificationsController> {
         actions: [
           TextButton(
             onPressed: controller.clearAll,
-            child: const Text('Clear all', style: TextStyle(color: AppColors.goldDark, fontWeight: FontWeight.bold)),
+            child: const Text('Clear all', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
       body: Obx(() {
+        if (controller.isLoading.value && controller.notifications.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.flame),
+          );
+        }
+
         if (controller.notifications.isEmpty) {
           return Center(
             child: Column(
@@ -46,51 +52,89 @@ class NotificationsView extends GetView<NotificationsController> {
           );
         }
 
-        return ListView.builder(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, isTab ? 135 : 20),
-          itemCount: controller.notifications.length,
-          itemBuilder: (context, index) {
-            final n = controller.notifications[index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.black.withOpacity(0.04)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.goldBg,
-                      borderRadius: BorderRadius.circular(12),
+        return RefreshIndicator(
+          color: AppColors.flame,
+          backgroundColor: AppColors.surface,
+          onRefresh: controller.loadNotifications,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, isTab ? 135 : 20),
+            itemCount: controller.notifications.length,
+            itemBuilder: (context, index) {
+              final n = controller.notifications[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF131715),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
-                    child: Icon(_getIcon(n.type), color: AppColors.goldDark, size: 20),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(n.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            Text(n.time, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(n.desc, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3)),
-                      ],
+                  ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(11),
+                      decoration: BoxDecoration(
+                        color: AppColors.gold.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                      ),
+                      child: Icon(_getIcon(n.type), color: AppColors.gold, size: 20),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  n.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                n.time,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white.withOpacity(0.45),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            n.desc,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withOpacity(0.7),
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         );
       }),
     );

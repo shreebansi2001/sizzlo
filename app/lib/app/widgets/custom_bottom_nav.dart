@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../core/theme/app_colors.dart';
 import '../controllers/navigation_controller.dart';
+import '../routes/app_routes.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -14,42 +15,49 @@ class CustomBottomNav extends StatelessWidget {
   }) : super(key: key);
 
   void _onItemTapped(int index) {
-    if (index == currentIndex) return;
     if (onTap != null) {
       onTap!(index);
     } else if (Get.isRegistered<NavigationController>()) {
+      if (Get.currentRoute != AppRoutes.HOME) {
+        Get.until((route) => Get.currentRoute == AppRoutes.HOME || route.isFirst);
+      }
       NavigationController.to.changeTab(index);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xEE161A18),
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.55),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF131715),
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withOpacity(0.08),
+            width: 1,
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _navItem(0, Icons.home_rounded, 'Home'),
-            _navItem(1, Icons.confirmation_number_outlined, 'Coupons'),
-            _navItem(2, Icons.auto_awesome_rounded, 'Points'),
-            _navItem(3, Icons.notifications_none_rounded, 'Alerts'),
-            _navItem(4, Icons.person_outline_rounded, 'Profile'),
-          ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _navItem(0, Icons.home_rounded, 'Home'),
+              _navItem(1, Icons.confirmation_number_outlined, 'Coupons'),
+              _navItem(2, Icons.auto_awesome_rounded, 'Points'),
+              _navItem(3, Icons.notifications_none_rounded, 'Alerts'),
+              _navItem(4, Icons.person_outline_rounded, 'Profile'),
+            ],
+          ),
         ),
       ),
     );

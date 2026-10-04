@@ -289,7 +289,7 @@ class LoginView extends GetView<AuthController> {
                   onPressed: controller.quickDemoLogin,
                   icon: const Icon(Icons.flash_on_rounded, color: AppColors.gold, size: 18),
                   label: Text(
-                    'Instant Demo VIP Access (Rahul Mehta)',
+                    'Instant VIP Guest Access',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,

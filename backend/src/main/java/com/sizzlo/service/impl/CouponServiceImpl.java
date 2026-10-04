@@ -16,11 +16,15 @@ public class CouponServiceImpl implements CouponService {
 
     private final CouponRepository couponRepository;
     private final MemberProfileRepository memberProfileRepository;
+    private final com.sizzlo.repository.ActivityLogRepository activityLogRepository;
 
     @Autowired
-    public CouponServiceImpl(CouponRepository couponRepository, MemberProfileRepository memberProfileRepository) {
+    public CouponServiceImpl(CouponRepository couponRepository,
+                             MemberProfileRepository memberProfileRepository,
+                             com.sizzlo.repository.ActivityLogRepository activityLogRepository) {
         this.couponRepository = couponRepository;
         this.memberProfileRepository = memberProfileRepository;
+        this.activityLogRepository = activityLogRepository;
     }
 
     @Override
@@ -53,6 +57,15 @@ public class CouponServiceImpl implements CouponService {
             memberProfileRepository.findByMembershipId(membershipId).ifPresent(member -> {
                 member.setCouponsUsed(member.getCouponsUsed() + 1);
                 memberProfileRepository.save(member);
+
+                com.sizzlo.entity.ActivityLog log = new com.sizzlo.entity.ActivityLog();
+                log.setActorName(member.getFullName());
+                log.setActionType("REDEMPTION");
+                log.setDescription("Voucher " + coupon.getName() + " (" + coupon.getCode() + ") redeemed");
+                log.setOutletName(coupon.getOutlet() != null ? coupon.getOutlet() : "Yanki Signature");
+                log.setTimeAgo("Just now");
+                log.setTimestamp(java.time.LocalDateTime.now());
+                activityLogRepository.save(log);
             });
         }
         return coupon;

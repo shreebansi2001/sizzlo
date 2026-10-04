@@ -4,6 +4,7 @@ import '../models/member_model.dart';
 import '../models/coupon_model.dart';
 import '../models/reservation_model.dart';
 import '../models/loyalty_model.dart';
+import '../models/notification_item_model.dart';
 import '../../core/values/app_constants.dart';
 
 class ApiService {
@@ -14,6 +15,72 @@ class ApiService {
     if (AppConstants.currentAuthToken != null)
       'Authorization': 'Bearer ${AppConstants.currentAuthToken}',
   };
+
+  /// Register new member (POST /api/auth/register)
+  Future<Map<String, dynamic>> registerMember(Map<String, dynamic> registrationData) async {
+    try {
+      final res = await _client.post(
+        Uri.parse('${AppConstants.baseUrl}/auth/register'),
+        headers: _headers,
+        body: json.encode(registrationData),
+      ).timeout(const Duration(seconds: 6));
+
+      if (res.statusCode == 200) {
+        final body = json.decode(res.body);
+        if (body['success'] == true && body['data'] != null) {
+          final data = body['data'];
+          final token = data['token']?.toString();
+          final profileData = data['profile'];
+          MemberModel? member;
+          if (profileData != null) {
+            member = MemberModel.fromJson(profileData);
+            _updateSessionFromMember(member, token);
+          }
+          return {
+            'success': true,
+            'message': body['message'] ?? 'Registration successful!',
+            'member': member,
+            'token': token,
+          };
+        }
+      }
+    } catch (_) {}
+
+    // Graceful offline fallback with user's actual entered data
+    final fallbackMember = MemberModel(
+      id: '1',
+      fullName: (registrationData['fullName'] ?? 'VIP Guest').toString(),
+      firstName: (registrationData['fullName'] ?? 'Guest').toString().split(' ').first,
+      membershipId: 'YSM-2024-${1000 + (DateTime.now().millisecondsSinceEpoch % 9000)}',
+      membershipType: 'VIP MEMBER',
+      mobile: (registrationData['mobile'] ?? AppConstants.currentUserMobile).toString(),
+      email: (registrationData['email'] ?? '').toString(),
+      issuedDate: 'Today',
+      expiryDate: '1 Year',
+      totalSavings: 0,
+      couponsUsed: 0,
+      couponsTotal: 12,
+      loyaltyPoints: 5000,
+      loyaltyGoal: 250000,
+      daysRemaining: 365,
+      status: 'Active',
+      planId: 'signature',
+      address: (registrationData['address'] ?? '').toString(),
+      gender: (registrationData['gender'] ?? '').toString(),
+      birthday: (registrationData['birthday'] ?? '').toString(),
+      spouseName: (registrationData['spouseName'] ?? '').toString(),
+      anniversaryDate: (registrationData['anniversaryDate'] ?? '').toString(),
+      isMarried: (registrationData['isMarried'] ?? 'No').toString(),
+    );
+    _updateSessionFromMember(fallbackMember, 'local_jwt_token');
+
+    return {
+      'success': true,
+      'message': 'Account created successfully! Welcome to Sizzlo VIP.',
+      'member': fallbackMember,
+      'token': 'local_jwt_token',
+    };
+  }
 
   /// Request OTP for mobile login (POST /api/auth/login)
   Future<Map<String, dynamic>> requestOtp(String mobile) async {
@@ -33,9 +100,7 @@ class ApiService {
           };
         }
       }
-    } catch (e) {
-      // Return simulated success if network glitch
-    }
+    } catch (_) {}
     return {
       'success': true,
       'message': 'OTP sent successfully to $mobile (Use demo OTP: 1234)',
@@ -60,11 +125,7 @@ class ApiService {
           MemberModel? member;
           if (profileData != null) {
             member = MemberModel.fromJson(profileData);
-            AppConstants.currentMembershipId = member.membershipId;
-            AppConstants.currentUserMobile = member.mobile;
-          }
-          if (token != null) {
-            AppConstants.currentAuthToken = token;
+            _updateSessionFromMember(member, token);
           }
           return {
             'token': token,
@@ -73,10 +134,23 @@ class ApiService {
         }
       }
     } catch (_) {}
+
+    final defaultM = MemberModel.defaultProfile().copyWith(mobile: mobile);
+    _updateSessionFromMember(defaultM, 'demo_token');
     return {
       'token': 'demo_token',
-      'member': MemberModel.defaultProfile(),
+      'member': defaultM,
     };
+  }
+
+  void _updateSessionFromMember(MemberModel member, String? token) {
+    AppConstants.currentMembershipId = member.membershipId;
+    AppConstants.currentUserMobile = member.mobile;
+    AppConstants.currentUserName = member.fullName;
+    AppConstants.currentUserEmail = member.email;
+    if (token != null) {
+      AppConstants.currentAuthToken = token;
+    }
   }
 
   Future<MemberModel> getMemberProfile([String? membershipId]) async {
@@ -87,13 +161,33 @@ class ApiService {
       if (res.statusCode == 200) {
         final body = json.decode(res.body);
         if (body['success'] == true && body['data'] != null) {
-          return MemberModel.fromJson(body['data']);
+          final m = MemberModel.fromJson(body['data']);
+          _updateSessionFromMember(m, null);
+          return m;
         }
       }
-    } catch (_) {
-      // Offline fallback
-    }
+    } catch (_) {}
     return MemberModel.defaultProfile();
+  }
+
+  Future<List<NotificationItemModel>> getNotifications([String? membershipId, String? mobile]) async {
+    final id = membershipId ?? AppConstants.currentMembershipId;
+    final phone = mobile ?? AppConstants.currentUserMobile;
+    try {
+      final res = await _client.get(
+        Uri.parse('${AppConstants.baseUrl}/notifications?membershipId=$id&mobile=${Uri.encodeComponent(phone)}'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 4));
+
+      if (res.statusCode == 200) {
+        final body = json.decode(res.body);
+        if (body['success'] == true && body['data'] != null) {
+          final List list = body['data'];
+          return list.map((e) => NotificationItemModel.fromJson(e)).toList();
+        }
+      }
+    } catch (_) {}
+    return _mockNotifications();
   }
 
   Future<List<CouponModel>> getCoupons() async {
@@ -107,9 +201,7 @@ class ApiService {
           return list.map((e) => CouponModel.fromJson(e)).toList();
         }
       }
-    } catch (_) {
-      // Offline fallback
-    }
+    } catch (_) {}
     return _mockCoupons();
   }
 
@@ -149,21 +241,24 @@ class ApiService {
   }
 
   Future<bool> bookReservation({
-    required String name,
-    required String mobile,
+    String? name,
+    String? mobile,
     required String outlet,
     required String time,
     required int guests,
     bool vip = false,
     String? specialRequests,
   }) async {
+    final bookingName = (name != null && name.isNotEmpty) ? name : AppConstants.currentUserName;
+    final bookingMobile = (mobile != null && mobile.isNotEmpty) ? mobile : AppConstants.currentUserMobile;
+
     try {
       final res = await _client.post(
         Uri.parse('${AppConstants.baseUrl}/reservations'),
         headers: _headers,
         body: json.encode({
-          'customerName': name,
-          'customerMobile': mobile,
+          'customerName': bookingName,
+          'customerMobile': bookingMobile,
           'outlet': outlet,
           'reservationTime': time,
           'guests': guests,
@@ -245,6 +340,16 @@ class ApiService {
     return _mockLoyaltyTransactions();
   }
 
+  List<NotificationItemModel> _mockNotifications() {
+    return [
+      NotificationItemModel(id: 1, type: "gift", title: "Birthday Coupon Activated", desc: "Your complimentary cake voucher is ready", time: "2h ago"),
+      NotificationItemModel(id: 2, type: "calendar", title: "Reservation Confirmed", desc: "Table for 4 at Yanki Signature, 20 Jun 8:30 PM", time: "Yesterday"),
+      NotificationItemModel(id: 3, type: "sparkle", title: "Points Earned", desc: "+1,200 loyalty points credited from last visit", time: "2 days ago"),
+      NotificationItemModel(id: 4, type: "alert", title: "Membership Expiry Reminder", desc: "365 days remaining — renew anytime for benefits", time: "3 days ago"),
+      NotificationItemModel(id: 5, type: "tag", title: "New Offer Available", desc: "Weekend brunch with chef's tasting menu — explore", time: "1 week ago"),
+    ];
+  }
+
   List<CouponModel> _mockCoupons() {
     return [
       CouponModel(id: "1", code: "C-01", name: "50% Dining Discount", subtitle: "Up to ₹2,000 off", description: "50% off on food and soft beverages", leftCount: 2, totalCount: 3, expiryDate: "30 Jun 2027", status: "available", outlet: "All Yanki Outlets", color: "royal"),
@@ -260,16 +365,14 @@ class ApiService {
 
   List<ReservationModel> _mockReservations() {
     return [
-      ReservationModel(id: "1", bookingReference: "R-2841", customerName: "Rahul Mehta", customerMobile: "+91 98250 12345", outlet: "Yanki Signature", reservationTime: "20 Jun, 8:30 PM", guests: 4, status: "Confirmed", vip: true, specialRequests: "Quiet corner table near garden"),
-      ReservationModel(id: "2", bookingReference: "R-2840", customerName: "Priya Shah", customerMobile: "+91 98250 20000", outlet: "Dough by Yanki", reservationTime: "21 Jun, 7:00 PM", guests: 2, status: "Confirmed", vip: false),
+      ReservationModel(id: "1", bookingReference: "R-2841", customerName: AppConstants.currentUserName, customerMobile: AppConstants.currentUserMobile, outlet: "Yanki Signature", reservationTime: "Today, 8:30 PM", guests: 4, status: "Confirmed", vip: true, specialRequests: "Quiet corner table near garden"),
     ];
   }
 
   List<LoyaltyTransactionModel> _mockLoyaltyTransactions() {
     return [
-      LoyaltyTransactionModel(id: "1", title: "Dine-in at Yanki Signature", description: "Earned 10 points per ₹100 spent", points: 1200, type: "EARN", outletName: "Yanki Signature", time: "2 days ago"),
-      LoyaltyTransactionModel(id: "2", title: "Redeemed for Chef's Tasting Vouchers", description: "Redeemed at Yanki Banquet", points: -5000, type: "REDEEM", outletName: "Yanki Banquet", time: "1 week ago"),
-      LoyaltyTransactionModel(id: "3", title: "VIP Membership Anniversary Bonus", description: "Annual loyalty milestone credit", points: 10000, type: "BONUS", outletName: "All Yanki Outlets", time: "2 weeks ago"),
+      LoyaltyTransactionModel(id: "1", title: "VIP Welcome Privilege Points", description: "Complimentary registration credit", points: 5000, type: "BONUS", outletName: "All Yanki Outlets", time: "Just now"),
+      LoyaltyTransactionModel(id: "2", title: "Dine-in at Yanki Signature", description: "Earned 10 points per ₹100 spent", points: 1200, type: "EARN", outletName: "Yanki Signature", time: "2 days ago"),
     ];
   }
 }

@@ -112,7 +112,7 @@ class AuthController extends GetxController {
         Get.snackbar(
           'Welcome to Sizzlo',
           'Logged in as ${member.fullName} (${member.membershipId})',
-          backgroundColor: const Color(0xFF001D4A),
+          backgroundColor: const Color(0xFF0E3B32),
           colorText: const Color(0xFFE8B84A),
           duration: const Duration(seconds: 3),
         );

@@ -11,14 +11,7 @@ interface ActivityItem {
   tab: string;
 }
 
-const defaultActivities: ActivityItem[] = [
-  { id: 1, type: "Reservation", text: "Rahul Mehta booked a table for 4", outlet: "Navrangpura", time: "2m ago", tab: "reservations" },
-  { id: 2, type: "Coupon", text: "C-01 redeemed by Priya Shah", outlet: "Shilaj", time: "5m ago", tab: "redemption" },
-  { id: 3, type: "Subscription", text: "Karan Bhatia purchased Signature Plan", outlet: "In-app", time: "8m ago", tab: "memberships" },
-  { id: 4, type: "Points", text: "Rahul Mehta earned 430 loyalty points", outlet: "Navrangpura", time: "12m ago", tab: "loyalty" },
-  { id: 5, type: "Reservation", text: "Ananya Rao changed arrival to 9:00 PM", outlet: "Gandhinagar", time: "18m ago", tab: "reservations" },
-  { id: 6, type: "Subscription", text: "Tara Menon renewed Elite VIP Plan", outlet: "In-app", time: "24m ago", tab: "memberships" },
-];
+const defaultActivities: ActivityItem[] = [];
 
 export const ActivityPage: React.FC<{ onNavigate?: (tab: string) => void }> = ({ onNavigate }) => {
   const [paused, setPaused] = useState(false);
@@ -38,7 +31,7 @@ export const ActivityPage: React.FC<{ onNavigate?: (tab: string) => void }> = ({
             time: item.timeAgo || 'Just now',
             tab: item.actionType === 'REDEMPTION' ? 'redemption' : 'reservations'
           }));
-          setActivities([...mapped, ...defaultActivities]);
+          setActivities(mapped);
         }
       })
       .catch(() => {});
