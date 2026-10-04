@@ -1,93 +1,101 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../core/theme/app_colors.dart';
-import '../routes/app_routes.dart';
+import '../controllers/navigation_controller.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
+  final ValueChanged<int>? onTap;
 
-  const CustomBottomNav({Key? key, required this.currentIndex}) : super(key: key);
+  const CustomBottomNav({
+    Key? key,
+    required this.currentIndex,
+    this.onTap,
+  }) : super(key: key);
 
   void _onItemTapped(int index) {
     if (index == currentIndex) return;
-    switch (index) {
-      case 0:
-        Get.offAllNamed(AppRoutes.HOME);
-        break;
-      case 1:
-        Get.toNamed(AppRoutes.CARD);
-        break;
-      case 2:
-        Get.toNamed(AppRoutes.COUPONS);
-        break;
-      case 3:
-        Get.toNamed(AppRoutes.RESERVATIONS);
-        break;
-      case 4:
-        Get.toNamed(AppRoutes.PROFILE);
-        break;
+    if (onTap != null) {
+      onTap!(index);
+    } else if (Get.isRegistered<NavigationController>()) {
+      NavigationController.to.changeTab(index);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _navItem(0, Icons.home_rounded, 'Home'),
-          _navItem(1, Icons.credit_card_rounded, 'Card'),
-          _navItem(2, Icons.confirmation_number_rounded, 'Coupons'),
-          _navItem(3, Icons.calendar_today_rounded, 'Book'),
-          _navItem(4, Icons.person_rounded, 'Profile'),
-        ],
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xEE161A18),
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.55),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _navItem(0, Icons.home_rounded, 'Home'),
+            _navItem(1, Icons.confirmation_number_outlined, 'Coupons'),
+            _navItem(2, Icons.auto_awesome_rounded, 'Points'),
+            _navItem(3, Icons.notifications_none_rounded, 'Alerts'),
+            _navItem(4, Icons.person_outline_rounded, 'Profile'),
+          ],
+        ),
       ),
     );
   }
 
   Widget _navItem(int index, IconData icon, String label) {
     final isSelected = index == currentIndex;
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: EdgeInsets.symmetric(horizontal: isSelected ? 14 : 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.gold.withOpacity(0.2) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _onItemTapped(index),
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.gold : Colors.white.withOpacity(0.7),
-              size: 22,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.gold,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.flame : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.flame.withOpacity(0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
-            ],
+              child: Icon(
+                icon,
+                color: isSelected ? const Color(0xFF161A18) : Colors.white.withOpacity(0.55),
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? AppColors.flame : Colors.white.withOpacity(0.55),
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),

@@ -1,177 +1,320 @@
-import React from 'react';
-import { TrendingUp, TrendingDown, Users, CreditCard, Ticket, Calendar, ArrowUpRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  MoreHorizontal, 
+  Download, 
+  Plus, 
+  Store, 
+  Activity,
+  CalendarCheck
+} from 'lucide-react';
+import { 
+  AreaChart, 
+  Area, 
+  ResponsiveContainer, 
+  Tooltip, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from 'recharts';
+import axios from 'axios';
 import { KPI, RevenuePoint, Outlet, Reservation } from '../types';
+import { 
+  fallbackKPIs, 
+  fallbackRevenueSeries, 
+  fallbackOutlets, 
+  fallbackReservations 
+} from '../api/client';
 
 interface DashboardPageProps {
-  kpis: KPI[];
-  revenueSeries: RevenuePoint[];
-  outlets: Outlet[];
-  reservations: Reservation[];
+  kpis?: KPI[];
+  revenueSeries?: RevenuePoint[];
+  outlets?: Outlet[];
+  reservations?: Reservation[];
 }
 
+const couponMix = [
+  { name: "Dining 50%", value: 4280 },
+  { name: "Birthday Special", value: 1840 },
+  { name: "Banquet Offers", value: 1240 },
+  { name: "Dough by Yanki", value: 2640 },
+  { name: "Anniversary Meal", value: 980 },
+];
+
+const palette = ["#FF8A00", "#C9A24D", "#3B82F6", "#10B981", "#EC4899"];
+
 export const DashboardPage: React.FC<DashboardPageProps> = ({
-  kpis,
-  revenueSeries,
-  outlets,
-  reservations,
+  kpis: initialKpis,
+  revenueSeries: initialRevenue,
+  outlets: initialOutlets,
+  reservations: initialReservations,
 }) => {
+  const [kpis, setKpis] = useState<KPI[]>(initialKpis || fallbackKPIs);
+  const [revenueSeries, setRevenueSeries] = useState<RevenuePoint[]>(initialRevenue || fallbackRevenueSeries);
+  const [outlets, setOutlets] = useState<Outlet[]>(initialOutlets || fallbackOutlets);
+  const [reservations, setReservations] = useState<Reservation[]>(initialReservations || fallbackReservations);
+  const [chartPeriod, setChartPeriod] = useState<'Daily' | 'Monthly' | 'Annually'>('Monthly');
+
+  useEffect(() => {
+    // Feature-wise load: Only fetch dashboard data when this view is rendered
+    axios.get('/api/admin/dashboard')
+      .then(res => {
+        if (res.data?.success && res.data.data) {
+          const d = res.data.data;
+          if (d.kpis) setKpis(d.kpis);
+          if (d.revenueSeries) setRevenueSeries(d.revenueSeries);
+          if (d.outletPerformance) setOutlets(d.outletPerformance);
+        }
+      })
+      .catch(() => {});
+
+    axios.get('/api/reservations')
+      .then(res => {
+        if (res.data?.success && res.data.data) {
+          setReservations(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div>
-      {/* 6-Grid KPIs */}
+      {/* Page Header */}
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <img 
+            src="/sizzlo-mascot.png" 
+            alt="Sizzlo" 
+            className="animate-float"
+            style={{ width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 4px 16px rgba(255, 138, 0, 0.4))' }} 
+          />
+          <div>
+            <h1 className="page-title">Good morning, Amit</h1>
+            <p className="page-subtitle">Here's how Yanki Sizzlerr is performing across all outlets today.</p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-outline">
+            <Download size={15} /> Export Report
+          </button>
+          <button className="btn btn-primary">
+            <Plus size={15} /> Quick Action
+          </button>
+        </div>
+      </div>
+
+      {/* 6 KPIs Grid */}
       <div className="kpi-grid">
-        {kpis.map((kpi, idx) => {
-          const isUp = kpi.trend === 'up';
+        {kpis.map((k, idx) => {
+          const isUp = k.trend === 'up';
           return (
             <div key={idx} className="kpi-card">
-              <div className="kpi-header">
-                <span className="kpi-label">{kpi.label}</span>
-                <span className={`kpi-delta ${isUp ? 'delta-up' : 'delta-down'}`}>
-                  {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                  {kpi.delta}
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span className="kpi-label">{k.label}</span>
+                <MoreHorizontal size={16} color="var(--text-dim)" />
               </div>
-              <div className="kpi-value">{kpi.value}</div>
+              <div className="kpi-value">{k.value}</div>
+              <div className={`kpi-trend ${isUp ? 'up' : 'down'}`}>
+                {isUp ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+                <span>{k.delta} vs last month</span>
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Mid Section: Revenue Performance & Top Venues */}
+      {/* Mid Charts: Revenue Analytics (AreaChart) + Coupon Mix (PieChart) */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 28 }}>
-        {/* Revenue Trends Chart Card */}
-        <div style={{
-          background: 'white',
-          borderRadius: 18,
-          border: '1px solid var(--border)',
-          padding: 24,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
-        }}>
+        {/* Revenue Analytics */}
+        <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Revenue & Membership Trends</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Monthly gross billing vs membership subscription volume</p>
+              <h2 className="card-title">Revenue Analytics</h2>
+              <p className="card-subtitle">Monthly gross revenue vs membership subscription revenue (₹ Lakhs)</p>
             </div>
-            <div style={{ display: 'flex', gap: 14, fontSize: 11, fontWeight: 600 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--primary)' }} />
-                Total Revenue (₹ Lakh)
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--gold)' }} />
-                Membership Fees
-              </span>
+            <div style={{ display: 'flex', background: 'var(--surface-alt)', borderRadius: 12, padding: 3, border: '1px solid var(--border)' }}>
+              {(['Daily', 'Monthly', 'Annually'] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setChartPeriod(p)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 9,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: chartPeriod === p ? 'var(--primary)' : 'transparent',
+                    color: chartPeriod === p ? '#070A09' : 'var(--text-muted)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Bar Chart Visualization */}
-          <div style={{ height: 220, display: 'flex', alignItems: 'flex-end', gap: 14, paddingTop: 20 }}>
-            {revenueSeries.map((item, i) => {
-              const maxRev = 35;
-              const revHeight = (item.revenue / maxRev) * 160;
-              const memHeight = (item.membership / maxRev) * 160;
-
-              return (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: 4, height: 160 }}>
-                    <div 
-                      title={`Gross: ₹${item.revenue}L`}
-                      style={{
-                        width: '45%',
-                        height: `${revHeight}px`,
-                        background: 'linear-gradient(180deg, #0A3175 0%, #001D4A 100%)',
-                        borderRadius: '4px 4px 0 0',
-                        transition: 'height 0.3s ease'
-                      }} 
-                    />
-                    <div 
-                      title={`Membership: ₹${item.membership}L`}
-                      style={{
-                        width: '45%',
-                        height: `${memHeight}px`,
-                        background: 'linear-gradient(180deg, #F3C762 0%, #E8B84A 100%)',
-                        borderRadius: '4px 4px 0 0',
-                        transition: 'height 0.3s ease'
-                      }} 
-                    />
-                  </div>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>{item.m}</span>
-                </div>
-              );
-            })}
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <AreaChart data={revenueSeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#FF8A00" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#FF8A00" stopOpacity={0.0} />
+                  </linearGradient>
+                  <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#C9A24D" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#C9A24D" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis dataKey="m" stroke="var(--text-dim)" fontSize={12} />
+                <YAxis stroke="var(--text-dim)" fontSize={12} />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: '#1F2220', 
+                    border: '1px solid rgba(255,255,255,0.15)', 
+                    borderRadius: 12,
+                    color: '#fff',
+                    fontSize: 12 
+                  }} 
+                />
+                <Area type="monotone" dataKey="revenue" name="Total Revenue (₹L)" stroke="#FF8A00" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRev)" />
+                <Area type="monotone" dataKey="membership" name="Subscription Revenue (₹L)" stroke="#C9A24D" strokeWidth={2.5} fillOpacity={1} fill="url(#colorMem)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Venue Breakdown */}
-        <div style={{
-          background: 'white',
-          borderRadius: 18,
-          border: '1px solid var(--border)',
-          padding: 24,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
-        }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)', marginBottom: 4 }}>Top Performing Venues</h3>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}>Ranked by monthly gross volume</p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {outlets.slice(0, 4).map((outlet) => (
-              <div key={outlet.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#F8FAFC', borderRadius: 12 }}>
-                <div>
-                  <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>{outlet.name}</h4>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{outlet.activeMembers} patrons · ABV ₹{outlet.averageBillValue}</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: 'var(--primary)' }}>₹{outlet.revenueLakhs}L</p>
-                  <span className="badge badge-gold" style={{ fontSize: 9 }}>★ {outlet.rating}</span>
-                </div>
+        {/* Coupon Mix */}
+        <div className="card">
+          <h2 className="card-title">Coupon Mix</h2>
+          <p className="card-subtitle">Redemptions across voucher categories</p>
+          <div style={{ height: 180, marginTop: 10 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie 
+                  data={couponMix} 
+                  dataKey="value" 
+                  nameKey="name" 
+                  innerRadius={48} 
+                  outerRadius={75} 
+                  paddingAngle={3}
+                >
+                  {couponMix.map((_, i) => (
+                    <Cell key={i} fill={palette[i % palette.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    background: '#1F2220', 
+                    border: '1px solid rgba(255,255,255,0.15)', 
+                    borderRadius: 12,
+                    color: '#fff',
+                    fontSize: 12 
+                  }} 
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
+            {couponMix.map((c, i) => (
+              <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: palette[i % palette.length] }} />
+                  {c.name}
+                </span>
+                <strong style={{ color: 'var(--text-main)' }}>{c.value.toLocaleString()}</strong>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Recent Reservations Table */}
-      <div className="data-table-card">
-        <div className="table-header-bar">
-          <div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Live Reservations & Dining Pipeline</h3>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Real-time bookings from Sizzlo mobile members</p>
+      {/* Bottom Section: Venue Performance Directory & Today's Bookings */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+        {/* Venue Directory */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <div>
+              <h2 className="card-title">Outlet Performance</h2>
+              <p className="card-subtitle">Top revenue and active VIP patrons by dining outlet</p>
+            </div>
+          </div>
+          <div className="data-table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Outlet Venue</th>
+                  <th>Revenue</th>
+                  <th>Patrons</th>
+                  <th>Rating</th>
+                </tr>
+              </thead>
+              <tbody>
+                {outlets.map(o => (
+                  <tr key={o.id}>
+                    <td>
+                      <strong>{o.name}</strong>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{o.address}</p>
+                    </td>
+                    <td style={{ color: 'var(--primary)', fontWeight: 600 }}>₹{o.revenueLakhs} Lakh</td>
+                    <td>{o.activeMembers} VIPs</td>
+                    <td>
+                      <span className="badge badge-gold">★ {o.rating}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-        <table className="sizzlo-table">
-          <thead>
-            <tr>
-              <th>Ref</th>
-              <th>Customer</th>
-              <th>Outlet</th>
-              <th>Time Slot</th>
-              <th>Party</th>
-              <th>Status</th>
-              <th>Special Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reservations.map((r) => (
-              <tr key={r.id}>
-                <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{r.bookingReference}</td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 600 }}>{r.customerName}</span>
-                    {r.vip && <span className="badge badge-gold">VIP</span>}
-                  </div>
-                </td>
-                <td>{r.outlet}</td>
-                <td>{r.reservationTime}</td>
-                <td style={{ fontWeight: 600 }}>{r.guests} Guests</td>
-                <td>
-                  <span className={`badge ${r.status === 'Confirmed' ? 'badge-success' : 'badge-gold'}`}>
-                    {r.status}
-                  </span>
-                </td>
-                <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{r.specialRequests || '—'}</td>
-              </tr>
+
+        {/* Live Host Station Bookings */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <div>
+              <h2 className="card-title">Live Host Station</h2>
+              <p className="card-subtitle">Tonight's seated and upcoming reservations</p>
+            </div>
+            <span className="badge badge-orange">{reservations.length} Booked</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {reservations.slice(0, 4).map(r => (
+              <div 
+                key={r.id} 
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: 12,
+                  borderRadius: 12,
+                  background: 'var(--surface-alt)',
+                  border: '1px solid var(--border-subtle)'
+                }}
+              >
+                <div>
+                  <strong style={{ fontSize: 13, color: 'var(--text-main)' }}>{r.customerName}</strong>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                    {r.outlet} · {r.reservationTime} · {r.guests} Guests
+                  </p>
+                </div>
+                {r.vip ? (
+                  <span className="badge badge-gold">VIP DINER</span>
+                ) : (
+                  <span className="badge badge-success">{r.status}</span>
+                )}
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     </div>
   );

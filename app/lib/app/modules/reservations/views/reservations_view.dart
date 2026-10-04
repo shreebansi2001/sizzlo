@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/reservations_controller.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../widgets/sizzlo_button.dart';
 import '../../../widgets/section_header.dart';
-import '../../../widgets/custom_bottom_nav.dart';
 
 class ReservationsView extends GetView<ReservationsController> {
-  const ReservationsView({Key? key}) : super(key: key);
+  final bool isTab;
+
+  const ReservationsView({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -16,14 +16,15 @@ class ReservationsView extends GetView<ReservationsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Table Reservations'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => Get.back(),
-        ),
+        automaticallyImplyLeading: !isTab,
+        leading: isTab
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                onPressed: () => Get.back(),
+              ),
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
+      body: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,9 +33,9 @@ class ReservationsView extends GetView<ReservationsController> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.border),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.04),
@@ -49,23 +50,32 @@ class ReservationsView extends GetView<ReservationsController> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Reserve a Table', style: AppTextStyles.titleLarge),
+                          const Text(
+                            'Reserve a Table',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontFamily: 'Playfair Display',
+                            ),
+                          ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColors.goldBg,
+                              color: AppColors.gold.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.gold.withOpacity(0.4)),
                             ),
                             child: Row(
                               children: const [
-                                Icon(Icons.stars, size: 12, color: AppColors.goldDark),
-                                SizedBox(width: 4),
+                                Icon(Icons.stars, size: 13, color: AppColors.gold),
+                                SizedBox(width: 5),
                                 Text(
                                   'VIP Priority',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.goldDark,
+                                    color: AppColors.gold,
                                   ),
                                 ),
                               ],
@@ -73,24 +83,39 @@ class ReservationsView extends GetView<ReservationsController> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
 
                       // Select Outlet
-                      Text('Select Venue', style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 6),
+                      const Text(
+                        'SELECT VENUE',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          color: Colors.white60,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Obx(
                         () => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceVariant,
+                            color: const Color(0xFF1B221E),
                             borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white.withOpacity(0.08)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               isExpanded: true,
+                              dropdownColor: const Color(0xFF1B221E),
+                              iconEnabledColor: AppColors.gold,
                               value: controller.selectedOutlet.value,
+                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                               items: controller.outlets.map((o) {
-                                return DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)));
+                                return DropdownMenuItem(
+                                  value: o,
+                                  child: Text(o, style: const TextStyle(fontSize: 14, color: Colors.white)),
+                                );
                               }).toList(),
                               onChanged: (val) {
                                 if (val != null) controller.selectedOutlet.value = val;
@@ -109,20 +134,29 @@ class ReservationsView extends GetView<ReservationsController> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Guests', style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 6),
+                                const Text(
+                                  'GUESTS',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                    color: Colors.white60,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
                                 Obx(
                                   () => Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: AppColors.surfaceVariant,
+                                      color: const Color(0xFF1B221E),
                                       borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.white.withOpacity(0.08)),
                                     ),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.remove, size: 18),
+                                          icon: const Icon(Icons.remove_circle_outline_rounded, size: 22, color: AppColors.flame),
                                           onPressed: () {
                                             if (controller.guestCount.value > 1) {
                                               controller.guestCount.value--;
@@ -130,11 +164,15 @@ class ReservationsView extends GetView<ReservationsController> {
                                           },
                                         ),
                                         Text(
-                                          '${controller.guestCount.value}',
-                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                          '${controller.guestCount.value} Guests',
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.add, size: 18),
+                                          icon: const Icon(Icons.add_circle_outline_rounded, size: 22, color: AppColors.flame),
                                           onPressed: () {
                                             if (controller.guestCount.value < 20) {
                                               controller.guestCount.value++;
@@ -154,8 +192,16 @@ class ReservationsView extends GetView<ReservationsController> {
                       const SizedBox(height: 16),
 
                       // Time Slot Selector
-                      Text('Time Slot', style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
+                      const Text(
+                        'TIME SLOT',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          color: Colors.white60,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       Obx(
                         () => Wrap(
                           spacing: 8,
@@ -165,17 +211,21 @@ class ReservationsView extends GetView<ReservationsController> {
                             return GestureDetector(
                               onTap: () => controller.selectedTimeSlot.value = slot,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                                 decoration: BoxDecoration(
-                                  color: isSel ? AppColors.primary : AppColors.surfaceVariant,
+                                  color: isSel ? const Color(0xFF163E33) : const Color(0xFF1B221E),
                                   borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSel ? const Color(0xFF4EE3B8) : Colors.white.withOpacity(0.08),
+                                    width: 1.2,
+                                  ),
                                 ),
                                 child: Text(
                                   slot,
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
-                                    color: isSel ? Colors.white : AppColors.textPrimary,
+                                    color: isSel ? const Color(0xFF4EE3B8) : Colors.white70,
                                   ),
                                 ),
                               ),
@@ -184,15 +234,15 @@ class ReservationsView extends GetView<ReservationsController> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 22),
 
                       // Submit Button
                       Obx(
                         () => SizzloButton(
-                          text: 'Confirm Booking',
+                          text: 'Reserve VIP Table',
                           isLoading: controller.isSubmitting.value,
                           isGold: true,
-                          onPressed: controller.bookTable,
+                          onPressed: controller.confirmAndBookTable,
                         ),
                       ),
                     ],
@@ -205,10 +255,13 @@ class ReservationsView extends GetView<ReservationsController> {
                 SectionHeader(title: 'Your Bookings'),
                 Obx(() {
                   if (controller.reservations.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24.0),
-                        child: Text('No active reservations'),
+                        padding: const EdgeInsets.all(24.0),
+                        child: Text(
+                          'No active reservations',
+                          style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                        ),
                       ),
                     );
                   }
@@ -219,62 +272,124 @@ class ReservationsView extends GetView<ReservationsController> {
                     itemCount: controller.reservations.length,
                     itemBuilder: (context, index) {
                       final r = controller.reservations[index];
+                      final isCancelled = r.status.toLowerCase() == 'cancelled';
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: const Color(0xFF141816),
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.black.withOpacity(0.06)),
+                          border: Border.all(
+                            color: isCancelled
+                                ? Colors.redAccent.withOpacity(0.15)
+                                : Colors.white.withOpacity(0.08),
+                          ),
                         ),
-                        child: Row(
+                        child: Column(
                           children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: AppColors.goldBg,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(Icons.table_restaurant_outlined, color: AppColors.goldDark),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Row(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1B221E),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Icon(
+                                    Icons.table_restaurant_outlined,
+                                    color: isCancelled ? Colors.white38 : AppColors.gold,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        r.outlet,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.success.withOpacity(0.12),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          r.status,
-                                          style: const TextStyle(
-                                            color: AppColors.success,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            r.outlet,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                              color: isCancelled ? Colors.white54 : Colors.white,
+                                            ),
                                           ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: isCancelled
+                                                  ? Colors.redAccent.withOpacity(0.15)
+                                                  : AppColors.success.withOpacity(0.15),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              r.status,
+                                              style: TextStyle(
+                                                color: isCancelled ? Colors.redAccent : AppColors.success,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${r.reservationTime} · ${r.guests} Guests (Ref: ${r.bookingReference})',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white.withOpacity(0.6),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${r.reservationTime} · ${r.guests} Guests (Ref: ${r.bookingReference})',
-                                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                            if (!isCancelled) ...[
+                              const SizedBox(height: 12),
+                              Divider(color: Colors.white.withOpacity(0.06), height: 1),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  if (r.specialRequests != null && r.specialRequests!.isNotEmpty)
+                                    Expanded(
+                                      child: Text(
+                                        'Note: ${r.specialRequests}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.4),
+                                          fontSize: 11,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    const Spacer(),
+                                  TextButton.icon(
+                                    onPressed: () => controller.confirmCancelReservation(r),
+                                    icon: const Icon(Icons.cancel_outlined, size: 14, color: Colors.redAccent),
+                                    label: const Text(
+                                      'Cancel Table',
+                                      style: TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       );
@@ -282,18 +397,10 @@ class ReservationsView extends GetView<ReservationsController> {
                   );
                 }),
 
-                const SizedBox(height: 100),
+                SizedBox(height: isTab ? 110 : 24),
               ],
             ),
           ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: CustomBottomNav(currentIndex: 3),
-          ),
-        ],
-      ),
     );
   }
 }

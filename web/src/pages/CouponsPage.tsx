@@ -1,40 +1,82 @@
-import React, { useState } from 'react';
-import { Plus, Ticket, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Ticket, CheckCircle2, AlertCircle, Trash2, RefreshCw } from 'lucide-react';
+import axios from 'axios';
 import { Coupon } from '../types';
 
 interface CouponsPageProps {
   coupons: Coupon[];
+  onRefresh?: () => void;
 }
 
-export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons }) => {
+export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons, onRefresh }) => {
   const [couponList, setCouponList] = useState<Coupon[]>(coupons);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCode, setNewCode] = useState('');
   const [newName, setNewName] = useState('');
+  const [newSubtitle, setNewSubtitle] = useState('Exclusive VIP Dining privilege');
   const [newOutlet, setNewOutlet] = useState('All Yanki Outlets');
+  const [newTotalCount, setNewTotalCount] = useState(3);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCreateCoupon = (e: React.FormEvent) => {
+  const fetchLiveCoupons = () => {
+    axios.get('/api/coupons')
+      .then(res => {
+        if (res.data?.success && res.data.data) {
+          setCouponList(res.data.data);
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchLiveCoupons();
+  }, []);
+
+  const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCode || !newName) return;
 
-    const created: Coupon = {
-      id: Date.now(),
-      code: newCode.toUpperCase(),
-      name: newName,
-      subtitle: 'Exclusive VIP privilege',
-      description: 'Special coupon issued from admin portal',
-      leftCount: 3,
-      totalCount: 3,
-      expiryDate: '31 Dec 2027',
+    setIsSubmitting(true);
+    const payload = {
+      code: newCode.toUpperCase().trim(),
+      name: newName.trim(),
+      subtitle: newSubtitle.trim(),
+      description: `Exclusive privilege voucher issued from management desk for ${newOutlet}.`,
+      leftCount: newTotalCount,
+      totalCount: newTotalCount,
+      expiryDate: '2027-12-31',
       status: 'available',
       outlet: newOutlet,
       color: 'gold',
     };
 
-    setCouponList([created, ...couponList]);
-    setShowAddModal(false);
-    setNewCode('');
-    setNewName('');
+    try {
+      const res = await axios.post('/api/coupons', payload);
+      if (res.data?.success && res.data.data) {
+        setCouponList(prev => [res.data.data, ...prev]);
+      } else {
+        fetchLiveCoupons();
+      }
+      setShowAddModal(false);
+      setNewCode('');
+      setNewName('');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Failed to create coupon', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCoupon = async (id: number | string) => {
+    if (!window.confirm('Are you sure you want to deactivate and remove this voucher?')) return;
+    try {
+      await axios.delete(`/api/coupons/${id}`);
+      setCouponList(prev => prev.filter(c => c.id !== id));
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Failed to delete coupon', err);
+    }
   };
 
   return (
@@ -80,7 +122,25 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons }) => {
 
             <div style={{ borderTop: '1px dashed var(--border)', paddingTop: 14, marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
               <span style={{ color: 'var(--text-muted)' }}>Outlet: <strong style={{ color: 'var(--text-main)' }}>{c.outlet}</strong></span>
-              <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{c.leftCount} / {c.totalCount} Remaining</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{c.leftCount} / {c.totalCount} Left</span>
+                <button 
+                  onClick={() => handleDeleteCoupon(c.id)}
+                  title="Deactivate voucher"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--danger)',
+                    cursor: 'pointer',
+                    padding: 4,
+                    borderRadius: 6,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
           </div>
         ))}

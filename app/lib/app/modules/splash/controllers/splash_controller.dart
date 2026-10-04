@@ -12,8 +12,7 @@ class SplashController extends GetxController {
 
   void _startAnimation() async {
     await Future.delayed(const Duration(milliseconds: 300));
-    opacity.value = 1.0;
-    await Future.delayed(const Duration(milliseconds: 1800));
-    Get.offNamed(AppRoutes.HOME);
+    await Future.delayed(const Duration(milliseconds: 2200));
+    Get.offNamed(AppRoutes.ONBOARDING);
   }
 }

@@ -1,210 +1,408 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../controllers/loyalty_controller.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../widgets/section_header.dart';
-import '../../../widgets/custom_bottom_nav.dart';
+import '../../../widgets/sizzlo_mascot_animated.dart';
 
 class LoyaltyView extends GetView<LoyaltyController> {
-  const LoyaltyView({Key? key}) : super(key: key);
+  final bool isTab;
+
+  const LoyaltyView({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<LoyaltyController>()) {
+      Get.put(LoyaltyController());
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Loyalty Rewards'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => Get.back(),
+        title: const Text(
+          'Loyalty Rewards',
+          style: TextStyle(
+            fontFamily: 'Playfair Display',
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        automaticallyImplyLeading: !isTab,
+        leading: isTab
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                onPressed: () => Get.back(),
+              ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Loyalty Hero Card matching Image 2
+            _buildBalanceHeroCard(),
+
+            const SizedBox(height: 16),
+
+            // 3 Stat Tiles in a row matching Image 2
+            _buildThreeStatsRow(),
+
+            const SizedBox(height: 24),
+
+            // Recent Activity Section Header with +22% vs last month
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Recent activity',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.gold,
+                  ),
+                ),
+                Row(
+                  children: const [
+                    Icon(Icons.trending_up, size: 16, color: Color(0xFF4EE3B8)),
+                    SizedBox(width: 4),
+                    Text(
+                      '+22% vs last month',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF4EE3B8),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Activity List matching Image 2
+            _buildActivityList(),
+
+            SizedBox(height: isTab ? 135 : 30),
+          ],
         ),
       ),
-      body: Stack(
+    );
+  }
+
+  Widget _buildBalanceHeroCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF382312),
+            Color(0xFF221509),
+            Color(0xFF160E06),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFF7F4420).withOpacity(0.6),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Loyalty Card
-                Obx(
-                  () => Container(
-                    padding: const EdgeInsets.all(24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'YANKI REWARDS BALANCE',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2.2,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '1,25,000',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.goldChampagne,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'points · earning 5x on weekends',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.65),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Mascot with sparkle aura
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
-                      gradient: AppColors.royalCardGradient,
-                      borderRadius: BorderRadius.circular(24),
+                      shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+                          color: AppColors.gold.withOpacity(0.25),
+                          blurRadius: 18,
+                          spreadRadius: 2,
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'POINTS BALANCE',
-                              style: TextStyle(
-                                fontSize: 11,
-                                letterSpacing: 1.8,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.gold,
-                              ),
-                            ),
-                            const Icon(Icons.stars_rounded, color: AppColors.gold, size: 28),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '${controller.member.value.loyaltyPoints} PTS',
-                          style: AppTextStyles.displayLarge.copyWith(color: Colors.white),
-                        ),
-                        const SizedBox(height: 16),
-                        // Progress Bar to Black Diamond
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: LinearProgressIndicator(
-                            value: controller.member.value.loyaltyProgress,
-                            minHeight: 8,
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.gold),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Current: ${controller.member.value.membershipType}',
-                              style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.8)),
-                            ),
-                            Text(
-                              'Goal: ${controller.member.value.loyaltyGoal} PTS',
-                              style: TextStyle(fontSize: 11, color: AppColors.gold),
-                            ),
-                          ],
-                        ),
-                      ],
+                  ),
+                  const SizzloMascotAnimated(height: 48),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // 50% Circular Progress Box matching Image 2
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.08),
+              ),
+            ),
+            child: Row(
+              children: [
+                // 50% circular indicator
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.gold, width: 2.5),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '50%',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 28),
-
-                // Earning rules
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.black.withOpacity(0.06)),
-                  ),
-                  child: Row(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.goldBg,
-                          borderRadius: BorderRadius.circular(12),
+                      Text(
+                        'NEXT REWARD AT 2,50,000 PTS',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.0,
+                          color: Colors.white.withOpacity(0.7),
                         ),
-                        child: const Icon(Icons.info_outline, color: AppColors.goldDark, size: 22),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text('How to earn points?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            SizedBox(height: 2),
-                            Text('Earn 10 points for every ₹100 spent at any Yanki venue.', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                          ],
-                        ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: const [
+                          Icon(Icons.card_giftcard, size: 13, color: AppColors.gold),
+                          SizedBox(width: 4),
+                          Text(
+                            'Free Subscription Renewal',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.gold,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 28),
-
-                // Transaction history
-                SectionHeader(title: 'Recent Activity'),
-                Obx(() {
-                  if (controller.transactions.isEmpty) {
-                    return const Center(child: Text('No points activity yet'));
-                  }
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: controller.transactions.length,
-                    itemBuilder: (context, index) {
-                      final t = controller.transactions[index];
-                      final isPositive = t.points > 0;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.black.withOpacity(0.04)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: isPositive ? AppColors.success.withOpacity(0.12) : AppColors.error.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                isPositive ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                                color: isPositive ? AppColors.success : AppColors.error,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(t.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                  const SizedBox(height: 2),
-                                  Text('${t.outletName} · ${t.time}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              '${isPositive ? '+' : ''}${t.points} pts',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: isPositive ? AppColors.success : AppColors.error,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                }),
-                const SizedBox(height: 100),
               ],
             ),
           ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: CustomBottomNav(currentIndex: 3),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildThreeStatsRow() {
+    return Row(
+      children: [
+        _statTile('THIS MONTH', '+4,840'),
+        const SizedBox(width: 10),
+        _statTile('LIFETIME', '3,12,840'),
+        const SizedBox(width: 10),
+        _statTile('REDEEMED', '48,200'),
+      ],
+    );
+  }
+
+  Widget _statTile(String label, String value) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF131715),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                color: Colors.white.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFDF9E5B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityList() {
+    final activities = [
+      {
+        'title': 'Yanki Signature · Dinner',
+        'date': '12 Jun 2026',
+        'points': '+2,840',
+        'icon': Icons.restaurant,
+      },
+      {
+        'title': 'Delivery Order #28741',
+        'date': '08 Jun 2026',
+        'points': '+420',
+        'icon': Icons.lunch_dining_rounded,
+      },
+      {
+        'title': 'Banquet Booking — Anniversary',
+        'date': '01 Jun 2026',
+        'points': '+12,000',
+        'icon': Icons.celebration,
+      },
+      {
+        'title': 'ODC Order — Family Function',
+        'date': '20 May 2026',
+        'points': '+6,800',
+        'icon': Icons.local_shipping_outlined,
+      },
+      {
+        'title': 'Dough by Yanki · Lunch',
+        'date': '14 May 2026',
+        'points': '+940',
+        'icon': Icons.local_pizza_outlined,
+      },
+    ];
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: activities.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final a = activities[index];
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF131715),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.06),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  a['icon'] as IconData,
+                  color: const Color(0xFFDF9E5B),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      a['title'] as String,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      a['date'] as String,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withOpacity(0.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                a['points'] as String,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFDF9E5B),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -1,6 +1,10 @@
 abstract class AppRoutes {
   static const SPLASH = '/';
+  static const ONBOARDING = '/onboarding';
   static const LOGIN = '/login';
+  static const VERIFY = '/verify';
+  static const REGISTER = '/register';
+  static const PLANS = '/plans';
   static const HOME = '/home';
   static const CARD = '/card';
   static const COUPONS = '/coupons';

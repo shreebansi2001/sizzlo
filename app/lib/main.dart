@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'app/core/theme/app_theme.dart';
 import 'app/core/values/app_constants.dart';
 import 'app/routes/app_pages.dart';
+import 'app/controllers/navigation_controller.dart';
+import 'app/modules/home/controllers/home_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +28,10 @@ class SizzloApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       initialRoute: AppPages.INITIAL,
+      initialBinding: BindingsBuilder(() {
+        Get.put(NavigationController(), permanent: true);
+        Get.put(HomeController(), permanent: true);
+      }),
       getPages: AppPages.routes,
       defaultTransition: Transition.cupertino,
     );

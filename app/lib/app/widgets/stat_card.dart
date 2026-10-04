@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
-import '../core/theme/app_text_styles.dart';
 
 enum StatTone { gold, royal }
 
@@ -23,57 +22,55 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isGold = tone == StatTone.gold;
-    final accentColor = isGold ? AppColors.gold : AppColors.primaryGlow;
-    final bgColor = isGold ? AppColors.goldBg : AppColors.surface;
+    final deltaColor = isGold ? AppColors.gold : AppColors.flame;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFF131715),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isGold ? AppColors.gold.withOpacity(0.3) : Colors.black.withOpacity(0.06),
+          color: Colors.white.withOpacity(0.08),
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: AppTextStyles.bodySmall.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              Icon(icon, size: 18, color: accentColor),
-            ],
-          ),
-          const SizedBox(height: 10),
           Text(
-            value,
-            style: AppTextStyles.titleLarge.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: Colors.white.withOpacity(0.55),
             ),
           ),
           const SizedBox(height: 6),
           Text(
+            value,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontFamily: 'Playfair Display',
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
             delta,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isGold ? AppColors.goldDark : AppColors.primaryGlow,
+              fontWeight: FontWeight.w500,
+              color: deltaColor,
             ),
           ),
         ],

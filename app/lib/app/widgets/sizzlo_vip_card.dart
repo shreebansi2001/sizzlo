@@ -87,21 +87,21 @@ class _SizzloVipCardState extends State<SizzloVipCard> with SingleTickerProvider
   Widget _buildFrontCard() {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.royalCardGradient,
+        gradient: widget.member.cardGradient,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryDark.withOpacity(0.35),
+            color: Colors.black.withOpacity(0.5),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: AppColors.gold.withOpacity(0.15),
-            blurRadius: 30,
+            color: AppColors.gold.withOpacity(0.12),
+            blurRadius: 25,
             offset: const Offset(0, -2),
           ),
         ],
-        border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1.2),
+        border: Border.all(color: widget.member.planAccentColor.withOpacity(0.4), width: 1.2),
       ),
       padding: EdgeInsets.all(widget.compact ? 20 : 24),
       child: Column(
@@ -116,59 +116,53 @@ class _SizzloVipCardState extends State<SizzloVipCard> with SingleTickerProvider
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppColors.gold.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.restaurant_menu, color: AppColors.gold, size: 20),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'SIZZLO',
-                        style: AppTextStyles.titleMedium.copyWith(
-                          color: Colors.white,
-                          letterSpacing: 3.0,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
+                  Image.asset(
+                    'assets/images/yanki-logo.png',
+                    height: 22,
+                    fit: BoxFit.contain,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
-                    'EXCLUSIVE MEMBERSHIP',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    widget.member.planTitle,
+                    style: const TextStyle(
                       color: AppColors.gold,
-                      fontSize: 10,
-                      letterSpacing: 2.2,
+                      fontSize: 9,
+                      letterSpacing: 1.4,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.4)),
-                ),
-                child: Text(
-                  widget.member.membershipType,
-                  style: AppTextStyles.badge.copyWith(color: AppColors.gold, fontSize: 10),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+                  ),
+                  child: Text(
+                    widget.member.planMemberLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.badge.copyWith(
+                      color: AppColors.gold,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
 
-          SizedBox(height: widget.compact ? 24 : 32),
+          SizedBox(height: widget.compact ? 22 : 30),
 
           // Member Name & ID
           Text(
-            'MEMBER',
+            'SUBSCRIBER',
             style: TextStyle(
               fontSize: 10,
               letterSpacing: 2.0,
@@ -179,7 +173,11 @@ class _SizzloVipCardState extends State<SizzloVipCard> with SingleTickerProvider
           const SizedBox(height: 4),
           Text(
             widget.member.fullName,
-            style: AppTextStyles.cardTitle.copyWith(fontSize: widget.compact ? 22 : 26),
+            style: AppTextStyles.cardTitle.copyWith(
+              fontSize: widget.compact ? 24 : 28,
+              fontFamily: 'Playfair Display',
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -187,14 +185,14 @@ class _SizzloVipCardState extends State<SizzloVipCard> with SingleTickerProvider
             style: TextStyle(
               fontSize: 12,
               letterSpacing: 1.2,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withOpacity(0.7),
               fontWeight: FontWeight.w500,
             ),
           ),
 
-          SizedBox(height: widget.compact ? 20 : 28),
+          SizedBox(height: widget.compact ? 22 : 28),
 
-          // Footer: Expiry & QR Code
+          // Footer: Expiry & Subscription Price matching demo_code MembershipCard.tsx
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -211,54 +209,54 @@ class _SizzloVipCardState extends State<SizzloVipCard> with SingleTickerProvider
                       color: Colors.white.withOpacity(0.5),
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Text(
                     widget.member.expiryDate,
                     style: const TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
-                  if (!widget.compact) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      'Tap to flip & view barcode',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.gold.withOpacity(0.9),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.gold.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'SUBSCRIPTION',
+                    style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withOpacity(0.5),
                     ),
-                  ],
-                ),
-                child: QrImageView(
-                  data: widget.member.membershipId,
-                  version: QrVersions.auto,
-                  size: widget.compact ? 48.0 : 64.0,
-                  eyeStyle: const QrEyeStyle(
-                    eyeShape: QrEyeShape.square,
-                    color: AppColors.primary,
                   ),
-                  dataModuleStyle: const QrDataModuleStyle(
-                    dataModuleShape: QrDataModuleShape.square,
-                    color: AppColors.primary,
+                  const SizedBox(height: 4),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${widget.member.planPriceFormatted} ',
+                          style: const TextStyle(
+                            color: AppColors.gold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Playfair Display',
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'annually',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),

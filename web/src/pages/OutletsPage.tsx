@@ -1,12 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Store, MapPin, Phone, Star, TrendingUp } from 'lucide-react';
+import axios from 'axios';
 import { Outlet } from '../types';
+import { fallbackOutlets } from '../api/client';
 
 interface OutletsPageProps {
-  outlets: Outlet[];
+  outlets?: Outlet[];
 }
 
-export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets }) => {
+export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlets }) => {
+  const [outletList, setOutletList] = useState<Outlet[]>(initialOutlets || fallbackOutlets);
+
+  useEffect(() => {
+    axios.get('/api/admin/outlets')
+      .then(res => {
+        if (res.data?.success && res.data.data?.length) {
+          setOutletList(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
@@ -15,7 +29,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets }) => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-        {outlets.map((outlet) => (
+        {outletList.map((outlet) => (
           <div 
             key={outlet.id}
             style={{

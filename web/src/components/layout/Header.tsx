@@ -1,5 +1,6 @@
-import React from 'react';
-import { Bell, Search, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, Search, RefreshCw, RotateCcw, Key, Check } from 'lucide-react';
+import { resetAllData } from '../../api/client';
 
 interface HeaderProps {
   title: string;
@@ -9,51 +10,191 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLoading }) => {
+  const [selectedOutlet, setSelectedOutlet] = useState('all');
+  const [searchVal, setSearchVal] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetStatus, setResetStatus] = useState<string | null>(null);
+  const [showCreds, setShowCreds] = useState(false);
+
+  const handleResetData = async () => {
+    if (!window.confirm('Clear all reservations, redemptions & test logs to restore clean default seed state?')) {
+      return;
+    }
+    setIsResetting(true);
+    try {
+      const res = await resetAllData();
+      setResetStatus(res.message);
+      setTimeout(() => setResetStatus(null), 4000);
+      if (onRefresh) onRefresh();
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <header className="admin-header">
       <div>
-        <h1 className="serif-title page-title">{title}</h1>
-        <p className="page-subtitle">{subtitle}</p>
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 700, color: 'var(--text-main)', letterSpacing: -0.3 }}>
+          {title}
+        </h1>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+          {subtitle}
+        </p>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div className="search-input">
-          <Search size={16} color="#64748B" />
-          <input type="text" placeholder="Search members, bookings, vouchers..." />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Reset Feedback Notification */}
+        {resetStatus && (
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '1px solid #10B981',
+            color: '#065F46',
+            padding: '6px 12px',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6
+          }}>
+            <Check size={14} color="#10B981" />
+            <span>{resetStatus}</span>
+          </div>
+        )}
+
+        {/* Credentials Pill / Popover */}
+        <div style={{ position: 'relative' }}>
+          <button 
+            className="btn btn-outline btn-sm"
+            onClick={() => setShowCreds(!showCreds)}
+            style={{ 
+              background: 'rgba(232, 184, 74, 0.1)', 
+              borderColor: 'var(--gold)', 
+              color: 'var(--primary)',
+              fontWeight: 600,
+              fontSize: 11,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+            title="Click to view Admin Credentials"
+          >
+            <Key size={13} color="var(--gold-dark)" />
+            <span>Admin Credentials</span>
+          </button>
+
+          {showCreds && (
+            <div style={{
+              position: 'absolute',
+              top: '115%',
+              right: 0,
+              background: '#070A09',
+              border: '1px solid var(--gold)',
+              borderRadius: 12,
+              padding: '12px 16px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              zIndex: 100,
+              minWidth: 260,
+              color: '#F8F9FA'
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', letterSpacing: 0.8, marginBottom: 6 }}>
+                ADMIN LOGIN ACCESS
+              </div>
+              <div style={{ fontSize: 12, marginBottom: 4 }}>
+                <span style={{ color: '#8BA19A' }}>Link: </span>
+                <span style={{ color: '#FFFFFF', fontWeight: 600 }}>http://localhost:5173</span>
+              </div>
+              <div style={{ fontSize: 12, marginBottom: 4 }}>
+                <span style={{ color: '#8BA19A' }}>Email: </span>
+                <span style={{ color: '#E8B84A', fontWeight: 600 }}>admin@sizzlo.com</span>
+              </div>
+              <div style={{ fontSize: 12 }}>
+                <span style={{ color: '#8BA19A' }}>Password: </span>
+                <span style={{ color: '#E8B84A', fontWeight: 600 }}>admin123</span>
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Reset Data Button */}
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={handleResetData}
+          disabled={isResetting}
+          style={{
+            borderColor: '#EF4444',
+            color: '#EF4444',
+            background: 'rgba(239, 68, 68, 0.05)',
+            fontSize: 11,
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5
+          }}
+          title="Clear & reset all test reservations, activity logs, and floor tables"
+        >
+          <RotateCcw size={12} className={isResetting ? 'spin' : ''} />
+          <span>{isResetting ? 'Resetting...' : 'Clear Test Data'}</span>
+        </button>
+
+        {/* Outlet Switcher */}
+        <select 
+          className="outlet-select"
+          value={selectedOutlet}
+          onChange={(e) => setSelectedOutlet(e.target.value)}
+        >
+          <option value="all">🏢 All Outlets (Consolidated)</option>
+          <option value="navrangpura">Navrangpura (Flagship)</option>
+          <option value="shilaj">Shilaj</option>
+          <option value="gandhinagar">Gandhinagar</option>
+          <option value="bodakdev">Bodakdev Signature</option>
+        </select>
+
+        {/* Global Search */}
+        <div className="header-search">
+          <Search size={15} />
+          <input 
+            type="text" 
+            placeholder="Search patron, phone, or voucher..." 
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
+          />
+        </div>
+
+        {/* Sync Java Backend Button */}
         {onRefresh && (
           <button 
-            className="btn btn-outline" 
+            className="btn btn-outline btn-sm" 
             onClick={onRefresh}
-            title="Sync with Java Backend"
-            style={{ padding: '8px 12px' }}
+            title="Sync current feature data with Java 8 Spring Boot API"
           >
-            <RefreshCw size={15} className={isLoading ? 'spin' : ''} />
-            <span style={{ fontSize: 12 }}>Sync Backend</span>
+            <RefreshCw size={13} className={isLoading ? 'spin' : ''} />
+            <span>Sync</span>
           </button>
         )}
 
+        {/* Notification Bell */}
         <div style={{
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          background: '#F1F5F9',
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
           display: 'grid',
           placeItems: 'center',
           position: 'relative',
           cursor: 'pointer'
         }}>
-          <Bell size={18} color="#001D4A" />
+          <Bell size={16} color="var(--text-main)" />
           <span style={{
             position: 'absolute',
-            top: 10,
-            right: 11,
-            width: 8,
-            height: 8,
+            top: 8,
+            right: 8,
+            width: 7,
+            height: 7,
             borderRadius: '50%',
-            background: '#E8B84A',
-            border: '2px solid white'
+            background: 'var(--primary)',
+            boxShadow: '0 0 8px var(--primary)'
           }} />
         </div>
       </div>

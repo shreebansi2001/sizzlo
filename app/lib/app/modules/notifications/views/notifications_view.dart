@@ -5,18 +5,26 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 
 class NotificationsView extends GetView<NotificationsController> {
-  const NotificationsView({Key? key}) : super(key: key);
+  final bool isTab;
+
+  const NotificationsView({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<NotificationsController>()) {
+      Get.put(NotificationsController());
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Notifications'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => Get.back(),
-        ),
+        automaticallyImplyLeading: !isTab,
+        leading: isTab
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                onPressed: () => Get.back(),
+              ),
         actions: [
           TextButton(
             onPressed: controller.clearAll,
@@ -39,7 +47,7 @@ class NotificationsView extends GetView<NotificationsController> {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, isTab ? 135 : 20),
           itemCount: controller.notifications.length,
           itemBuilder: (context, index) {
             final n = controller.notifications[index];

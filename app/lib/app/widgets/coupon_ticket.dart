@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
-import '../core/theme/app_text_styles.dart';
 import '../data/models/coupon_model.dart';
 
 class CouponTicket extends StatelessWidget {
@@ -25,16 +24,16 @@ class CouponTicket extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF141816),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isGold ? AppColors.gold.withOpacity(0.4) : Colors.black.withOpacity(0.08),
+            color: isGold ? AppColors.gold.withOpacity(0.4) : Colors.white.withOpacity(0.08),
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
@@ -51,15 +50,15 @@ class CouponTicket extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: isGold ? AppColors.goldBg : AppColors.surfaceVariant,
+                      color: const Color(0xFF1B221E),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isGold ? AppColors.gold.withOpacity(0.3) : Colors.transparent,
+                        color: isGold ? AppColors.gold.withOpacity(0.3) : Colors.white.withOpacity(0.06),
                       ),
                     ),
                     child: Icon(
                       isGold ? Icons.cake_outlined : Icons.confirmation_number_outlined,
-                      color: isGold ? AppColors.goldDark : AppColors.primary,
+                      color: isGold ? AppColors.gold : AppColors.flame,
                       size: 24,
                     ),
                   ),
@@ -74,49 +73,57 @@ class CouponTicket extends StatelessWidget {
                           children: [
                             Text(
                               coupon.code,
-                              style: AppTextStyles.badge.copyWith(
-                                color: isGold ? AppColors.goldDark : AppColors.primary,
+                              style: const TextStyle(
+                                color: AppColors.gold,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                letterSpacing: 1.2,
                               ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: isAvailable ? AppColors.success.withOpacity(0.12) : Colors.black.withOpacity(0.06),
-                                borderRadius: BorderRadius.circular(10),
+                                color: isAvailable ? AppColors.success.withOpacity(0.15) : Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 isAvailable ? '${coupon.leftCount} Left' : 'Used',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: isAvailable ? AppColors.success : AppColors.textMuted,
+                                  color: isAvailable ? AppColors.success : Colors.white.withOpacity(0.4),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 5),
                         Text(
                           coupon.name,
-                          style: AppTextStyles.titleMedium.copyWith(fontSize: 16),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           coupon.subtitle,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
-                            const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textMuted),
+                            Icon(Icons.location_on_outlined, size: 13, color: Colors.white.withOpacity(0.45)),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 coupon.outlet,
-                                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.55)),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -131,12 +138,12 @@ class CouponTicket extends StatelessWidget {
             ),
             // Dashed Divider / Action Bar
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
               decoration: BoxDecoration(
-                color: isGold ? AppColors.goldBg.withOpacity(0.5) : const Color(0xFFFAFAFA),
+                color: const Color(0xFF0F1311),
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(19)),
                 border: Border(
-                  top: BorderSide(color: Colors.black.withOpacity(0.05)),
+                  top: BorderSide(color: Colors.white.withOpacity(0.06)),
                 ),
               ),
               child: Row(
@@ -147,22 +154,23 @@ class CouponTicket extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary.withOpacity(0.8),
+                      color: Colors.white.withOpacity(0.55),
                     ),
                   ),
                   if (isAvailable && onRedeem != null)
                     InkWell(
                       onTap: onRedeem,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: const Color(0xFF163E33),
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF286D5A)),
                         ),
                         child: const Text(
                           'Redeem',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Color(0xFF4EE3B8),
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),

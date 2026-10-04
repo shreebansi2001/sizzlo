@@ -9,94 +9,175 @@ import '../../../widgets/sizzlo_vip_card.dart';
 import '../../../widgets/stat_card.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/custom_bottom_nav.dart';
+import '../../../widgets/sizzler_smoke_effect.dart';
+import '../../../widgets/sizzlo_mascot_animated.dart';
+import '../../../widgets/sizzler_hero_animation.dart';
+import '../../../controllers/navigation_controller.dart';
+import '../../coupons/views/coupons_view.dart';
+import '../../loyalty/views/loyalty_view.dart';
+import '../../notifications/views/notifications_view.dart';
+import '../../profile/views/profile_view.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final navController = Get.find<NavigationController>();
+
+    final List<Widget> pages = [
+      _buildHomeContent(context),
+      const CouponsView(isTab: true),
+      const LoyaltyView(isTab: true),
+      const NotificationsView(isTab: true),
+      const ProfileView(isTab: true),
+    ];
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          RefreshIndicator(
-            onRefresh: () async => controller.refreshData(),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  _buildBody(context),
-                  const SizedBox(height: 100), // padding for bottom nav
-                ],
-              ),
+          Obx(
+            () => IndexedStack(
+              index: navController.currentIndex.value,
+              children: pages,
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: CustomBottomNav(currentIndex: 0),
+            child: Obx(
+              () => CustomBottomNav(
+                currentIndex: navController.currentIndex.value,
+                onTap: navController.changeTab,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: AppColors.royalCardGradient,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+  Widget _buildHomeContent(BuildContext context) {
+    return RefreshIndicator(
+      color: AppColors.flame,
+      backgroundColor: AppColors.surface,
+      onRefresh: () async => controller.refreshData(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            SizzlerSmokeEffect(
+              enableSmoke: true,
+              child: _buildHeader(),
+            ),
+            _buildBody(context),
+            const SizedBox(height: 135),
+          ],
+        ),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'WELCOME BACK',
-                    style: TextStyle(
-                      fontSize: 11,
-                      letterSpacing: 2.2,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.gold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Obx(
-                    () => Text(
-                      'Hello, ${controller.member.value.firstName}',
-                      style: AppTextStyles.displayMedium.copyWith(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              GestureDetector(
-                onTap: () => Get.toNamed(AppRoutes.NOTIFICATIONS),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
+    );
+  }
+
+  Widget _buildHeader() {
+    return Obx(() {
+      final m = controller.member.value;
+      final isSub = m.isSubscriber;
+      return Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: m.headerGradient,
+        ),
+        padding: EdgeInsets.fromLTRB(20, 56, 20, isSub ? 72 : 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
+                      Text(
+                        'WELCOME BACK',
+                        style: TextStyle(
+                          fontSize: 11,
+                          letterSpacing: 2.4,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.gold.withOpacity(0.95),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            'Hello, ${m.firstName}',
+                            style: AppTextStyles.displayMedium.copyWith(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontFamily: 'Playfair Display',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizzloMascotAnimated(
+                            height: 44,
+                            onTap: () => Get.toNamed(AppRoutes.PLANS),
+                          ),
+                        ],
+                      ),
+                      if (isSub) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.gold.withOpacity(0.35)),
+                          ),
+                          child: Text(
+                            '${m.planMemberLabel} · ${m.expiryDate.toUpperCase()}',
+                            style: const TextStyle(
+                              color: AppColors.gold,
+                              fontSize: 9.5,
+                              letterSpacing: 1.0,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                // Bell Notification Button matching demo_code
+                GestureDetector(
+                  onTap: () => Get.find<NavigationController>().changeTab(3),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white.withOpacity(0.15)),
+                        ),
+                        child: const Icon(
+                          Icons.notifications_none_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
                       Positioned(
-                        top: 10,
-                        right: 12,
+                        top: 2,
+                        right: 2,
                         child: Container(
-                          width: 8,
-                          height: 8,
+                          width: 9,
+                          height: 9,
                           decoration: const BoxDecoration(
                             color: AppColors.gold,
                             shape: BoxShape.circle,
@@ -106,102 +187,87 @@ class HomeView extends GetView<HomeController> {
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Obx(
-            () => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppColors.gold.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-              ),
-              child: Text(
-                '${controller.member.value.membershipType} · VALID TILL ${controller.member.value.expiryDate.toUpperCase()}',
-                style: const TextStyle(
-                  color: AppColors.gold,
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildBody(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 18),
+    return Obx(() {
+      final isSub = controller.member.value.isSubscriber;
+      return Transform.translate(
+        offset: Offset(0, isSub ? -50 : 8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isSub) ...[
+                // VIP Member Card Preview matching demo_code overlapping banner
+                GestureDetector(
+                  onTap: () => Get.toNamed(AppRoutes.CARD),
+                  child: SizzloVipCard(
+                    member: controller.member.value,
+                    compact: true,
+                    enableFlip: false,
+                  ),
+                ),
 
-          // VIP Member Card Preview
-          Obx(
-            () => GestureDetector(
-              onTap: () => Get.toNamed(AppRoutes.CARD),
-              child: SizzloVipCard(
-                member: controller.member.value,
-                compact: true,
-                enableFlip: false,
-              ),
-            ),
-          ),
+                const SizedBox(height: 24),
 
-          const SizedBox(height: 24),
+                // Key Stats Grid
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.35,
+                  children: [
+                    StatCard(
+                      label: 'Total Savings',
+                      value: CurrencyFormatter.formatInr(controller.member.value.totalSavings),
+                      delta: '+₹4,200 this month',
+                      icon: Icons.savings_outlined,
+                      tone: StatTone.gold,
+                    ),
+                    StatCard(
+                      label: 'Coupons Used',
+                      value: '${controller.member.value.couponsUsed} / ${controller.member.value.couponsTotal}',
+                      delta: '${controller.member.value.couponsLeft} remaining',
+                      icon: Icons.confirmation_number_outlined,
+                      tone: StatTone.royal,
+                    ),
+                    StatCard(
+                      label: 'Loyalty Points',
+                      value: '${(controller.member.value.loyaltyPoints / 1000).toStringAsFixed(0)}K pts',
+                      delta: '50% to renewal reward',
+                      icon: Icons.stars_outlined,
+                      tone: StatTone.royal,
+                    ),
+                    StatCard(
+                      label: 'Coupons Left',
+                      value: '${controller.member.value.couponsLeft}',
+                      delta: 'Expires ${controller.member.value.expiryDate}',
+                      icon: Icons.local_offer_outlined,
+                      tone: StatTone.gold,
+                    ),
+                  ],
+                ),
 
-          // Key Stats Grid
-          Obx(
-            () => GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.35,
-              children: [
-                StatCard(
-                  label: 'Total Savings',
-                  value: CurrencyFormatter.formatInr(controller.member.value.totalSavings),
-                  delta: '+₹4,200 this month',
-                  icon: Icons.savings_outlined,
-                  tone: StatTone.gold,
-                ),
-                StatCard(
-                  label: 'Coupons Used',
-                  value: '${controller.member.value.couponsUsed} / ${controller.member.value.couponsTotal}',
-                  delta: '${controller.member.value.couponsLeft} remaining',
-                  icon: Icons.confirmation_number_outlined,
-                  tone: StatTone.royal,
-                ),
-                StatCard(
-                  label: 'Loyalty Points',
-                  value: '${(controller.member.value.loyaltyPoints / 1000).toStringAsFixed(0)}K pts',
-                  delta: '50% to diamond tier',
-                  icon: Icons.stars_outlined,
-                  tone: StatTone.royal,
-                ),
-                StatCard(
-                  label: 'Coupons Left',
-                  value: '${controller.member.value.couponsLeft}',
-                  delta: 'Valid across venues',
-                  icon: Icons.local_offer_outlined,
-                  tone: StatTone.gold,
-                ),
+                const SizedBox(height: 20),
               ],
-            ),
-          ),
 
-          const SizedBox(height: 24),
+              // Hot Sizzler Platter & Rising Smoke Hero Animation
+              const SizzlerHeroAnimation(),
 
-          // Quick Actions Grid
-          SectionHeader(title: 'Quick Actions'),
+              const SizedBox(height: 20),
+
+              // Quick Actions Grid
+              SectionHeader(title: 'Quick Actions'),
           _buildQuickActions(),
 
           const SizedBox(height: 24),
@@ -210,71 +276,95 @@ class HomeView extends GetView<HomeController> {
           SectionHeader(
             title: 'Featured Coupons',
             actionLabel: 'View all',
-            onAction: () => Get.toNamed(AppRoutes.COUPONS),
+            onAction: () => Get.find<NavigationController>().changeTab(2),
           ),
           _buildFeaturedCoupons(),
 
           const SizedBox(height: 24),
 
-          // Latest Privileges / Promo
-          SectionHeader(title: 'Latest Privileges'),
+          // Outlets Locator Tile matching demo_code
+          _buildOutletsTile(),
+
+          const SizedBox(height: 24),
+
+          // Latest Privileges / Brunch Promo matching demo_code
+          SectionHeader(title: 'Latest Offers'),
           _buildPromoBanner(),
+
+          const SizedBox(height: 24),
+
+          // Customer Reviews Carousel matching demo_code
+          SectionHeader(title: 'Customer Reviews'),
+          _buildCustomerReviews(),
+
+          const SizedBox(height: 28),
+
+          // Social Media Icons matching demo_code
+          _buildSocialMediaLinks(),
+
+          const SizedBox(height: 12),
         ],
       ),
+    ),
     );
+    });
   }
 
   Widget _buildQuickActions() {
     final actions = [
-      {'label': 'Membership', 'icon': Icons.badge_outlined, 'route': AppRoutes.CARD},
-      {'label': 'Coupons', 'icon': Icons.confirmation_number_outlined, 'route': AppRoutes.COUPONS},
+      {'label': 'Subscription', 'icon': Icons.badge_outlined, 'route': AppRoutes.PLANS},
+      {'label': 'Coupons', 'icon': Icons.confirmation_number_outlined, 'tabIndex': 1},
       {'label': 'Reservations', 'icon': Icons.table_restaurant_outlined, 'route': AppRoutes.RESERVATIONS},
-      {'label': 'Loyalty', 'icon': Icons.stars_rounded, 'route': AppRoutes.LOYALTY},
-      {'label': 'Dough Pizza', 'icon': Icons.local_pizza_outlined, 'route': AppRoutes.COUPONS},
-      {'label': 'Banquets', 'icon': Icons.celebration_outlined, 'route': AppRoutes.COUPONS},
+      {'label': 'Loyalty', 'icon': Icons.stars_rounded, 'tabIndex': 2},
+      {'label': 'Banquets', 'icon': Icons.celebration_outlined, 'tabIndex': 1},
       {'label': 'ODC Catering', 'icon': Icons.local_shipping_outlined, 'route': AppRoutes.DELIVERY},
-      {'label': 'Delivery', 'icon': Icons.delivery_dining_outlined, 'route': AppRoutes.DELIVERY},
     ];
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+        crossAxisCount: 3,
         mainAxisSpacing: 12,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.88,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.0,
       ),
       itemCount: actions.length,
       itemBuilder: (context, index) {
         final a = actions[index];
         return GestureDetector(
-          onTap: () => Get.toNamed(a['route'] as String),
+          onTap: () {
+            if (a['tabIndex'] != null) {
+              Get.find<NavigationController>().changeTab(a['tabIndex'] as int);
+            } else if (a['route'] != null) {
+              Get.toNamed(a['route'] as String);
+            }
+          },
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.black.withOpacity(0.04)),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 8,
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(a['icon'] as IconData, color: AppColors.primary, size: 20),
+                  child: Icon(a['icon'] as IconData, color: AppColors.flame, size: 22),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -283,7 +373,7 @@ class HomeView extends GetView<HomeController> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
@@ -302,7 +392,7 @@ class HomeView extends GetView<HomeController> {
         return const SizedBox();
       }
       return SizedBox(
-        height: 140,
+        height: 145,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: controller.featuredCoupons.length,
@@ -311,17 +401,17 @@ class HomeView extends GetView<HomeController> {
             final c = controller.featuredCoupons[index];
             final isGold = c.color == 'gold';
             return GestureDetector(
-              onTap: () => Get.toNamed(AppRoutes.COUPONS),
+              onTap: () => Get.find<NavigationController>().changeTab(2),
               child: Container(
-                width: 250,
+                width: 260,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: isGold ? AppColors.goldGradient : AppColors.royalCardGradient,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: (isGold ? AppColors.gold : AppColors.primary).withOpacity(0.25),
-                      blurRadius: 10,
+                      color: (isGold ? AppColors.gold : AppColors.primary).withOpacity(0.3),
+                      blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -361,7 +451,7 @@ class HomeView extends GetView<HomeController> {
                     Text(
                       c.name,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: isGold ? AppColors.primaryDark : Colors.white,
                       ),
@@ -381,7 +471,7 @@ class HomeView extends GetView<HomeController> {
                       children: [
                         Icon(
                           Icons.location_on_outlined,
-                          size: 11,
+                          size: 12,
                           color: isGold ? AppColors.primaryDark : Colors.white.withOpacity(0.7),
                         ),
                         const SizedBox(width: 4),
@@ -408,65 +498,349 @@ class HomeView extends GetView<HomeController> {
     });
   }
 
-  Widget _buildPromoBanner() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.goldBg,
-              borderRadius: BorderRadius.circular(16),
+  Widget _buildOutletsTile() {
+    return GestureDetector(
+      onTap: () => Get.find<NavigationController>().changeTab(3),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: const Icon(Icons.wine_bar_rounded, color: AppColors.goldDark, size: 28),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.location_on_rounded, color: AppColors.flame, size: 24),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Our Outlets',
+                    style: TextStyle(
+                      fontFamily: 'Playfair Display',
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Visit your nearest Yanki outlet in Ahmedabad',
+                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '4 LOCATIONS AVAILABLE',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: AppColors.gold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Row(
+              children: [
+                Text(
+                  'View All',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.flame),
+                ),
+                Icon(Icons.chevron_right, size: 18, color: AppColors.flame),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromoBanner() {
+    return GestureDetector(
+      onTap: () {
+        Get.dialog(
+          Dialog(
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            child: Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.flame.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.celebration_rounded, color: AppColors.flame, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Yanki Sunday Brunch',
+                          style: TextStyle(fontFamily: 'Playfair Display', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Indulge in our signature Sunday Brunch buffet featuring live sizzler grill stations, chef-crafted desserts, artisanal mocktails, and live jazz music.',
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Timings:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                            Text('12:00 PM – 4:00 PM (Sundays)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                          ],
+                        ),
+                        SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Subscriber Benefit:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                            Text('Flat 20% Off + Welcome Sizzler', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.gold)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.flame,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: () {
+                        Get.back();
+                        Get.find<NavigationController>().changeTab(3);
+                      },
+                      child: const Text('Reserve Table for Brunch', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppColors.goldGradient,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(Icons.celebration_rounded, color: AppColors.primaryDark, size: 28),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '1. YANKI BRUNCH OFFER',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                      color: AppColors.gold,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Sunday Sparkling Brunch',
+                    style: TextStyle(
+                      fontFamily: 'Playfair Display',
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Live grill stations & 20% off for verified subscribers',
+                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 20, color: AppColors.gold),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomerReviews() {
+    final reviews = [
+      {
+        'name': 'Priya Sharma',
+        'rating': 5.0,
+        'review': 'Absolutely loved the experience at Yanki. The subscription benefits and service were excellent!',
+        'date': '2 days ago'
+      },
+      {
+        'name': 'Arjun Patel',
+        'rating': 4.8,
+        'review': 'Great service and amazing offers. The VIP subscription is definitely worth it!',
+        'date': '5 days ago'
+      },
+      {
+        'name': 'Neha Mehta',
+        'rating': 5.0,
+        'review': 'Beautiful experience every time. The staff, offers and overall hospitality are fantastic.',
+        'date': '1 week ago'
+      },
+    ];
+
+    return SizedBox(
+      height: 135,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: reviews.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final r = reviews[index];
+          return Container(
+            width: 280,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(6),
+                    Text(
+                      r['name'] as String,
+                      style: const TextStyle(
+                        fontFamily: 'Playfair Display',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      child: const Text(
-                        'THIS WEEKEND',
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.goldDark),
-                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded, size: 14, color: AppColors.gold),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${r['rating']}',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.gold),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  "Weekend Chef's Tasting",
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                Text(
+                  r['review'] as String,
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                const Text(
-                  '9-course pairing menu with sommelier — 30% off for VIP members',
-                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                Text(
+                  r['date'] as String,
+                  style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
                 ),
               ],
             ),
-          ),
-        ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSocialMediaLinks() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _socialButton(Icons.play_arrow_rounded, const Color(0xFFFF0000), 'YouTube'),
+        const SizedBox(width: 16),
+        _socialButton(Icons.camera_alt_outlined, const Color(0xFFE4405F), 'Instagram'),
+        const SizedBox(width: 16),
+        _socialButton(Icons.facebook, const Color(0xFF1877F2), 'Facebook'),
+      ],
+    );
+  }
+
+  Widget _socialButton(IconData icon, Color color, String tooltip) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: color, size: 20),
+        onPressed: () {
+          Get.snackbar(
+            tooltip,
+            'Opening Yanki Sizzlerr $tooltip channel',
+            backgroundColor: AppColors.surface,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        },
       ),
     );
   }

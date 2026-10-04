@@ -1,5 +1,19 @@
 import axios from 'axios';
-import { Member, Coupon, Reservation, Outlet, KPI, RevenuePoint, AIInsight } from '../types';
+import { 
+  Member, 
+  Coupon, 
+  Reservation, 
+  Outlet, 
+  KPI, 
+  RevenuePoint, 
+  AIInsight,
+  EventItem,
+  PendingPayment,
+  StaffRole,
+  FeedbackItem,
+  MarketingChannel,
+  CampaignPreset
+} from '../types';
 
 const API_BASE = '/api';
 
@@ -115,3 +129,69 @@ export async function fetchReservations(): Promise<Reservation[]> {
   } catch (_) {}
   return fallbackReservations;
 }
+
+export async function fetchOutlets(): Promise<Outlet[]> {
+  try {
+    const res = await apiClient.get('/admin/outlets');
+    if (res.data?.success && res.data.data?.length) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return fallbackOutlets;
+}
+
+export async function resetAllData(): Promise<{ success: boolean; message: string }> {
+  try {
+    const res = await apiClient.post('/admin/reset-data');
+    return {
+      success: true,
+      message: res.data?.message || 'Data cleared and reset successfully.',
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.response?.data?.message || 'Failed to reset data.',
+    };
+  }
+}
+
+export const fallbackEvents: EventItem[] = [
+  { id: "E-101", name: "Sangeet — Bhatia Family", type: "Banquet", date: "28 Jun 2026", guests: 220, value: 485000, status: "Confirmed" },
+  { id: "E-102", name: "Corporate Annual Day — Infosys", type: "ODC", date: "02 Jul 2026", guests: 480, value: 920000, status: "Pipeline" },
+  { id: "E-103", name: "Anniversary — Mehta", type: "Banquet", date: "10 Jul 2026", guests: 90, value: 215000, status: "Confirmed" },
+  { id: "E-104", name: "Product Launch — Adani", type: "ODC", date: "18 Jul 2026", guests: 650, value: 1240000, status: "Confirmed" },
+];
+
+export const fallbackPendingPayments: PendingPayment[] = [
+  { id: "YSM-2024-04001", name: "Rahul Mehta", mobile: "+91 98250 12345", pending: 15000, dueDate: "18 Jun 2026", reminder: "Sent 2d ago" },
+  { id: "YSM-2024-04003", name: "Arjun Patel", mobile: "+91 98250 20111", pending: 15000, dueDate: "22 Jun 2026", reminder: "Not sent" },
+  { id: "YSM-2024-04005", name: "Kabir Joshi", mobile: "+91 98250 20333", pending: 15000, dueDate: "28 Jun 2026", reminder: "Sent today" },
+  { id: "YSM-2024-04015", name: "Yash Bhatt", mobile: "+91 98250 20999", pending: 15000, dueDate: "01 Jul 2026", reminder: "Sent 1w ago" },
+];
+
+export const fallbackStaffRoles: StaffRole[] = [
+  { role: "Super Admin", count: 2, perms: ["All access"] },
+  { role: "Finance Admin", count: 3, perms: ["Payments", "Revenue", "Refunds"] },
+  { role: "Subscription Manager", count: 5, perms: ["Subscribers", "Renewals", "Coupons"] },
+  { role: "Outlet Manager", count: 8, perms: ["Reservations", "Outlet view"] },
+  { role: "Marketing Manager", count: 2, perms: ["Campaigns", "Notifications", "Segments"] },
+];
+
+export const fallbackFeedback: FeedbackItem[] = [
+  { id: "FB-1048", user_id: "YSM-2024-04821", rating: 5, overall_rating: "Excellent", comment: "The team made our anniversary dinner feel truly special. Excellent hospitality and food quality.", created_at: "2026-09-23T19:10:00+05:30", profile: { full_name: "Rahul Mehta", membership_id: "YSM-2024-04821", mobile: "+91 98250 12345" } },
+  { id: "FB-1047", user_id: "YSM-2024-04012", rating: 4, overall_rating: "Good", comment: "Reservation was seamless and the subscriber welcome was warm.", created_at: "2026-09-22T13:35:00+05:30", profile: { full_name: "Priya Shah", membership_id: "YSM-2024-04012", mobile: "+91 98250 20000" } },
+  { id: "FB-1046", user_id: null, rating: 3, overall_rating: "Okay", comment: "Good sizzlers, but waiting time during peak weekend dinner could be shorter.", created_at: "2026-09-21T21:05:00+05:30", profile: null },
+];
+
+export const fallbackMarketingChannels: MarketingChannel[] = [
+  { name: "Push Notifications", reach: "4,582 devices", open: "32%" },
+  { name: "WhatsApp Campaign", reach: "5,128 numbers", open: "84%" },
+  { name: "SMS Broadcast", reach: "5,128 numbers", open: "61%" },
+];
+
+export const fallbackCampaignPresets: CampaignPreset[] = [
+  { name: "Birthday Privileges", desc: "Auto-trigger 24h before subscriber birthday with complimentary cake voucher.", tag: "AUTOMATED" },
+  { name: "Renewal Journey", desc: "Trigger at 30 / 14 / 7 / 1 days before expiry across WhatsApp and Push.", tag: "JOURNEY" },
+  { name: "Weekend Chef's Tasting", desc: "Curated audience: VIP subscribers visiting 2+ times in the last 30 days.", tag: "WEEKLY" },
+];
+

@@ -25,11 +25,29 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private ReservationRepository reservationRepository;
     @Autowired private LoyaltyTransactionRepository loyaltyTransactionRepository;
     @Autowired private OutletRepository outletRepository;
+    @Autowired private com.sizzlo.repository.FloorTableRepository floorTableRepository;
+    @Autowired private com.sizzlo.repository.WaitlistEntryRepository waitlistEntryRepository;
+    @Autowired private com.sizzlo.repository.ActivityLogRepository activityLogRepository;
 
     @Override
     public void run(String... args) {
         if (memberProfileRepository.count() > 0) return;
+        initData();
+    }
 
+    public void resetAllData() {
+        couponRepository.deleteAll();
+        reservationRepository.deleteAll();
+        loyaltyTransactionRepository.deleteAll();
+        floorTableRepository.deleteAll();
+        waitlistEntryRepository.deleteAll();
+        activityLogRepository.deleteAll();
+        memberProfileRepository.deleteAll();
+        outletRepository.deleteAll();
+        initData();
+    }
+
+    private void initData() {
         // 1. Seed Outlets
         seedOutlets();
 
@@ -44,6 +62,12 @@ public class DataInitializer implements CommandLineRunner {
 
         // 5. Seed Loyalty Transactions
         seedLoyaltyTransactions();
+
+        // 6. Seed Floor Tables & Waitlist
+        seedFloorTables();
+
+        // 7. Seed Activity Logs
+        seedActivityLogs();
     }
 
     private void seedOutlets() {
@@ -177,5 +201,36 @@ public class DataInitializer implements CommandLineRunner {
         t.setOutletName(outlet);
         t.setTransactionTime(LocalDateTime.now().minusDays(points > 0 ? 2 : 7));
         loyaltyTransactionRepository.save(t);
+    }
+
+    private void seedFloorTables() {
+        int[] seats = {2, 4, 4, 6};
+        String[] states = {"Available", "Reserved", "Occupied", "Cleaning"};
+        String[] guests = {"Rahul Mehta", "Priya Shah", "Kabir Joshi"};
+
+        for (int i = 1; i <= 16; i++) {
+            com.sizzlo.entity.FloorTable t = new com.sizzlo.entity.FloorTable();
+            t.setTableNumber(i);
+            t.setSeats(seats[(i - 1) % 4]);
+            String state = states[(i - 1) % 4];
+            t.setState(state);
+            if ("Occupied".equals(state) || "Reserved".equals(state)) {
+                t.setGuest(guests[(i - 1) % 3]);
+            }
+            t.setPremium(i == 3 || i == 11);
+            floorTableRepository.save(t);
+        }
+
+        waitlistEntryRepository.save(new com.sizzlo.entity.WaitlistEntry("Mehta family", 4, 12));
+        waitlistEntryRepository.save(new com.sizzlo.entity.WaitlistEntry("Aarav Shah", 2, 7));
+        waitlistEntryRepository.save(new com.sizzlo.entity.WaitlistEntry("Desai", 6, 3));
+    }
+
+    private void seedActivityLogs() {
+        activityLogRepository.save(new com.sizzlo.entity.ActivityLog("Priya Shah", "REDEMPTION", "Redeemed 50% Dining Discount", "Navrangpura", "2m ago"));
+        activityLogRepository.save(new com.sizzlo.entity.ActivityLog("Kabir Joshi", "CHECK_IN", "Checked in at Table T4 (VIP)", "Navrangpura", "6m ago"));
+        activityLogRepository.save(new com.sizzlo.entity.ActivityLog("Ananya Rao", "RESERVATION", "Booked 6 seats for 8:30 PM", "Shilaj", "10m ago"));
+        activityLogRepository.save(new com.sizzlo.entity.ActivityLog("Rahul Mehta", "REDEMPTION", "Redeemed Birthday Voucher", "Navrangpura", "14m ago"));
+        activityLogRepository.save(new com.sizzlo.entity.ActivityLog("Aditya Verma", "TIER_UPGRADE", "Upgraded to Elite VIP Tier", "Online", "22m ago"));
     }
 }

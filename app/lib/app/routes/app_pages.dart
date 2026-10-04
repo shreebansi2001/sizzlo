@@ -2,8 +2,14 @@ import 'package:get/get.dart';
 import 'app_routes.dart';
 import '../modules/splash/bindings/splash_binding.dart';
 import '../modules/splash/views/splash_view.dart';
+import '../modules/onboarding/bindings/onboarding_binding.dart';
+import '../modules/onboarding/views/onboarding_view.dart';
 import '../modules/auth/bindings/auth_binding.dart';
 import '../modules/auth/views/login_view.dart';
+import '../modules/auth/views/verify_view.dart';
+import '../modules/auth/views/register_view.dart';
+import '../modules/plans/bindings/plans_binding.dart';
+import '../modules/plans/views/plans_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/card/bindings/card_binding.dart';
@@ -31,9 +37,28 @@ class AppPages {
       binding: SplashBinding(),
     ),
     GetPage(
+      name: AppRoutes.ONBOARDING,
+      page: () => const OnboardingView(),
+      binding: OnboardingBinding(),
+    ),
+    GetPage(
       name: AppRoutes.LOGIN,
       page: () => const LoginView(),
       binding: AuthBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.VERIFY,
+      page: () => const VerifyView(),
+      binding: AuthBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.REGISTER,
+      page: () => const RegisterView(),
+    ),
+    GetPage(
+      name: AppRoutes.PLANS,
+      page: () => const PlansView(),
+      binding: PlansBinding(),
     ),
     GetPage(
       name: AppRoutes.HOME,
