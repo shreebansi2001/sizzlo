@@ -55,6 +55,7 @@ class MemberModel {
   });
 
   bool get isSubscriber => planId.isNotEmpty && planId != 'none';
+  String get subscriptionTier => (planId.isNotEmpty && planId != 'none') ? planId.toUpperCase() : 'REGISTERED';
   int get couponsLeft => (couponsTotal - couponsUsed).clamp(0, 999);
   double get loyaltyProgress => (loyaltyGoal > 0) ? (loyaltyPoints / loyaltyGoal).clamp(0.0, 1.0) : 0.0;
 

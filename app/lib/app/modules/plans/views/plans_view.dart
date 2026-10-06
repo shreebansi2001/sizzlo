@@ -3,64 +3,97 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../controllers/plans_controller.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../routes/app_routes.dart';
 
 class PlansView extends GetView<PlansController> {
   const PlansView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top App Bar
-            Container(
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Color(0x22C9A24D),
-                    width: 1,
+    return PopScope(
+      canPop: Navigator.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Get.offAllNamed(AppRoutes.HOME);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Top App Bar
+              Container(
+                height: 64,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Color(0x22C9A24D),
+                      width: 1,
+                    ),
                   ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Get.back(),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF163E33),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.chevron_left_rounded,
-                          color: Color(0xFF4EE3B8),
-                          size: 24,
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        if (Navigator.of(context).canPop()) {
+                          Get.back();
+                        } else {
+                          Get.offAllNamed(AppRoutes.HOME);
+                        }
+                      },
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF163E33),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            color: Color(0xFF4EE3B8),
+                            size: 24,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Subscription Plans',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.goldChampagne,
+                    Expanded(
+                      child: Text(
+                        'Subscription Plans',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.goldChampagne,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 42), // Balance width
-                ],
+                    if (Navigator.of(context).canPop())
+                      const SizedBox(width: 42)
+                    else
+                      GestureDetector(
+                        onTap: () => Get.offAllNamed(AppRoutes.HOME),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF163E33),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Skip',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF4EE3B8),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
 
             // Scrollable Content with Pull to Refresh
             Expanded(
@@ -237,8 +270,9 @@ class PlansView extends GetView<PlansController> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildPlanCard({
     required String planId,

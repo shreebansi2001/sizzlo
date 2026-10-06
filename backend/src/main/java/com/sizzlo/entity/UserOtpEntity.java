@@ -25,7 +25,14 @@ public class UserOtpEntity {
     @Column(nullable = false)
     private LocalDateTime expiryTime;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void onPrePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+        }
+    }
 
     public UserOtpEntity() {}
 
@@ -35,7 +42,7 @@ public class UserOtpEntity {
         this.otp = otp;
         this.isUsed = false;
         this.expiryTime = expiryTime;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
     }
 
     public Long getId() { return id; }

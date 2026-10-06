@@ -36,6 +36,13 @@ class SizzloApp extends StatelessWidget {
       }),
       getPages: AppPages.routes,
       defaultTransition: Transition.cupertino,
+      builder: (context, child) {
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

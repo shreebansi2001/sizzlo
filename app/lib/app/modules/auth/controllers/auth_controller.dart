@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../routes/app_routes.dart';
+import '../../../data/models/member_model.dart';
 import '../../../data/services/api_service.dart';
 import '../../../core/values/app_constants.dart';
 import '../../home/controllers/home_controller.dart';
@@ -37,6 +38,7 @@ class AuthController extends GetxController {
   }
 
   void onContinueLogin() async {
+    if (isLoading.value) return;
     final phone = phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
     if (phone.isEmpty || phone.length != 10) {
       errorMessage.value = 'Please enter a valid 10-digit Indian mobile number.';
@@ -49,7 +51,7 @@ class AuthController extends GetxController {
     isLoading.value = true;
     try {
       final res = await _apiService.requestOtp(phone);
-      startResendTimer();
+      startResendTimer(force: true);
       Get.snackbar(
         'OTP Sent Successfully',
         res['message']?.toString() ?? 'Please enter the OTP sent to your WhatsApp',
@@ -58,6 +60,8 @@ class AuthController extends GetxController {
         duration: const Duration(seconds: 4),
       );
       Get.toNamed(AppRoutes.VERIFY, arguments: {'phone': phone});
+    } catch (e) {
+      errorMessage.value = 'Failed to send OTP. Please try again.';
     } finally {
       isLoading.value = false;
     }
@@ -81,7 +85,7 @@ class AuthController extends GetxController {
       return;
     }
     _countdownTimer?.cancel();
-    resendTimer.value = 23;
+    resendTimer.value = 30;
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (resendTimer.value > 0) {
         resendTimer.value--;
@@ -92,19 +96,26 @@ class AuthController extends GetxController {
   }
 
   void resendOtp() async {
+    if (isLoading.value) return;
     if (resendTimer.value == 0) {
-      startResendTimer(force: true);
-      final res = await _apiService.requestOtp(currentPhone.value);
-      Get.snackbar(
-        'OTP Resent',
-        res['message']?.toString() ?? 'A new OTP has been sent to +91 ${currentPhone.value}',
-        backgroundColor: const Color(0xFF141917),
-        colorText: const Color(0xFFE8B84A),
-      );
+      isLoading.value = true;
+      try {
+        startResendTimer(force: true);
+        final res = await _apiService.requestOtp(currentPhone.value);
+        Get.snackbar(
+          'OTP Resent',
+          res['message']?.toString() ?? 'A new OTP has been sent to +91 ${currentPhone.value}',
+          backgroundColor: const Color(0xFF141917),
+          colorText: const Color(0xFFE8B84A),
+        );
+      } finally {
+        isLoading.value = false;
+      }
     }
   }
 
   void verifyOtp() async {
+    if (isLoading.value) return;
     final enteredOtp = otpController.text.trim();
     if (enteredOtp.isEmpty) {
       Get.snackbar('OTP Required', 'Please enter the 6-digit OTP sent to WhatsApp',
@@ -115,16 +126,18 @@ class AuthController extends GetxController {
     try {
       final authResult = await _apiService.verifyOtp(currentPhone.value, enteredOtp);
       if (authResult != null && authResult['member'] != null) {
-        final member = authResult['member'];
+        final MemberModel member = authResult['member'] is MemberModel
+            ? authResult['member']
+            : MemberModel.defaultProfile();
         await LocalStorageService.saveUserSession(
-          mobile: member.mobile ?? currentPhone.value,
-          membershipId: member.membershipId ?? '',
-          name: member.fullName ?? '',
+          mobile: member.mobile.isNotEmpty ? member.mobile : currentPhone.value,
+          membershipId: member.membershipId,
+          name: member.fullName,
           tier: member.subscriptionTier,
         );
-        AppConstants.currentUserMobile = member.mobile ?? currentPhone.value;
-        AppConstants.currentMembershipId = member.membershipId ?? '';
-        AppConstants.currentUserName = member.fullName ?? 'Guest';
+        AppConstants.currentUserMobile = member.mobile.isNotEmpty ? member.mobile : currentPhone.value;
+        AppConstants.currentMembershipId = member.membershipId;
+        AppConstants.currentUserName = member.fullName.isNotEmpty ? member.fullName : 'Guest';
 
         if (Get.isRegistered<HomeController>()) {
           Get.find<HomeController>().member.value = member;
@@ -139,16 +152,15 @@ class AuthController extends GetxController {
           duration: const Duration(seconds: 3),
         );
 
-        if (member.isSubscriber) {
-          Get.offAllNamed(AppRoutes.HOME);
-        } else {
-          // If not yet subscribed, route to Plans screen to choose a plan
-          Get.offAllNamed(AppRoutes.PLANS);
-        }
+        // Directly route to HOME upon successful authentication
+        Get.offAllNamed(AppRoutes.HOME);
       } else {
         Get.snackbar('Verification Failed', 'Invalid or expired OTP. Please try again.',
             backgroundColor: Colors.redAccent, colorText: Colors.white);
       }
+    } catch (e) {
+      Get.snackbar('Error', 'Verification could not be completed. Please try again.',
+          backgroundColor: Colors.redAccent, colorText: Colors.white);
     } finally {
       isLoading.value = false;
     }

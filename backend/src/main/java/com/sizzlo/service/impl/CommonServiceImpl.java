@@ -70,27 +70,30 @@ public class CommonServiceImpl implements CommonService, WhatsAppOtpService {
         return val != null ? val.trim() : DEFAULT_TEMPLATE_ID;
     }
 
+    private static final java.time.ZoneId IST_ZONE = java.time.ZoneId.of("Asia/Kolkata");
+
     @Override
     @Transactional
     public String generateAndSendOtp(String email, String mobileNo, int ttlMinutes) {
         String cleanPhone = cleanMobile(mobileNo);
         int ttl = ttlMinutes > 0 ? ttlMinutes : 10;
         String otp = String.format("%06d", new Random().nextInt(999999));
-        LocalDateTime expiry = LocalDateTime.now().plusMinutes(ttl);
+        LocalDateTime now = LocalDateTime.now(IST_ZONE);
+        LocalDateTime expiry = now.plusMinutes(ttl);
 
         if (email != null && !email.trim().isEmpty()) {
             try {
-                userOtpRepository.deleteByEmailAndIsUsedTrue(email.trim().toLowerCase());
+                userOtpRepository.invalidatePreviousOtpsByEmail(email.trim().toLowerCase());
             } catch (Exception ex) {
-                log.warn("Could not purge used OTPs for email: {}", ex.getMessage());
+                log.warn("Could not invalidate previous OTPs for email: {}", ex.getMessage());
             }
         }
 
         if (!cleanPhone.isEmpty()) {
             try {
-                userOtpRepository.deleteByMobileAndIsUsedTrue(cleanPhone);
+                userOtpRepository.invalidatePreviousOtpsByMobile(cleanPhone);
             } catch (Exception ex) {
-                log.warn("Could not purge used OTPs for mobile: {}", ex.getMessage());
+                log.warn("Could not invalidate previous OTPs for mobile: {}", ex.getMessage());
             }
         }
 
@@ -99,6 +102,7 @@ public class CommonServiceImpl implements CommonService, WhatsAppOtpService {
         entity.setMobile(cleanPhone);
         entity.setOtp(otp);
         entity.setIsUsed(false);
+        entity.setCreatedAt(now);
         entity.setExpiryTime(expiry);
         userOtpRepository.save(entity);
 
@@ -178,7 +182,7 @@ public class CommonServiceImpl implements CommonService, WhatsAppOtpService {
         }
 
         String cleanPhone = cleanMobile(mobileNo);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(IST_ZONE);
 
         Optional<UserOtpEntity> tokenOpt = userOtpRepository
                 .findTopByMobileAndOtpAndIsUsedFalseAndExpiryTimeAfterOrderByCreatedAtDesc(cleanPhone, trimmedOtp, now);
@@ -215,7 +219,7 @@ public class CommonServiceImpl implements CommonService, WhatsAppOtpService {
         if ("1234".equals(trimmedOtp) || "123456".equals(trimmedOtp)) {
             return true;
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(IST_ZONE);
         Optional<UserOtpEntity> tokenOpt = userOtpRepository
                 .findTopByEmailAndOtpAndIsUsedFalseAndExpiryTimeAfterOrderByCreatedAtDesc(email.trim().toLowerCase(), trimmedOtp, now);
         if (tokenOpt.isPresent()) {

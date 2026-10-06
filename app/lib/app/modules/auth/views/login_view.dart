@@ -19,7 +19,38 @@ class LoginView extends GetView<AuthController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
+              if (Navigator.of(context).canPop()) ...[
+                GestureDetector(
+                  onTap: () => Get.back(),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF141917),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Back',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
               // Brand Label
               Text(
                 'YANKI SUBSCRIPTION',
@@ -160,6 +191,7 @@ class LoginView extends GetView<AuthController> {
                     ),
                     GestureDetector(
                       onTap: () {
+                        if (controller.isLoading.value) return;
                         controller.phoneController.text = '9825012345';
                         controller.onContinueLogin();
                       },
@@ -291,40 +323,53 @@ class LoginView extends GetView<AuthController> {
                     const SizedBox(height: 20),
 
                     // Continue Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: controller.onContinueLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.flame,
-                          foregroundColor: const Color(0xFF070A09),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                    Obx(() {
+                      final isBusy = controller.isLoading.value;
+                      return SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: isBusy ? null : controller.onContinueLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.flame,
+                            disabledBackgroundColor: AppColors.flame.withOpacity(0.5),
+                            foregroundColor: const Color(0xFF070A09),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
+                          child: isBusy
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Color(0xFF070A09),
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Continue',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF070A09),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 18,
+                                      color: Color(0xFF070A09),
+                                    ),
+                                  ],
+                                ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Continue',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF070A09),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 18,
-                              color: Color(0xFF070A09),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                      );
+                    }),
                   ],
                 ),
               ),

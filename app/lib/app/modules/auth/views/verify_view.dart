@@ -28,16 +28,53 @@ class VerifyView extends GetView<AuthController> {
       }
     });
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
-              // Shield Icon in Orange Circle
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Get.back();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Back Button
+                GestureDetector(
+                  onTap: () => Get.back(),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF141917),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Change Phone Number',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+                // Shield Icon in Orange Circle
               Container(
                 width: 52,
                 height: 52,
@@ -181,23 +218,27 @@ class VerifyView extends GetView<AuthController> {
 
                     // Verify & Continue Button
                     Obx(() {
+                      final isBusy = controller.isLoading.value;
                       final hasSixDigits =
                           controller.otpController.text.length == 6;
                       return SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (controller.otpController.text.isEmpty) {
-                              // Demo convenience: auto-fill 123456
-                              controller.otpController.text = '123456';
-                            }
-                            controller.verifyOtp();
-                          },
+                          onPressed: isBusy
+                              ? null
+                              : () {
+                                  if (controller.otpController.text.isEmpty) {
+                                    // Demo convenience: auto-fill 123456
+                                    controller.otpController.text = '123456';
+                                  }
+                                  controller.verifyOtp();
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: hasSixDigits
                                 ? AppColors.flame
                                 : const Color(0xFF8B4B0A),
+                            disabledBackgroundColor: const Color(0xFF553310),
                             foregroundColor: hasSixDigits
                                 ? const Color(0xFF070A09)
                                 : const Color(0xFFDFC27D),
@@ -206,12 +247,12 @@ class VerifyView extends GetView<AuthController> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          child: controller.isLoading.value
+                          child: isBusy
                               ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
+                                  height: 22,
+                                  width: 22,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                                    strokeWidth: 2.5,
                                     color: Colors.white,
                                   ),
                                 )
@@ -225,7 +266,7 @@ class VerifyView extends GetView<AuthController> {
                                         fontWeight: FontWeight.bold,
                                         color: hasSixDigits
                                             ? const Color(0xFF070A09)
-                                            : const Color(0xFFE2BE6A),
+                                            : const Color(0xFFDFC27D),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -234,7 +275,7 @@ class VerifyView extends GetView<AuthController> {
                                       size: 18,
                                       color: hasSixDigits
                                           ? const Color(0xFF070A09)
-                                          : const Color(0xFFE2BE6A),
+                                          : const Color(0xFFDFC27D),
                                     ),
                                   ],
                                 ),
@@ -248,8 +289,9 @@ class VerifyView extends GetView<AuthController> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _OtpInputRow extends StatefulWidget {
@@ -268,7 +310,9 @@ class _OtpInputRowState extends State<_OtpInputRow> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNode.requestFocus();
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
     });
   }
 
@@ -278,71 +322,94 @@ class _OtpInputRowState extends State<_OtpInputRow> {
     super.dispose();
   }
 
+  void _onTapRow() {
+    if (!_focusNode.hasFocus) {
+      _focusNode.requestFocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => FocusScope.of(context).requestFocus(_focusNode),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Invisible actual textfield
-          Opacity(
-            opacity: 0.0,
-            child: SizedBox(
-              width: 1,
-              height: 1,
+      behavior: HitTestBehavior.opaque,
+      onTap: _onTapRow,
+      child: SizedBox(
+        height: 60,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Visual 6 Custom Rounded Boxes
+            IgnorePointer(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(6, (index) {
+                  final text = widget.controller.otpController.text;
+                  final hasChar = index < text.length;
+                  final char = hasChar ? text[index] : '';
+                  final isCurrent = index == text.length && _focusNode.hasFocus;
+
+                  return Container(
+                    width: 46,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.inputBackground,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isCurrent
+                            ? AppColors.flame
+                            : (hasChar
+                                ? AppColors.gold.withOpacity(0.7)
+                                : AppColors.inputBorder),
+                        width: isCurrent ? 2.0 : 1.0,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        char,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+            // Real invisible full-width TextField that captures all tap events & keypresses
+            Positioned.fill(
               child: TextField(
                 focusNode: _focusNode,
                 controller: widget.controller.otpController,
                 keyboardType: TextInputType.number,
+                autofocus: true,
+                showCursor: false,
+                enableInteractiveSelection: false,
+                style: const TextStyle(color: Colors.transparent),
+                cursorColor: Colors.transparent,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  counterText: '',
+                ),
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(6),
                 ],
-                onChanged: (_) {
+                onChanged: (val) {
                   setState(() {});
+                  if (val.length == 6) {
+                    widget.controller.verifyOtp();
+                  }
                 },
               ),
             ),
-          ),
-          // 6 Custom Rounded Boxes
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(6, (index) {
-              final text = widget.controller.otpController.text;
-              final hasChar = index < text.length;
-              final char = hasChar ? text[index] : '';
-              final isCurrent = index == text.length;
-
-              return Container(
-                width: 44,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.inputBackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isCurrent
-                        ? AppColors.flame
-                        : (hasChar
-                            ? AppColors.gold.withOpacity(0.6)
-                            : AppColors.inputBorder),
-                    width: isCurrent ? 1.5 : 1.0,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    char,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

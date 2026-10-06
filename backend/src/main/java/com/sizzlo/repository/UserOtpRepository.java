@@ -38,4 +38,14 @@ public interface UserOtpRepository extends JpaRepository<UserOtpEntity, Long> {
     @Modifying
     @Query("DELETE FROM UserOtpEntity u WHERE u.mobile = :mobile AND u.isUsed = true")
     void deleteByMobileAndIsUsedTrue(@Param("mobile") String mobile);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE UserOtpEntity u SET u.isUsed = true WHERE u.mobile = :mobile AND u.isUsed = false")
+    void invalidatePreviousOtpsByMobile(@Param("mobile") String mobile);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE UserOtpEntity u SET u.isUsed = true WHERE u.email = :email AND u.isUsed = false")
+    void invalidatePreviousOtpsByEmail(@Param("email") String email);
 }

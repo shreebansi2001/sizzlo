@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/member_model.dart';
 import '../models/coupon_model.dart';
@@ -84,11 +85,13 @@ class ApiService {
   /// Verify OTP and obtain JWT token + Member profile (POST /api/auth/verify-otp)
   Future<Map<String, dynamic>?> verifyOtp(String mobile, String otp) async {
     try {
+      final cleanDigits = mobile.replaceAll(RegExp(r'\D'), '');
       final res = await _client.post(
         Uri.parse('${AppConstants.baseUrl}/auth/verify-otp'),
         headers: _headers,
-        body: json.encode({'mobile': mobile, 'otp': otp}),
-      ).timeout(const Duration(seconds: 5));
+        body: json.encode({'mobile': cleanDigits, 'otp': otp}),
+      ).timeout(const Duration(seconds: 12));
+      debugPrint('verifyOtp response code: ${res.statusCode}');
       if (res.statusCode == 200) {
         final body = json.decode(res.body);
         if (body['success'] == true && body['data'] != null) {
@@ -96,8 +99,8 @@ class ApiService {
           final token = data['token']?.toString();
           final profileData = data['profile'];
           MemberModel? member;
-          if (profileData != null) {
-            member = MemberModel.fromJson(profileData);
+          if (profileData != null && profileData is Map) {
+            member = MemberModel.fromJson(Map<String, dynamic>.from(profileData));
             _updateSessionFromMember(member, token);
           }
           return {
@@ -105,8 +108,12 @@ class ApiService {
             'member': member ?? MemberModel.defaultProfile(),
           };
         }
+      } else {
+        debugPrint('verifyOtp failed with body: ${res.body}');
       }
-    } catch (_) {}
+    } catch (e, stack) {
+      debugPrint('Error in verifyOtp: $e\n$stack');
+    }
     return null;
   }
 

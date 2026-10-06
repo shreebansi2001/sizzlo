@@ -1,6 +1,3 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
-
 class AppConstants {
   static const String appName = 'Sizzlo';
   static const String appTagline = 'Exclusive Dining & Privileges';
