@@ -142,7 +142,7 @@ public class DataInitializer implements CommandLineRunner {
         LoyaltyTransaction t1 = new LoyaltyTransaction();
         t1.setMembershipId(rahul.getMembershipId());
         t1.setTitle("Dine-in at Yanki Sizzlerr Bodakdev");
-        t1.setDescription("POS Bill #POS-88210 (₹1 Net Spend = 1 Point)");
+        t1.setDescription("POS Bill #POS-88210 (Rs. 1 Net Spend = 1 Point)");
         t1.setPoints(2850);
         t1.setType("EARN");
         t1.setOutletName("Yanki Sizzlerr Bodakdev");
@@ -185,7 +185,7 @@ public class DataInitializer implements CommandLineRunner {
         createCoupon("C-10D-04821", "10% Flat Dining Discount", "10% off entire bill", "PERCENT", 10.0, 7, 12, LocalDate.now().plusMonths(9), "available", "All Yanki Outlets", "royal", "YSM-2024-04821");
         createCoupon("C-BDAY-04821", "15% Birthday Celebration", "15% off member dining + chef dessert", "PERCENT", 15.0, 1, 1, LocalDate.now().plusMonths(9), "available", "All Yanki Outlets", "gold", "YSM-2024-04821");
         createCoupon("C-CPL50-04821", "50% Off Couple Dinner", "50% off on romantic dinner for two", "PERCENT", 50.0, 1, 1, LocalDate.now().plusMonths(9), "available", "Yanki Sizzlerr & Dough", "gold", "YSM-2024-04821");
-        createCoupon("C-DOUGH10-04821", "Dough by Yanki 10% Off", "10% off on spends ₹2,500+", "PERCENT", 10.0, 4, 6, LocalDate.now().plusMonths(9), "available", "Dough by Yanki CG Road", "emerald", "YSM-2024-04821");
+        createCoupon("C-DOUGH10-04821", "Dough by Yanki 10% Off", "10% off on spends Rs. 2,500+", "PERCENT", 10.0, 4, 6, LocalDate.now().plusMonths(9), "available", "Dough by Yanki CG Road", "emerald", "YSM-2024-04821");
         createCoupon("C-ODC20-04821", "Outdoor Catering 20% Off", "20% off catering card rates", "PERCENT", 20.0, 2, 2, LocalDate.now().plusMonths(9), "available", "House of Yanki Banquets", "royal", "YSM-2024-04821");
         createBurnedCoupon("C-10D-04821-USED-POS-77192", "10% Flat Dining Discount (Visit Used)", "10% off entire bill", "PERCENT", 10.0, LocalDate.now().plusMonths(9), "Yanki Sizzlerr Bodakdev", "royal", "YSM-2024-04821", "POS-77192");
 

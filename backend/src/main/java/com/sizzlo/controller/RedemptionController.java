@@ -67,7 +67,7 @@ public class RedemptionController {
             return ResponseEntity.ok(ApiResponse.success(resp));
         } else if (code.contains("BILL")) {
             resp.setValid(false);
-            resp.setErrorMessage("Bill below minimum (₹2,500 required)");
+            resp.setErrorMessage("Bill below minimum (Rs. 2,500 required)");
             return ResponseEntity.ok(ApiResponse.success(resp));
         } else if (code.contains("WINDOW")) {
             resp.setValid(false);
@@ -79,11 +79,11 @@ public class RedemptionController {
         resp.setSubscriberName("Rahul Mehta");
         resp.setPlanTier("ELITE");
         resp.setBenefitTitle("50% Dining Discount");
-        resp.setDiscountSummary("Up to ₹2,000 off on total bill");
+        resp.setDiscountSummary("Up to Rs. 2,000 off on total bill");
         resp.setRulesPassed(Arrays.asList(
             "Subscription active",
             "Valid at this outlet",
-            "₹2,500 minimum met",
+            "Rs. 2,500 minimum met",
             "Valid during dinner"
         ));
         return ResponseEntity.ok(ApiResponse.success(resp));

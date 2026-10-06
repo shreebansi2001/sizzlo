@@ -200,7 +200,7 @@ public class PaymentController {
 
         // Dough by Yanki Offer
         if ("SIGNATURE".equalsIgnoreCase(tier)) {
-            createVaultCoupon(membershipId, "C-DOUGH10", "Dough by Yanki 10% Off", "10% off on spends ₹2,500+", "PERCENT", 10.0, 6, expiry, "Dough by Yanki", "emerald");
+            createVaultCoupon(membershipId, "C-DOUGH10", "Dough by Yanki 10% Off", "10% off on spends Rs. 2,500+", "PERCENT", 10.0, 6, expiry, "Dough by Yanki", "emerald");
         } else if ("ELITE".equalsIgnoreCase(tier)) {
             createVaultCoupon(membershipId, "C-DOUGH-BOGO", "Dough by Yanki Buy 1 Get 1", "Buy 1 Get 1 on artisanal woodfired pizzas", "BOGO", 100.0, 15, expiry, "Dough by Yanki", "emerald");
         }

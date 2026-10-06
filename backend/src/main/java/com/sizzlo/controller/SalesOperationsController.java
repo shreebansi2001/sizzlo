@@ -121,7 +121,7 @@ public class SalesOperationsController {
         resp.put("staffId", req.staffId);
         resp.put("commissionEarned", commission);
         resp.put("status", "ACTIVATED");
-        resp.put("message", "Plan enrolled successfully! ₹" + (int) commission + " credited to Captain " + (req.staffName != null ? req.staffName : req.staffId) + "'s incentive ledger.");
+        resp.put("message", "Plan enrolled successfully! Rs. " + (int) commission + " credited to Captain " + (req.staffName != null ? req.staffName : req.staffId) + "'s incentive ledger.");
 
         return ResponseEntity.ok(ApiResponse.success(resp));
     }

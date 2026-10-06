@@ -93,7 +93,7 @@ public class PlanController {
         elite.put("benefits", new ArrayList<>(Arrays.asList(
                 "18 dining visits annually across all Yanki outlets",
                 "Premium banquet reservations with dedicated catering manager",
-                "Exclusive gift vouchers worth ₹5,000 for family & friends",
+                "Exclusive gift vouchers worth Rs. 5,000 for family & friends",
                 "All access pass to Yanki Signature, Dough & Banquets",
                 "Complimentary VIP birthday dinner for up to 4 guests",
                 "Highest priority reservation window even on rush days"

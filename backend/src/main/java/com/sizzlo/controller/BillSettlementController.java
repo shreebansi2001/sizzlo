@@ -242,7 +242,7 @@ public class BillSettlementController {
                 LoyaltyTransaction tx = new LoyaltyTransaction();
                 tx.setMembershipId(m.getMembershipId());
                 tx.setTitle("Dining at " + bill.getOutletName());
-                tx.setDescription("POS Bill #" + bill.getPosInvoiceNumber() + " (₹1 = 1 Point)");
+                tx.setDescription("POS Bill #" + bill.getPosInvoiceNumber() + " (Rs. 1 = 1 Point)");
                 tx.setPoints(pointsToCredit);
                 tx.setType("EARN");
                 tx.setOutletName(bill.getOutletName());

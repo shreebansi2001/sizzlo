@@ -47,10 +47,10 @@ public class AdminServiceImpl implements AdminService {
         // Dynamic KPIs — zeros when empty
         List<Map<String, Object>> kpis = new ArrayList<>();
         String totalRevStr = totalOutletRev > 0 ? String.format(Locale.US, "%.2f", totalOutletRev / 100.0) : "0";
-        kpis.add(createKpi("Total Revenue", "₹" + totalRevStr + " Cr", totalOutletRev > 0 ? "+12.4%" : "0%", "up"));
-        kpis.add(createKpi("Membership Revenue", "₹" + (memberCount > 0 ? (memberCount * 10000 / 100000) : 0) + " Lakh", memberCount > 0 ? "+8.2%" : "0%", "up"));
+        kpis.add(createKpi("Total Revenue", "Rs. " + totalRevStr + " Cr", totalOutletRev > 0 ? "+12.4%" : "0%", "up"));
+        kpis.add(createKpi("Membership Revenue", "Rs. " + (memberCount > 0 ? (memberCount * 10000 / 100000) : 0) + " Lakh", memberCount > 0 ? "+8.2%" : "0%", "up"));
         kpis.add(createKpi("Active Members", String.valueOf(memberCount), memberCount > 0 ? "+" + memberCount : "0", "up"));
-        kpis.add(createKpi("Pending Payments", "₹" + (pendingDuesSum > 0 ? String.format(Locale.US, "%.2f L", pendingDuesSum / 100000.0) : "0"), pendingDuesSum > 0 ? "-4.1%" : "0%", "down"));
+        kpis.add(createKpi("Pending Payments", "Rs. " + (pendingDuesSum > 0 ? String.format(Locale.US, "%.2f L", pendingDuesSum / 100000.0) : "0"), pendingDuesSum > 0 ? "-4.1%" : "0%", "down"));
         kpis.add(createKpi("Coupons Redeemed", String.valueOf(totalCouponsUsed), totalCouponsUsed > 0 ? "+" + totalCouponsUsed : "0", "up"));
         kpis.add(createKpi("Reservations", String.valueOf(reservationCount), reservationCount > 0 ? "+" + reservationCount : "0", "up"));
 
