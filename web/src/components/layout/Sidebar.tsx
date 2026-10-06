@@ -16,15 +16,18 @@ import {
   Brain,
   Armchair,
   Activity,
-  ScanLine
+  ScanLine,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 
 interface SidebarProps {
   currentTab: string;
   onTabChange: (tab: string) => void;
+  onLogout?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) => {
   const navGroups = [
     {
       group: 'Overview',
@@ -136,6 +139,62 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => 
         <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
           Across 4 outlets · 92% capacity
         </p>
+
+        {/* Logged in Admin & Logout */}
+        <div style={{
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          paddingTop: 10,
+          marginTop: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+            <div style={{
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              background: 'rgba(201, 162, 77, 0.2)',
+              border: '1px solid var(--gold)',
+              display: 'grid',
+              placeItems: 'center',
+            }}>
+              <UserCheck size={13} color="var(--gold)" />
+            </div>
+            <div style={{ overflow: 'hidden' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                admin@sizzlo.com
+              </div>
+              <div style={{ fontSize: 9, color: 'var(--gold)', letterSpacing: 0.5 }}>
+                Super Admin
+              </div>
+            </div>
+          </div>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="Logout from Admin Console"
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                color: '#EF4444',
+                padding: '6px 8px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 11,
+                fontWeight: 600,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <LogOut size={12} />
+              <span>Exit</span>
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );

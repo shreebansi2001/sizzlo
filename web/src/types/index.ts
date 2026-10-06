@@ -129,3 +129,17 @@ export interface CampaignPreset {
   tag: string;
 }
 
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  memberLabel: string;
+  price: number;
+  couponLimit: number;
+  giftVoucherLimit: number;
+  offerLabel: string;
+  description: string;
+  personality: string;
+  highlights: string[];
+  benefits?: string[];
+}
+

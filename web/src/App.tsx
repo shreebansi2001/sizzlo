@@ -26,8 +26,13 @@ import {
   fallbackMarketingChannels,
   fallbackCampaignPresets,
 } from './api/client';
+import { LoginPage } from './pages/LoginPage';
 
 export function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return Boolean(localStorage.getItem('yanki_admin_auth'));
+  });
+
   const getInitialTab = () => {
     const hash = window.location.hash.replace('#', '');
     const validTabs = [
@@ -102,6 +107,15 @@ export function App() {
 
   const { title, subtitle } = getPageInfo();
 
+  const handleLogout = () => {
+    localStorage.removeItem('yanki_admin_auth');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <LoginPage onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <AdminLayout
       currentTab={currentTab}
@@ -110,6 +124,7 @@ export function App() {
       subtitle={subtitle}
       onRefresh={handleRefresh}
       isLoading={false}
+      onLogout={handleLogout}
     >
       {currentTab === 'dashboard' && (
         <DashboardPage key={`dashboard-${refreshKey}`} />

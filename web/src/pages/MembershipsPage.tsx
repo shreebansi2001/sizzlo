@@ -1,14 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BadgeCheck, AlertCircle, RefreshCw, Wallet, TrendingUp } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+import { 
+  Users, 
+  BadgeCheck, 
+  AlertCircle, 
+  RefreshCw, 
+  Wallet, 
+  TrendingUp, 
+  Plus, 
+  Trash2, 
+  Sparkles, 
+  Crown, 
+  CheckCircle2, 
+  Zap,
+  ArrowRight,
+  Gift
+} from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import axios from 'axios';
-import { Member } from '../types';
+import { Member, SubscriptionPlan } from '../types';
+import { fetchPlans, addOfferToPlan, removeOfferFromPlan, resetPlans } from '../api/client';
 
 export const MembershipsPage: React.FC = () => {
   const [memberList, setMemberList] = useState<Member[]>([]);
   const [membershipRev, setMembershipRev] = useState('₹1.10 Lakh');
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState('signature');
+  const [newOfferText, setNewOfferText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
+
+  const loadPlans = async () => {
+    setIsLoadingPlans(true);
+    try {
+      const data = await fetchPlans();
+      if (data && data.length > 0) {
+        setPlans(data);
+      }
+    } finally {
+      setIsLoadingPlans(false);
+    }
+  };
 
   useEffect(() => {
+    loadPlans();
+
     axios.get('/api/members')
       .then(res => {
         if (res.data?.success && res.data.data) {
@@ -26,6 +63,49 @@ export const MembershipsPage: React.FC = () => {
       })
       .catch(() => {});
   }, []);
+
+  const handleOpenAddModal = (planId?: string) => {
+    if (planId) setSelectedPlanId(planId);
+    setNewOfferText('');
+    setShowAddModal(true);
+  };
+
+  const handleAddOffer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOfferText.trim()) return;
+
+    setIsSubmitting(true);
+    const updatedPlan = await addOfferToPlan(selectedPlanId, newOfferText.trim());
+    setIsSubmitting(false);
+
+    if (updatedPlan) {
+      setPlans(prev => prev.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+      setSyncToast(`Offer added to ${updatedPlan.name} and synced to mobile app!`);
+      setShowAddModal(false);
+      setNewOfferText('');
+      setTimeout(() => setSyncToast(null), 4000);
+    }
+  };
+
+  const handleDeleteOffer = async (planId: string, offer: string) => {
+    if (!window.confirm(`Remove offer "${offer}" from ${planId.toUpperCase()} plan?`)) return;
+    const updatedPlan = await removeOfferFromPlan(planId, offer);
+    if (updatedPlan) {
+      setPlans(prev => prev.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+      setSyncToast(`Offer removed and mobile app synced!`);
+      setTimeout(() => setSyncToast(null), 4000);
+    }
+  };
+
+  const handleResetPlans = async () => {
+    if (!window.confirm('Reset all plans and offers to original defaults?')) return;
+    const defaultPlans = await resetPlans();
+    if (defaultPlans && defaultPlans.length > 0) {
+      setPlans(defaultPlans);
+      setSyncToast('Plans and offers restored to initial baseline!');
+      setTimeout(() => setSyncToast(null), 4000);
+    }
+  };
 
   const totalSubscribers = memberList.length;
   const activeCount = memberList.filter(m => m.status === 'Active').length;
@@ -50,8 +130,319 @@ export const MembershipsPage: React.FC = () => {
     { m: 'Nov', renewed: Math.round(totalSubscribers * 0.9), due: Math.round(renewalDueCount * 1.4) },
   ];
 
+  // Helper colors for plan cards
+  const getPlanStyling = (planId: string) => {
+    switch (planId) {
+      case 'classic':
+        return {
+          badgeClass: 'badge-gold',
+          accentColor: '#DFC27D',
+          border: '1px solid rgba(201, 162, 77, 0.35)',
+          background: 'linear-gradient(145deg, #1C1510 0%, #120D09 100%)',
+          glow: 'rgba(201, 162, 77, 0.1)',
+        };
+      case 'signature':
+        return {
+          badgeClass: 'badge-orange',
+          accentColor: '#4EE3B8',
+          border: '1px solid rgba(78, 227, 184, 0.4)',
+          background: 'linear-gradient(145deg, #0F2D25 0%, #071914 100%)',
+          glow: 'rgba(78, 227, 184, 0.15)',
+        };
+      case 'elite':
+      default:
+        return {
+          badgeClass: 'badge-gold',
+          accentColor: '#FFB800',
+          border: '1px solid rgba(255, 184, 0, 0.45)',
+          background: 'linear-gradient(145deg, #221A0F 0%, #140E06 100%)',
+          glow: 'rgba(255, 184, 0, 0.15)',
+        };
+    }
+  };
+
+  const sampleQuickOffers = [
+    '15% off across weekend dining',
+    'Complimentary Chef Special Dessert',
+    'Buy 1 Get 1 Pizza at Dough by Yanki',
+    'Free Banquet Mocktails for 10 Guests',
+    'Priority Valet & VIP Table Window',
+  ];
+
   return (
     <div>
+      {/* Toast Notification */}
+      {syncToast && (
+        <div style={{
+          position: 'fixed',
+          top: 84,
+          right: 32,
+          zIndex: 1000,
+          background: '#0E3B32',
+          border: '1px solid #4EE3B8',
+          color: '#4EE3B8',
+          padding: '12px 20px',
+          borderRadius: 14,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+          animation: 'modalEnter 0.25s ease-out',
+        }}>
+          <CheckCircle2 size={18} />
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{syncToast}</span>
+        </div>
+      )}
+
+      {/* Plan & Offer Management Section Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 16,
+        marginBottom: 24,
+        background: 'linear-gradient(135deg, rgba(201, 162, 77, 0.08) 0%, rgba(255, 138, 0, 0.04) 100%)',
+        border: '1px solid var(--border)',
+        borderRadius: 20,
+        padding: '20px 24px',
+      }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <Crown size={22} color="var(--gold)" />
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 700, color: 'var(--text-main)' }}>
+              Privilege Subscription Plans & Offers Manager
+            </h2>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#10B981',
+              padding: '3px 10px',
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 0.5,
+            }}>
+              <Zap size={12} />
+              LIVE APP SYNC ACTIVE
+            </span>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            Add, update, or remove offers from any plan. Changes automatically reflect in real time on the VIP Mobile App.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button 
+            className="btn btn-outline btn-sm"
+            onClick={handleResetPlans}
+            title="Reset plans to default values"
+            style={{ fontSize: 12 }}
+          >
+            <RefreshCw size={13} />
+            <span>Reset Baseline</span>
+          </button>
+          <button 
+            className="btn btn-primary"
+            onClick={() => handleOpenAddModal()}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', fontSize: 13 }}
+          >
+            <Plus size={16} />
+            <span>Add Offer to Plan</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3 Interactive Plan Cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: 20,
+        marginBottom: 32,
+      }}>
+        {plans.map((p) => {
+          const style = getPlanStyling(p.id);
+          return (
+            <div
+              key={p.id}
+              style={{
+                background: style.background,
+                border: style.border,
+                borderRadius: 22,
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                boxShadow: `0 12px 32px ${style.glow}`,
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'all 0.25s ease',
+              }}
+            >
+              <div>
+                {/* Header Row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div>
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: 1.5,
+                      textTransform: 'uppercase',
+                      color: style.accentColor,
+                    }}>
+                      {p.memberLabel}
+                    </span>
+                    <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 24, fontWeight: 700, color: '#FFFFFF', marginTop: 2 }}>
+                      {p.name}
+                    </h3>
+                  </div>
+                  <span style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    padding: '4px 10px',
+                    borderRadius: 999,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: style.accentColor,
+                  }}>
+                    {p.offerLabel}
+                  </span>
+                </div>
+
+                {/* Price & Venue */}
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 700, color: 'var(--gold)' }}>
+                    ₹{p.price.toLocaleString('en-IN')}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>annually</span>
+                </div>
+
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}>
+                  {p.description}
+                </p>
+
+                {/* Offer Highlights Header */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  paddingTop: 14,
+                  marginBottom: 12,
+                }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                    Active Offers & Highlights ({p.highlights?.length || 0})
+                  </span>
+                  <button
+                    onClick={() => handleOpenAddModal(p.id)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: style.accentColor,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <Plus size={13} />
+                    <span>Add</span>
+                  </button>
+                </div>
+
+                {/* Offers List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
+                  {p.highlights?.map((h, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 12px',
+                        borderRadius: 12,
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                        <span style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '50%',
+                          background: style.accentColor,
+                          display: 'grid',
+                          placeItems: 'center',
+                          flexShrink: 0,
+                        }}>
+                          <CheckCircle2 size={12} color="#070A09" />
+                        </span>
+                        <span style={{ fontSize: 12, color: 'var(--text-main)', whiteSpace: 'normal' }}>
+                          {h}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteOffer(p.id, h)}
+                        title="Remove offer from plan"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--danger)',
+                          cursor: 'pointer',
+                          padding: 4,
+                          borderRadius: 6,
+                          display: 'flex',
+                          alignItems: 'center',
+                          opacity: 0.7,
+                          transition: 'opacity 0.2s ease',
+                          flexShrink: 0,
+                          marginLeft: 8,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Card Footer Button */}
+              <button
+                onClick={() => handleOpenAddModal(p.id)}
+                style={{
+                  width: '100%',
+                  marginTop: 18,
+                  padding: '10px',
+                  borderRadius: 12,
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: `1px solid ${style.accentColor}40`,
+                  color: style.accentColor,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Plus size={14} />
+                <span>Add Offer to {p.name}</span>
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
       {/* 6 Metric Cards */}
       <div className="kpi-grid">
         {dynamicStats.map((s) => {
@@ -133,9 +524,9 @@ export const MembershipsPage: React.FC = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[
-                { name: 'Elite VIP Connoisseur', price: '₹14,999/yr', count: '0', pct: 0, color: 'var(--gold)' },
-                { name: 'Signature Gourmet', price: '₹9,999/yr', count: '0', pct: 0, color: 'var(--primary)' },
-                { name: 'Classic Privileges', price: '₹4,999/yr', count: '0', pct: 0, color: '#64748B' },
+                { name: 'Elite VIP Connoisseur', price: '₹15,000/yr', count: `${plans.find(p=>p.id==='elite')?.highlights.length || 3} Offers`, pct: 38, color: 'var(--gold)' },
+                { name: 'Signature Gourmet', price: '₹10,000/yr', count: `${plans.find(p=>p.id==='signature')?.highlights.length || 3} Offers`, pct: 45, color: 'var(--primary)' },
+                { name: 'Classic Privileges', price: '₹5,000/yr', count: `${plans.find(p=>p.id==='classic')?.highlights.length || 3} Offers`, pct: 17, color: '#64748B' },
               ].map((tier) => (
                 <div key={tier.name} style={{ padding: '12px 14px', borderRadius: 14, background: 'var(--surface-alt)', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -154,11 +545,151 @@ export const MembershipsPage: React.FC = () => {
             </div>
           </div>
 
-          <button className="primary-btn" style={{ width: '100%', marginTop: 16 }}>
-            Export Membership Analytics
+          <button 
+            className="btn btn-outline" 
+            style={{ width: '100%', marginTop: 16 }}
+            onClick={() => handleOpenAddModal()}
+          >
+            <Sparkles size={14} color="var(--gold)" />
+            <span>Configure Plan Privileges</span>
           </button>
         </div>
       </div>
+
+      {/* Modal: Add Offer to Plan */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'grid',
+          placeItems: 'center',
+          zIndex: 1000,
+          padding: 20,
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            width: '100%',
+            maxWidth: 480,
+            borderRadius: 24,
+            padding: 28,
+            border: '1px solid rgba(201, 162, 77, 0.3)',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.8)',
+            animation: 'modalEnter 0.25s ease-out',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <Gift size={20} color="var(--gold)" />
+              <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 700, color: 'var(--text-main)' }}>
+                Add Privilege Offer to Plan
+              </h3>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
+              This offer will instantly sync and appear for users under this subscription on the VIP mobile app.
+            </p>
+
+            <form onSubmit={handleAddOffer}>
+              {/* Select Target Plan */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Target Subscription Plan
+                </label>
+                <select
+                  value={selectedPlanId}
+                  onChange={(e) => setSelectedPlanId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: 12,
+                    background: 'var(--surface-alt)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-main)',
+                    fontSize: 13,
+                    outline: 'none',
+                  }}
+                >
+                  <option value="classic">Classic Subscription (₹5,000 / yr)</option>
+                  <option value="signature">Signature Subscription (₹10,000 / yr)</option>
+                  <option value="elite">Elite Subscription (₹15,000 / yr)</option>
+                </select>
+              </div>
+
+              {/* Offer Text */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Offer Title / Privilege Benefit
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 20% off all chef tasting menus"
+                  value={newOfferText}
+                  onChange={(e) => setNewOfferText(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: 12,
+                    background: 'var(--surface-alt)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-main)',
+                    fontSize: 13,
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              {/* Quick Suggestion Chips */}
+              <div style={{ marginBottom: 22 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-dim)', display: 'block', marginBottom: 6 }}>
+                  Quick Suggestions
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {sampleQuickOffers.map((suggest) => (
+                    <button
+                      key={suggest}
+                      type="button"
+                      onClick={() => setNewOfferText(suggest)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        color: 'var(--text-muted)',
+                        padding: '4px 10px',
+                        borderRadius: 8,
+                        fontSize: 11,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      + {suggest}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setShowAddModal(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={isSubmitting}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span>{isSubmitting ? 'Syncing...' : 'Add & Sync to App'}</span>
+                  {!isSubmitting && <ArrowRight size={14} />}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

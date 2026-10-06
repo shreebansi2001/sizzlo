@@ -12,12 +12,30 @@ class PlansController extends GetxController {
   final ApiService _apiService = ApiService();
   final RxString selectedPlan = 'signature'.obs;
   final RxBool isProcessingPayment = false.obs;
+  final RxList<Map<String, dynamic>> plans = <Map<String, dynamic>>[].obs;
+  final RxBool isLoading = true.obs;
+
 
   @override
   void onInit() {
     super.onInit();
     if (Get.isRegistered<HomeController>()) {
       selectedPlan.value = Get.find<HomeController>().member.value.planId;
+    }
+    loadPlans();
+  }
+
+  Future<void> loadPlans() async {
+    isLoading.value = true;
+    try {
+      final fetched = await _apiService.getPlans();
+      if (fetched.isNotEmpty) {
+        plans.value = fetched;
+      }
+    } catch (_) {
+      // Graceful fallback from ApiService
+    } finally {
+      isLoading.value = false;
     }
   }
 

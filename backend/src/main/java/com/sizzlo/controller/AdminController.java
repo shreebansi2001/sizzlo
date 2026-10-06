@@ -44,4 +44,10 @@ public class AdminController {
         dataInitializer.resetAllData();
         return ResponseEntity.ok(ApiResponse.success("All test data successfully cleared and reset to fresh seed state.", "OK"));
     }
+
+    @PostMapping("/seed-demo-data")
+    public ResponseEntity<ApiResponse<String>> seedDemoData() {
+        dataInitializer.initData();
+        return ResponseEntity.ok(ApiResponse.success("Demo dataset populated successfully with patrons, vouchers, and reservations.", "OK"));
+    }
 }

@@ -30,3 +30,7 @@ out/
 target/
 backend/target/
 
+# Temporary and archive files
+cookies.txt
+*.zip
+

@@ -48,7 +48,7 @@ public class DataInitializer implements CommandLineRunner {
         initData();
     }
 
-    private void initData() {
+    public void initData() {
         if (outletRepository.count() == 0) {
             seedOutlets();
         }

@@ -62,11 +62,16 @@ class PlansView extends GetView<PlansController> {
               ),
             ),
 
-            // Scrollable Content
+            // Scrollable Content with Pull to Refresh
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-                child: Column(
+              child: RefreshIndicator(
+                onRefresh: controller.loadPlans,
+                color: AppColors.gold,
+                backgroundColor: const Color(0xFF141917),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Tag
@@ -104,123 +109,82 @@ class PlansView extends GetView<PlansController> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Plan 1: Classic Subscription
-                    Obx(
-                      () => _buildPlanCard(
-                        planId: 'classic',
-                        isSelected: controller.selectedPlan.value == 'classic',
-                        title: 'Classic Subscription',
-                        subtitle: 'Yanki Sizzlerr only',
-                        price: '₹5,000',
-                        offersLabel: '6 OFFERS',
-                        highlights: [
-                          '10% off across 6 visits',
-                          'Birthday week benefit',
-                          'Complimentary couple meal',
-                        ],
-                        gradientColors: const [
-                          Color(0xFF522815),
-                          Color(0xFF33160B),
-                        ],
-                        borderColor: const Color(0xFF7F4420),
-                        accentColor: const Color(0xFFDF9E5B),
-                        onSelect: () => controller.selectPlan('classic'),
-                        onDetails: () => _showBenefitsModal(
-                          context,
-                          'Classic Subscription',
-                          '₹5,000',
-                          [
-                            '10% off bill amount, 6 times a year',
-                            'Complimentary birthday dessert and gift voucher',
-                            'Complimentary couple meal on special anniversary',
-                            'Priority table reservations on weekends',
-                            'Valid across all Yanki Sizzlerr locations',
-                          ],
-                        ),
-                      ),
-                    ),
+                    // Dynamic Plan Cards synced from Admin / Backend
+                    Obx(() {
+                      if (controller.isLoading.value && controller.plans.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: Center(
+                            child: CircularProgressIndicator(color: AppColors.gold),
+                          ),
+                        );
+                      }
 
-                    const SizedBox(height: 18),
+                      final plansList = controller.plans;
+                      if (plansList.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
 
-                    // Plan 2: Signature Subscription
-                    Obx(
-                      () => _buildPlanCard(
-                        planId: 'signature',
-                        isSelected: controller.selectedPlan.value == 'signature',
-                        title: 'Signature Subscription',
-                        subtitle: 'Restaurant, Dough, banquet and catering',
-                        price: '₹10,000',
-                        offersLabel: '12 OFFERS',
-                        highlights: [
-                          '12 dining visits annually',
-                          'Dough by Yanki rewards',
-                          'Banquet and catering benefits',
-                        ],
-                        gradientColors: const [
-                          Color(0xFF0D4335),
-                          Color(0xFF07241C),
-                        ],
-                        borderColor: const Color(0xFF155C48),
-                        accentColor: const Color(0xFF4EE3B8),
-                        onSelect: () => controller.selectPlan('signature'),
-                        onDetails: () => _showBenefitsModal(
-                          context,
-                          'Signature Subscription',
-                          '₹10,000',
-                          [
-                            '12 dining visits annually with 10% privilege discount',
-                            'Couple dinner at 50% off twice per year',
-                            'Dough by Yanki Buy 1 Get 1 complimentary',
-                            'Banquet & catering privileges at House of Yanki',
-                            'Free renewal subscription upon earning 25,000 points',
-                            'VIP private table reservation with dedicated manager',
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
+                      return Column(
+                        children: plansList.map((p) {
+                          final id = p['id']?.toString() ?? 'signature';
+                          final name = p['name']?.toString() ?? 'Subscription';
+                          final desc = p['description']?.toString() ?? '';
+                          final priceNum = p['price'] ?? 10000;
+                          final priceStr = '₹${priceNum.toString()}';
+                          final offerLabel = (p['offerLabel']?.toString() ?? '').toUpperCase();
+                          final highlights = List<String>.from(p['highlights'] ?? []);
+                          final benefits = List<String>.from(p['benefits'] ?? highlights);
 
-                    // Plan 3: Elite Subscription matching Image 2
-                    Obx(
-                      () => _buildPlanCard(
-                        planId: 'elite',
-                        isSelected: controller.selectedPlan.value == 'elite',
-                        title: 'Elite Subscription',
-                        subtitle: 'All Yanki outlets',
-                        price: '₹15,000',
-                        offersLabel: '10 OFFERS + GIFT VOUCHERS',
-                        highlights: [
-                          '18 dining visits annually',
-                          'Premium banquet benefits',
-                          'Exclusive gift vouchers',
-                        ],
-                        gradientColors: const [
-                          Color(0xFF282015),
-                          Color(0xFF16120C),
-                        ],
-                        borderColor: const Color(0xFF4A3820),
-                        accentColor: const Color(0xFFDF9E5B),
-                        onSelect: () => controller.selectPlan('elite'),
-                        onDetails: () => _showBenefitsModal(
-                          context,
-                          'Elite Subscription',
-                          '₹15,000',
-                          [
-                            '18 dining visits annually across all Yanki outlets',
-                            'Premium banquet reservations with dedicated catering manager',
-                            'Exclusive gift vouchers worth ₹5,000 for family & friends',
-                            'All access pass to Yanki Signature, Dough & Banquets',
-                            'Complimentary VIP birthday dinner for up to 4 guests',
-                            'Highest priority reservation window even on rush days',
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                          List<Color> gradientColors;
+                          Color borderColor;
+                          Color accentColor;
+
+                          if (id == 'classic') {
+                            gradientColors = const [Color(0xFF522815), Color(0xFF33160B)];
+                            borderColor = const Color(0xFF7F4420);
+                            accentColor = const Color(0xFFDF9E5B);
+                          } else if (id == 'elite') {
+                            gradientColors = const [Color(0xFF282015), Color(0xFF16120C)];
+                            borderColor = const Color(0xFF4A3820);
+                            accentColor = const Color(0xFFDF9E5B);
+                          } else {
+                            gradientColors = const [Color(0xFF0D4335), Color(0xFF07241C)];
+                            borderColor = const Color(0xFF155C48);
+                            accentColor = const Color(0xFF4EE3B8);
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 18),
+                            child: _buildPlanCard(
+                              planId: id,
+                              isSelected: controller.selectedPlan.value == id,
+                              title: '$name Subscription',
+                              subtitle: desc,
+                              price: priceStr,
+                              offersLabel: offerLabel.isNotEmpty ? offerLabel : '${highlights.length} OFFERS',
+                              highlights: highlights,
+                              gradientColors: gradientColors,
+                              borderColor: borderColor,
+                              accentColor: accentColor,
+                              onSelect: () => controller.selectPlan(id),
+                              onDetails: () => _showBenefitsModal(
+                                context,
+                                '$name Subscription',
+                                priceStr,
+                                benefits,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    }),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),
             ),
+          ),
 
             // Bottom Sticky Bar: Skip For Now
             Container(

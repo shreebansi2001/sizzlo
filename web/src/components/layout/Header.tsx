@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Search, RefreshCw, RotateCcw, Key, Check } from 'lucide-react';
+import { Bell, Search, RefreshCw, RotateCcw, Key, Check, LogOut } from 'lucide-react';
 import { resetAllData } from '../../api/client';
 
 interface HeaderProps {
@@ -7,9 +7,10 @@ interface HeaderProps {
   subtitle: string;
   onRefresh?: () => void;
   isLoading?: boolean;
+  onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLoading }) => {
+export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLoading, onLogout }) => {
   const [selectedOutlet, setSelectedOutlet] = useState('all');
   const [searchVal, setSearchVal] = useState('');
   const [isResetting, setIsResetting] = useState(false);
@@ -197,6 +198,32 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLo
             boxShadow: '0 0 8px var(--primary)'
           }} />
         </div>
+
+        {/* Header Logout Button */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            title="Sign out of Admin Console"
+            style={{
+              height: 38,
+              padding: '0 12px',
+              borderRadius: 12,
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              color: '#EF4444',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <LogOut size={14} />
+            <span>Logout</span>
+          </button>
+        )}
       </div>
     </header>
   );

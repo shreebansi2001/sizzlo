@@ -565,4 +565,99 @@ class ApiService {
     } catch (_) {}
     return [];
   }
+
+  /// Get live subscription plans and synced offers (GET /api/plans)
+  Future<List<Map<String, dynamic>>> getPlans() async {
+    try {
+      final res = await _client.get(
+        Uri.parse('${AppConstants.baseUrl}/plans'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 4));
+
+      if (res.statusCode == 200) {
+        final body = json.decode(res.body);
+        if (body['success'] == true && body['data'] != null) {
+          final List list = body['data'];
+          return list.map((e) => Map<String, dynamic>.from(e)).toList();
+        }
+      }
+    } catch (_) {}
+    return _mockPlans();
+  }
+
+  List<Map<String, dynamic>> _mockPlans() {
+    return [
+      {
+        'id': 'classic',
+        'name': 'Classic',
+        'memberLabel': 'CLASSIC SUBSCRIBER',
+        'price': 5000,
+        'couponLimit': 6,
+        'giftVoucherLimit': 0,
+        'offerLabel': '6 OFFERS',
+        'description': 'Yanki Sizzlerr only',
+        'personality': 'Warm Premium',
+        'highlights': [
+          '10% off across 6 visits',
+          'Birthday week benefit',
+          'Complimentary couple meal',
+        ],
+        'benefits': [
+          '10% off bill amount, 6 times a year',
+          'Complimentary birthday dessert and gift voucher',
+          'Complimentary couple meal on special anniversary',
+          'Priority table reservations on weekends',
+          'Valid across all Yanki Sizzlerr locations',
+        ],
+      },
+      {
+        'id': 'signature',
+        'name': 'Signature',
+        'memberLabel': 'SIGNATURE SUBSCRIBER',
+        'price': 10000,
+        'couponLimit': 12,
+        'giftVoucherLimit': 0,
+        'offerLabel': '12 OFFERS',
+        'description': 'Restaurant, Dough, banquet and catering',
+        'personality': 'Rich & Sophisticated',
+        'highlights': [
+          '12 dining visits annually',
+          'Dough by Yanki rewards',
+          'Banquet and catering benefits',
+        ],
+        'benefits': [
+          '12 dining visits annually with 10% privilege discount',
+          'Couple dinner at 50% off twice per year',
+          'Dough by Yanki Buy 1 Get 1 complimentary',
+          'Banquet & catering privileges at House of Yanki',
+          'Free renewal subscription upon earning 25,000 points',
+          'VIP private table reservation with dedicated manager',
+        ],
+      },
+      {
+        'id': 'elite',
+        'name': 'Elite',
+        'memberLabel': 'ELITE SUBSCRIBER',
+        'price': 15000,
+        'couponLimit': 10,
+        'giftVoucherLimit': 5,
+        'offerLabel': '10 OFFERS + GIFT VOUCHERS',
+        'description': 'All Yanki outlets',
+        'personality': 'Exclusive VIP',
+        'highlights': [
+          '18 dining visits annually',
+          'Premium banquet benefits',
+          'Exclusive gift vouchers',
+        ],
+        'benefits': [
+          '18 dining visits annually across all Yanki outlets',
+          'Premium banquet reservations with dedicated catering manager',
+          'Exclusive gift vouchers worth ₹5,000 for family & friends',
+          'All access pass to Yanki Signature, Dough & Banquets',
+          'Complimentary VIP birthday dinner for up to 4 guests',
+          'Highest priority reservation window even on rush days',
+        ],
+      },
+    ];
+  }
 }
