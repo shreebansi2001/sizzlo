@@ -12,6 +12,7 @@
     <groupId>com.sizzlo</groupId>
     <artifactId>sizzlo-backend</artifactId>
     <version>1.0.0</version>
+    <packaging>war</packaging>
     <name>sizzlo-backend</name>
     <description>Sizzlo Restaurant &amp; Loyalty Platform API (Java 8)</description>
 
@@ -58,6 +59,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Embedded Tomcat marked as provided for external WAR deployment -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -67,6 +75,7 @@
     </dependencies>
 
     <build>
+        <finalName>sizzlo-backend</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

@@ -29,6 +29,8 @@ out/
 .next/
 target/
 backend/target/
+release/
+*.war
 
 # Temporary and archive files
 cookies.txt
