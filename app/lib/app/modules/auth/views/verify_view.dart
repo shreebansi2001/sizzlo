@@ -78,26 +78,26 @@ class VerifyView extends GetView<AuthController> {
               ),
               const SizedBox(height: 10),
 
-              // Demo Testing Banner
+              // WhatsApp OTP Delivery Notice Banner
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.12),
+                  color: const Color(0xFF0F261E),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                  border: Border.all(color: const Color(0xFF1E4D3C)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.key_rounded, size: 14, color: AppColors.gold),
+                    const Icon(Icons.chat_bubble_outline_rounded, size: 14, color: Color(0xFF4EE3B8)),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Demo OTP: 1234 or 123456 (Auto-fills on Verify)',
+                        'WhatsApp OTP dispatched · Demo fallback: 1234',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.gold,
+                          color: const Color(0xFF4EE3B8),
                         ),
                       ),
                     ),

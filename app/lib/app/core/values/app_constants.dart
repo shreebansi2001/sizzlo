@@ -18,13 +18,13 @@ class AppConstants {
     return 'http://localhost:8080/api';
   }
 
-  static const String defaultMembershipId = 'YSM-2024-04821';
-  static const String defaultUserMobile = '+91 98250 12345';
-  static const String defaultUserName = 'VIP Guest';
+  static const String defaultMembershipId = '';
+  static const String defaultUserMobile = '';
+  static const String defaultUserName = 'Guest';
 
   // Dynamic session state updated upon live registration / authentication
-  static String currentMembershipId = defaultMembershipId;
-  static String currentUserMobile = defaultUserMobile;
+  static String currentMembershipId = '';
+  static String currentUserMobile = '';
   static String currentUserName = defaultUserName;
   static String currentUserEmail = '';
   static String? currentAuthToken;

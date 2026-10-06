@@ -17,7 +17,7 @@ import '../../coupons/views/coupons_view.dart';
 import '../../loyalty/views/loyalty_view.dart';
 import '../../notifications/views/notifications_view.dart';
 import '../../profile/views/profile_view.dart';
-import '../../delivery/controllers/delivery_controller.dart';
+import '../../reservations/controllers/reservations_controller.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({Key? key}) : super(key: key);
@@ -173,18 +173,19 @@ class HomeView extends GetView<HomeController> {
                           size: 22,
                         ),
                       ),
-                      Positioned(
-                        top: 2,
-                        right: 2,
-                        child: Container(
-                          width: 9,
-                          height: 9,
-                          decoration: const BoxDecoration(
-                            color: AppColors.gold,
-                            shape: BoxShape.circle,
+                      if (isSub)
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: Container(
+                            width: 9,
+                            height: 9,
+                            decoration: const BoxDecoration(
+                              color: AppColors.gold,
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -274,15 +275,19 @@ class HomeView extends GetView<HomeController> {
 
           const SizedBox(height: 24),
 
-          // Featured Coupons Carousel
-          SectionHeader(
-            title: 'Featured Coupons',
-            actionLabel: 'View all',
-            onAction: () => Get.find<NavigationController>().changeTab(1),
-          ),
-          _buildFeaturedCoupons(),
-
-          const SizedBox(height: 24),
+          // Featured Coupons Carousel - STRICT REQUIREMENT: Only after plan purchase
+          if (controller.member.value.isSubscriber && controller.featuredCoupons.isNotEmpty) ...[
+            SectionHeader(
+              title: 'Featured Coupons',
+              actionLabel: 'View all',
+              onAction: () => Get.find<NavigationController>().changeTab(1),
+            ),
+            _buildFeaturedCoupons(),
+            const SizedBox(height: 24),
+          ] else if (!controller.member.value.isSubscriber) ...[
+            _buildLockedVaultBanner(),
+            const SizedBox(height: 24),
+          ],
 
           // Outlets Locator Tile matching demo_code
           _buildOutletsTile(),
@@ -293,11 +298,11 @@ class HomeView extends GetView<HomeController> {
           SectionHeader(title: 'Latest Offers'),
           _buildPromoBanner(),
 
-          const SizedBox(height: 24),
-
-          // Customer Reviews Carousel matching demo_code
-          SectionHeader(title: 'Customer Reviews'),
-          _buildCustomerReviews(),
+          if (controller.customerReviews.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            SectionHeader(title: 'Customer Reviews'),
+            _buildCustomerReviews(),
+          ],
 
           const SizedBox(height: 28),
 
@@ -313,84 +318,196 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _buildQuickActions() {
-    final actions = [
-      {'label': 'Subscription', 'icon': Icons.badge_outlined, 'route': AppRoutes.PLANS},
-      {'label': 'Coupons', 'icon': Icons.confirmation_number_outlined, 'tabIndex': 1},
-      {'label': 'Reservations', 'icon': Icons.table_restaurant_outlined, 'route': AppRoutes.RESERVATIONS},
-      {'label': 'Loyalty', 'icon': Icons.stars_rounded, 'tabIndex': 2},
-      {'label': 'Banquets', 'icon': Icons.celebration_outlined, 'route': AppRoutes.DELIVERY, 'deliveryTab': 1},
-      {'label': 'ODC Catering', 'icon': Icons.local_shipping_outlined, 'route': AppRoutes.DELIVERY, 'deliveryTab': 1},
-    ];
-
-    return GridView.builder(
-      padding: EdgeInsets.zero,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.0,
-      ),
-      itemCount: actions.length,
-      itemBuilder: (context, index) {
-        final a = actions[index];
-        return GestureDetector(
-          onTap: () {
-            if (a['deliveryTab'] != null) {
-              if (Get.isRegistered<DeliveryController>()) {
-                Get.find<DeliveryController>().selectedServiceTab.value = a['deliveryTab'] as int;
-              }
-              Get.toNamed(a['route'] as String);
-            } else if (a['tabIndex'] != null) {
-              Get.find<NavigationController>().changeTab(a['tabIndex'] as int);
-            } else if (a['route'] != null) {
-              Get.toNamed(a['route'] as String);
-            }
-          },
+    return Column(
+      children: [
+        // High-Priority Direct Table Settlement Action (Chapter 10 SRS)
+        GestureDetector(
+          onTap: () => Get.toNamed(AppRoutes.BILLING),
           child: Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2E1A11), Color(0xFF1B100A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: const Color(0xFF5A301E)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.3),
                   blurRadius: 10,
-                  offset: const Offset(0, 3),
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Row(
               children: [
                 Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
+                    color: const Color(0xFF4A2515),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(a['icon'] as IconData, color: AppColors.flame, size: 22),
+                  child: const Icon(Icons.receipt_long_rounded, color: AppColors.flame, size: 24),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  a['label'] as String,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'Settle Table Bill',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontFamily: 'Playfair Display',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00E676),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'NON-INTEGRATED POS',
+                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Apply coupon, enter POS bill # & earn points instantly',
+                        style: TextStyle(fontSize: 11, color: Colors.white70),
+                      ),
+                    ],
                   ),
                 ),
+                const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.gold, size: 16),
               ],
             ),
           ),
-        );
-      },
+        ),
+
+        // 4 High-Contrast Operations (Chapter 01.4 & 04.1 SRS)
+        GridView.count(
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 4,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 0.85,
+          children: [
+            _buildOpButton(
+              icon: Icons.table_restaurant_rounded,
+              label: 'Book a Table',
+              onTap: () => Get.toNamed(AppRoutes.RESERVATIONS),
+            ),
+            _buildOpButton(
+              icon: Icons.celebration_rounded,
+              label: 'Banquet & ODC',
+              badge: '20+',
+              onTap: () {
+                if (Get.isRegistered<ReservationsController>()) {
+                  Get.find<ReservationsController>().bookingMode.value = 1;
+                }
+                Get.toNamed(AppRoutes.RESERVATIONS);
+              },
+            ),
+            _buildOpButton(
+              icon: Icons.storefront_rounded,
+              label: 'Outlets',
+              onTap: () => Get.toNamed(AppRoutes.OUTLETS),
+            ),
+            _buildOpButton(
+              icon: Icons.wallet_rounded,
+              label: 'My Vault',
+              badge: controller.member.value.isSubscriber ? '${controller.member.value.couponsLeft}' : null,
+              onTap: () => Get.find<NavigationController>().changeTab(1),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOpButton({
+    required IconData icon,
+    required String label,
+    String? badge,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: AppColors.flame, size: 20),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (badge != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: AppColors.gold,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  badge,
+                  style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -506,9 +623,97 @@ class HomeView extends GetView<HomeController> {
     });
   }
 
+  Widget _buildLockedVaultBanner() {
+    return GestureDetector(
+      onTap: () => Get.toNamed(AppRoutes.PLANS),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF231A12), Color(0xFF140F0A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFF6A4725)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3B2814),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.5)),
+              ),
+              child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFD4AF37), size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'VIP Coupon Vault',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontFamily: 'Playfair Display',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.4)),
+                        ),
+                        child: const Text(
+                          'LOCKED',
+                          style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFFD4AF37)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Coupons unlock after plan enrollment. Choose Classic, Signature, or Elite plan.',
+                    style: TextStyle(fontSize: 11, color: Colors.white70, height: 1.3),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.black, size: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildOutletsTile() {
     return GestureDetector(
-      onTap: () => Get.find<NavigationController>().changeTab(3),
+      onTap: () => Get.toNamed(AppRoutes.OUTLETS),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

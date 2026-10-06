@@ -11,6 +11,7 @@ class AppColors {
   
   // Luxury Gold Palettes
   static const Color gold = Color(0xFFC9A24D);           // Champagne Gold
+  static const Color goldAccent = Color(0xFFD4AF37);     // Royal Gold Accent
   static const Color goldLight = Color(0xFFF7E7BE);      // Soft Gold Tint
   static const Color goldDark = Color(0xFFA67D28);       // Metallic Antique Gold
   static const Color goldBg = Color(0xFF1E1A12);         // Dark Warm Gold Tint

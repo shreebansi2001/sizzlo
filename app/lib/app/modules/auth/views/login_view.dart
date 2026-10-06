@@ -281,31 +281,6 @@ class LoginView extends GetView<AuthController> {
                 ),
               ),
 
-              const SizedBox(height: 24),
-
-              // Quick Demo VIP Access Button
-              Center(
-                child: TextButton.icon(
-                  onPressed: controller.quickDemoLogin,
-                  icon: const Icon(Icons.flash_on_rounded, color: AppColors.gold, size: 18),
-                  label: Text(
-                    'Instant VIP Guest Access',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.gold,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.surface,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      side: BorderSide(color: AppColors.gold.withOpacity(0.3)),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),

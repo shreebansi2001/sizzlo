@@ -30,13 +30,22 @@ public class Reservation {
     private Integer guests;
 
     @Column(nullable = false)
-    private String status; // "Confirmed", "Pending", "Cancelled", "Completed"
+    private String status; // "Booked", "Seated", "Completed", "No-Show", "Cancelled"
 
     @Column(name = "is_vip")
     private Boolean vip;
 
+    @Column(name = "tier_priority_tag")
+    private String tierPriorityTag; // "Non-Subscriber", "Classic", "Signature", "Elite"
+
+    @Column(name = "occasion_tag")
+    private String occasionTag; // "Birthday", "Anniversary", "Business", "Regular"
+
     @Column(name = "special_requests")
     private String specialRequests;
+
+    @Column(name = "table_assigned")
+    private String tableAssigned;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -47,7 +56,9 @@ public class Reservation {
             createdAt = LocalDateTime.now();
         }
         if (vip == null) vip = false;
-        if (status == null) status = "Confirmed";
+        if (status == null) status = "Booked";
+        if (tierPriorityTag == null) tierPriorityTag = vip ? "Signature" : "Non-Subscriber";
+        if (occasionTag == null) occasionTag = "Regular";
     }
 
     public Reservation() {}
@@ -79,8 +90,17 @@ public class Reservation {
     public Boolean getVip() { return vip; }
     public void setVip(Boolean vip) { this.vip = vip; }
 
+    public String getTierPriorityTag() { return tierPriorityTag; }
+    public void setTierPriorityTag(String tierPriorityTag) { this.tierPriorityTag = tierPriorityTag; }
+
+    public String getOccasionTag() { return occasionTag; }
+    public void setOccasionTag(String occasionTag) { this.occasionTag = occasionTag; }
+
     public String getSpecialRequests() { return specialRequests; }
     public void setSpecialRequests(String specialRequests) { this.specialRequests = specialRequests; }
+
+    public String getTableAssigned() { return tableAssigned; }
+    public void setTableAssigned(String tableAssigned) { this.tableAssigned = tableAssigned; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

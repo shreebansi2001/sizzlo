@@ -21,13 +21,13 @@ class CouponsView extends GetView<CouponsController> {
     return Obx(() {
       final isSub = Get.isRegistered<HomeController>()
           ? Get.find<HomeController>().member.value.isSubscriber
-          : true;
+          : false;
 
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
           title: Text(
-            isSub ? 'Exclusive Coupons' : 'My Coupon Wallet',
+            isSub ? 'Exclusive Coupons' : 'VIP Coupon Vault',
             style: const TextStyle(
               fontFamily: 'Playfair Display',
               fontSize: 20,
@@ -202,36 +202,52 @@ class CouponsView extends GetView<CouponsController> {
 
             final list = controller.filteredCoupons;
             if (list.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.confirmation_number_outlined,
-                      size: 56,
-                      color: Colors.white.withOpacity(0.3),
+              return RefreshIndicator(
+                color: AppColors.flame,
+                backgroundColor: AppColors.surface,
+                onRefresh: () async => controller.loadCoupons(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Container(
+                    height: 400,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.confirmation_number_outlined,
+                          size: 56,
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No coupons found in this category',
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'No coupons found in this category',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                  ],
+                  ),
                 ),
               );
             }
 
-            return ListView.separated(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, isTab ? 135 : 20),
-              itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 14),
-              itemBuilder: (context, index) {
-                final coupon = list[index];
-                return CouponTicket(
-                  coupon: coupon,
-                  onRedeem: () => controller.redeemCoupon(coupon),
-                );
-              },
+            return RefreshIndicator(
+              color: AppColors.flame,
+              backgroundColor: AppColors.surface,
+              onRefresh: () async => controller.loadCoupons(),
+              child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(20, 8, 20, isTab ? 135 : 20),
+                itemCount: list.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                itemBuilder: (context, index) {
+                  final coupon = list[index];
+                  return CouponTicket(
+                    coupon: coupon,
+                    onRedeem: () => controller.redeemCoupon(coupon),
+                  );
+                },
+              ),
             );
           }),
         ),

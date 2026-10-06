@@ -21,15 +21,18 @@ public class MemberProfile {
     @Column(name = "first_name")
     private String firstName;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String mobile;
 
     private String email;
 
     @Column(name = "membership_type")
-    private String membershipType; // e.g. "VIP MEMBER", "BLACK DIAMOND"
+    private String membershipType; // e.g. "REGISTERED USER", "CLASSIC SUBSCRIBER", "SIGNATURE SUBSCRIBER", "ELITE SUBSCRIBER"
 
-    private String status; // "Active", "Renewal Due", "Expired"
+    @Column(name = "subscription_tier")
+    private String subscriptionTier; // "REGISTERED", "CLASSIC", "SIGNATURE", "ELITE"
+
+    private String status; // "Active", "Renewal Due", "In Grace Period", "Expired"
 
     @Column(name = "issued_date")
     private LocalDate issuedDate;
@@ -67,6 +70,9 @@ public class MemberProfile {
 
     private String birthday;
 
+    @Column(name = "dob_locked")
+    private Boolean dobLocked; // Mandatory Profile Rule: strictly locked once submitted!
+
     @Column(name = "spouse_name")
     private String spouseName;
 
@@ -78,6 +84,12 @@ public class MemberProfile {
 
     @Column(name = "is_married")
     private String isMarried;
+
+    @Column(name = "referred_by_staff_id")
+    private String referredByStaffId; // Floor Captain Staff ID for incentive attribution
+
+    @Column(name = "corporate_id")
+    private Long corporateId;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -94,6 +106,8 @@ public class MemberProfile {
         if (loyaltyGoal == null) loyaltyGoal = 250000;
         if (pendingDues == null) pendingDues = 0;
         if (totalSpend == null) totalSpend = 0;
+        if (subscriptionTier == null) subscriptionTier = "REGISTERED";
+        if (dobLocked == null) dobLocked = false;
     }
 
     public MemberProfile() {}
@@ -118,6 +132,9 @@ public class MemberProfile {
 
     public String getMembershipType() { return membershipType; }
     public void setMembershipType(String membershipType) { this.membershipType = membershipType; }
+
+    public String getSubscriptionTier() { return subscriptionTier; }
+    public void setSubscriptionTier(String subscriptionTier) { this.subscriptionTier = subscriptionTier; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
@@ -164,6 +181,9 @@ public class MemberProfile {
     public String getBirthday() { return birthday; }
     public void setBirthday(String birthday) { this.birthday = birthday; }
 
+    public Boolean getDobLocked() { return dobLocked; }
+    public void setDobLocked(Boolean dobLocked) { this.dobLocked = dobLocked; }
+
     public String getSpouseName() { return spouseName; }
     public void setSpouseName(String spouseName) { this.spouseName = spouseName; }
 
@@ -175,4 +195,10 @@ public class MemberProfile {
 
     public String getIsMarried() { return isMarried; }
     public void setIsMarried(String isMarried) { this.isMarried = isMarried; }
+
+    public String getReferredByStaffId() { return referredByStaffId; }
+    public void setReferredByStaffId(String referredByStaffId) { this.referredByStaffId = referredByStaffId; }
+
+    public Long getCorporateId() { return corporateId; }
+    public void setCorporateId(Long corporateId) { this.corporateId = corporateId; }
 }

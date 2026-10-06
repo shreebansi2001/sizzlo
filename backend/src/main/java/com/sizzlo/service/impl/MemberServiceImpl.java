@@ -7,6 +7,7 @@ import com.sizzlo.entity.LoyaltyTransaction;
 import com.sizzlo.entity.MemberProfile;
 import com.sizzlo.exception.ResourceNotFoundException;
 import com.sizzlo.repository.ActivityLogRepository;
+import com.sizzlo.repository.CouponRepository;
 import com.sizzlo.repository.LoyaltyTransactionRepository;
 import com.sizzlo.repository.MemberProfileRepository;
 import com.sizzlo.service.MemberService;
@@ -25,14 +26,17 @@ public class MemberServiceImpl implements MemberService {
     private final MemberProfileRepository memberProfileRepository;
     private final LoyaltyTransactionRepository loyaltyTransactionRepository;
     private final ActivityLogRepository activityLogRepository;
+    private final CouponRepository couponRepository;
 
     @Autowired
     public MemberServiceImpl(MemberProfileRepository memberProfileRepository,
                              LoyaltyTransactionRepository loyaltyTransactionRepository,
-                             ActivityLogRepository activityLogRepository) {
+                             ActivityLogRepository activityLogRepository,
+                             CouponRepository couponRepository) {
         this.memberProfileRepository = memberProfileRepository;
         this.loyaltyTransactionRepository = loyaltyTransactionRepository;
         this.activityLogRepository = activityLogRepository;
+        this.couponRepository = couponRepository;
     }
 
     private String cleanMobile(String mobile) {
@@ -67,12 +71,13 @@ public class MemberServiceImpl implements MemberService {
                     p.setExpiryDate(LocalDate.now().plusYears(1));
                     p.setTotalSavings(0);
                     p.setCouponsUsed(0);
-                    p.setCouponsTotal(12);
-                    p.setLoyaltyPoints(5000); // 5,000 Welcome bonus points!
+                    p.setCouponsTotal(0);
+                    p.setLoyaltyPoints(0);
                     p.setLoyaltyGoal(250000);
                     p.setTotalSpend(0);
                     p.setPendingDues(0);
                     p.setStatus("Active");
+                    p.setSubscriptionTier("REGISTERED");
                     return p;
                 });
 
@@ -83,36 +88,32 @@ public class MemberServiceImpl implements MemberService {
         if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
             profile.setEmail(request.getEmail().trim());
         } else if (profile.getEmail() == null || profile.getEmail().isEmpty()) {
-            profile.setEmail(profile.getFirstName().toLowerCase() + "." + (cleanPhone.length() >= 4 ? cleanPhone.substring(cleanPhone.length() - 4) : "vip") + "@sizzlo.in");
+            profile.setEmail(profile.getFirstName().toLowerCase() + "." + (cleanPhone.length() >= 4 ? cleanPhone.substring(cleanPhone.length() - 4) : "guest") + "@sizzlo.in");
         }
         profile.setAddress(request.getAddress());
         profile.setGender(request.getGender());
-        profile.setBirthday(request.getBirthday());
+        
+        // Strictly lock DOB once submitted (Chapter 03.2 SRS)
+        if (request.getBirthday() != null && !request.getBirthday().isEmpty()) {
+            profile.setBirthday(request.getBirthday());
+            profile.setDobLocked(true);
+        }
+        
         profile.setSpouseName(request.getSpouseName());
         profile.setSpouseBirthday(request.getSpouseBirthday());
         profile.setAnniversaryDate(request.getAnniversaryDate());
         profile.setIsMarried(request.getIsMarried());
-        profile.setMembershipType("VIP MEMBER");
+        profile.setMembershipType(profile.getSubscriptionTier() != null && !profile.getSubscriptionTier().equals("REGISTERED")
+                ? profile.getSubscriptionTier() + " SUBSCRIBER" : "REGISTERED USER");
         profile.setLastVisit("Just Joined");
 
         MemberProfile saved = memberProfileRepository.save(profile);
-
-        // Record welcome loyalty reward
-        LoyaltyTransaction welcomeTx = new LoyaltyTransaction();
-        welcomeTx.setMembershipId(saved.getMembershipId());
-        welcomeTx.setTitle("VIP Welcome Privilege Points");
-        welcomeTx.setDescription("Complimentary registration bonus credited");
-        welcomeTx.setPoints(5000);
-        welcomeTx.setType("BONUS");
-        welcomeTx.setOutletName("Sizzlo VIP Privilege");
-        welcomeTx.setTransactionTime(LocalDateTime.now());
-        loyaltyTransactionRepository.save(welcomeTx);
 
         // Log into admin activity
         ActivityLog log = new ActivityLog();
         log.setActorName(saved.getFullName());
         log.setActionType("REGISTRATION");
-        log.setDescription("New VIP Member registered with mobile " + saved.getMobile());
+        log.setDescription("New User registered with mobile " + saved.getMobile());
         log.setOutletName("Digital Portal");
         log.setTimeAgo("Just now");
         log.setTimestamp(LocalDateTime.now());
@@ -129,22 +130,23 @@ public class MemberServiceImpl implements MemberService {
 
         MemberProfile profile = findMemberByPhone(mobile)
                 .orElseGet(() -> {
-                    // Create dynamic member with their real phone if logging in first time
+                    // Create standard registered user record
                     MemberProfile newProfile = new MemberProfile();
                     newProfile.setMobile(formattedPhone);
-                    String suffix = cleanPhone.length() >= 4 ? cleanPhone.substring(cleanPhone.length() - 4) : "VIP";
-                    newProfile.setFullName("VIP Guest " + suffix);
+                    String suffix = cleanPhone.length() >= 4 ? cleanPhone.substring(cleanPhone.length() - 4) : "User";
+                    newProfile.setFullName("Guest " + suffix);
                     newProfile.setFirstName("Guest");
                     newProfile.setEmail("guest." + suffix.toLowerCase() + "@sizzlo.in");
                     newProfile.setMembershipId("YSM-2024-" + (1000 + (int)(Math.random() * 9000)));
-                    newProfile.setMembershipType("VIP MEMBER");
+                    newProfile.setMembershipType("REGISTERED USER");
+                    newProfile.setSubscriptionTier("REGISTERED");
                     newProfile.setStatus("Active");
                     newProfile.setIssuedDate(LocalDate.now());
                     newProfile.setExpiryDate(LocalDate.now().plusYears(1));
                     newProfile.setTotalSavings(0);
                     newProfile.setCouponsUsed(0);
-                    newProfile.setCouponsTotal(12);
-                    newProfile.setLoyaltyPoints(5000);
+                    newProfile.setCouponsTotal(0);
+                    newProfile.setLoyaltyPoints(0);
                     newProfile.setLoyaltyGoal(250000);
                     newProfile.setTotalSpend(0);
                     newProfile.setPendingDues(0);
@@ -156,7 +158,7 @@ public class MemberServiceImpl implements MemberService {
         ActivityLog log = new ActivityLog();
         log.setActorName(profile.getFullName());
         log.setActionType("CHECK_IN");
-        log.setDescription("VIP Member authenticated via OTP");
+        log.setDescription("Member authenticated via DLT OTP");
         log.setOutletName("Mobile Client");
         log.setTimeAgo("Just now");
         log.setTimestamp(LocalDateTime.now());
@@ -191,7 +193,15 @@ public class MemberServiceImpl implements MemberService {
         if (updatedProfile.getMobile() != null) existing.setMobile(updatedProfile.getMobile());
         if (updatedProfile.getAddress() != null) existing.setAddress(updatedProfile.getAddress());
         if (updatedProfile.getGender() != null) existing.setGender(updatedProfile.getGender());
-        if (updatedProfile.getBirthday() != null) existing.setBirthday(updatedProfile.getBirthday());
+        
+        // Strict DOB lock constraint: cannot modify once locked!
+        if (Boolean.TRUE.equals(existing.getDobLocked())) {
+            // Do not allow DOB override
+        } else if (updatedProfile.getBirthday() != null && !updatedProfile.getBirthday().isEmpty()) {
+            existing.setBirthday(updatedProfile.getBirthday());
+            existing.setDobLocked(true);
+        }
+
         if (updatedProfile.getSpouseName() != null) existing.setSpouseName(updatedProfile.getSpouseName());
         if (updatedProfile.getSpouseBirthday() != null) existing.setSpouseBirthday(updatedProfile.getSpouseBirthday());
         if (updatedProfile.getAnniversaryDate() != null) existing.setAnniversaryDate(updatedProfile.getAnniversaryDate());
@@ -207,5 +217,44 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public List<MemberProfile> getAllMembers() {
         return memberProfileRepository.findAll();
+    }
+
+    @Override
+    public boolean deleteAccount(String mobile) {
+        Optional<MemberProfile> opt = findMemberByPhone(mobile);
+        if (opt.isPresent()) {
+            MemberProfile m = opt.get();
+            // Purge personal PII and member record (Apple App Store & Google Play compliance)
+            memberProfileRepository.delete(m);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public MemberProfile renewWithPoints(String membershipId) {
+        MemberProfile m = getProfileByMembershipId(membershipId);
+        int points = m.getLoyaltyPoints() != null ? m.getLoyaltyPoints() : 0;
+        if (points < 250000) {
+            throw new RuntimeException("Insufficient points for free renewal. Required: 250,000 points. Current: " + points);
+        }
+
+        // Deduct 250,000 points and extend subscription for 365 days
+        m.setLoyaltyPoints(points - 250000);
+        m.setStatus("Active");
+        m.setIssuedDate(LocalDate.now());
+        m.setExpiryDate(LocalDate.now().plusDays(365));
+
+        LoyaltyTransaction tx = new LoyaltyTransaction();
+        tx.setMembershipId(m.getMembershipId());
+        tx.setTitle("Annual Plan Free Renewal (250,000 Points)");
+        tx.setDescription("1-Tap Loyalty Milestone Redemption");
+        tx.setPoints(-250000);
+        tx.setType("REDEEM");
+        tx.setOutletName("All Yanki Outlets");
+        tx.setTransactionTime(LocalDateTime.now());
+        loyaltyTransactionRepository.save(tx);
+
+        return memberProfileRepository.save(m);
     }
 }

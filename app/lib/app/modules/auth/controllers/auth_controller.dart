@@ -36,13 +36,9 @@ class AuthController extends GetxController {
   }
 
   void onContinueLogin() async {
-    var phone = phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
-    if (phone.isEmpty) {
-      phone = '9825012345';
-      phoneController.text = phone;
-    }
-    if (phone.length != 10) {
-      errorMessage.value = 'Enter a valid 10-digit Indian mobile number.';
+    final phone = phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
+    if (phone.isEmpty || phone.length != 10) {
+      errorMessage.value = 'Please enter a valid 10-digit Indian mobile number.';
       return;
     }
     errorMessage.value = '';
@@ -55,7 +51,7 @@ class AuthController extends GetxController {
       startResendTimer();
       Get.snackbar(
         'OTP Sent Successfully',
-        res['message']?.toString() ?? 'Please enter demo OTP: 1234',
+        res['message']?.toString() ?? 'Please enter the OTP sent to your WhatsApp',
         backgroundColor: const Color(0xFF001D4A),
         colorText: const Color(0xFFE8B84A),
         duration: const Duration(seconds: 4),
@@ -99,7 +95,12 @@ class AuthController extends GetxController {
   }
 
   void verifyOtp() async {
-    final enteredOtp = otpController.text.trim().isEmpty ? '1234' : otpController.text.trim();
+    final enteredOtp = otpController.text.trim();
+    if (enteredOtp.isEmpty) {
+      Get.snackbar('OTP Required', 'Please enter the 6-digit OTP sent to WhatsApp',
+          backgroundColor: Colors.redAccent, colorText: Colors.white);
+      return;
+    }
     isLoading.value = true;
     try {
       final authResult = await _apiService.verifyOtp(currentPhone.value, enteredOtp);
@@ -107,6 +108,7 @@ class AuthController extends GetxController {
         final member = authResult['member'];
         if (Get.isRegistered<HomeController>()) {
           Get.find<HomeController>().member.value = member;
+          Get.find<HomeController>().activePlan.value = member.planId;
           Get.find<HomeController>().loadDashboardData();
         }
         Get.snackbar(
@@ -116,9 +118,17 @@ class AuthController extends GetxController {
           colorText: const Color(0xFFE8B84A),
           duration: const Duration(seconds: 3),
         );
+
+        if (member.isSubscriber) {
+          Get.offAllNamed(AppRoutes.HOME);
+        } else {
+          // If not yet subscribed, route to Plans screen to choose a plan
+          Get.offAllNamed(AppRoutes.PLANS);
+        }
+      } else {
+        Get.snackbar('Verification Failed', 'Invalid or expired OTP. Please try again.',
+            backgroundColor: Colors.redAccent, colorText: Colors.white);
       }
-      // After OTP, navigate to Subscription Plans screen
-      Get.offAllNamed(AppRoutes.PLANS);
     } finally {
       isLoading.value = false;
     }

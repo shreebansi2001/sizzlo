@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/members")
@@ -24,9 +25,21 @@ public class MemberController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<MemberProfile>> getCurrentProfile(
-            @RequestParam(name = "membershipId", defaultValue = "YSM-2024-04821") String membershipId) {
-        MemberProfile profile = memberService.getProfileByMembershipId(membershipId);
-        return ResponseEntity.ok(ApiResponse.success(profile));
+            @RequestParam(required = false) String membershipId,
+            @RequestParam(required = false) String mobile) {
+        if (membershipId != null && !membershipId.trim().isEmpty()) {
+            try {
+                MemberProfile profile = memberService.getProfileByMembershipId(membershipId.trim());
+                return ResponseEntity.ok(ApiResponse.success(profile));
+            } catch (Exception ignored) {}
+        }
+        if (mobile != null && !mobile.trim().isEmpty()) {
+            try {
+                MemberProfile profile = memberService.getProfileByMobile(mobile.trim());
+                return ResponseEntity.ok(ApiResponse.success(profile));
+            } catch (Exception ignored) {}
+        }
+        return ResponseEntity.ok(ApiResponse.error("Profile not found"));
     }
 
     @GetMapping("/{membershipId}")
@@ -53,5 +66,22 @@ public class MemberController {
     public ResponseEntity<ApiResponse<List<MemberProfile>>> getAllMembers() {
         List<MemberProfile> list = memberService.getAllMembers();
         return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
+    @PostMapping("/{membershipId}/renew-points")
+    public ResponseEntity<ApiResponse<MemberProfile>> renewWithPoints(@PathVariable String membershipId) {
+        MemberProfile renewed = memberService.renewWithPoints(membershipId);
+        return ResponseEntity.ok(ApiResponse.success("Subscription renewed for 365 days via 250,000 loyalty points!", renewed));
+    }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<ApiResponse<String>> deleteAccount(
+            @RequestParam(name = "mobile") String mobile) {
+        boolean deleted = memberService.deleteAccount(mobile);
+        if (deleted) {
+            return ResponseEntity.ok(ApiResponse.success("Your Sizzlo account and personal data have been completely deleted as per privacy regulations.", "DELETED"));
+        } else {
+            return ResponseEntity.ok(ApiResponse.success("Account already inactive or deleted.", "NOT_FOUND"));
+        }
     }
 }

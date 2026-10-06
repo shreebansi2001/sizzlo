@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -41,58 +42,71 @@ public class NotificationController {
         List<NotificationDto> list = new ArrayList<>();
         long idCounter = 1;
 
-        // 1. Check member profile
+        // 1. Resolve member profile
         MemberProfile profile = null;
-        if (membershipId != null && !membershipId.isEmpty()) {
-            profile = memberProfileRepository.findByMembershipId(membershipId).orElse(null);
+        if (membershipId != null && !membershipId.trim().isEmpty()) {
+            profile = memberProfileRepository.findByMembershipId(membershipId.trim()).orElse(null);
         }
-        if (profile == null && mobile != null && !mobile.isEmpty()) {
+        if (profile == null && mobile != null && !mobile.trim().isEmpty()) {
             String digits = mobile.replaceAll("\\D", "");
             for (MemberProfile m : memberProfileRepository.findAll()) {
                 String mDigits = m.getMobile().replaceAll("\\D", "");
-                if (mDigits.equals(digits) || (mDigits.length() >= 10 && mDigits.endsWith(digits))) {
+                if (!digits.isEmpty() && (mDigits.equals(digits) || (mDigits.length() >= 10 && mDigits.endsWith(digits)))) {
                     profile = m;
                     break;
                 }
             }
         }
 
-        // Welcome / VIP notification
-        if (profile != null) {
+        // For new accounts or unauthenticated sessions with no events, return clean empty list
+        if (profile == null) {
+            return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
+        }
+
+        String tier = profile.getSubscriptionTier();
+        boolean isSubscriber = tier != null && !"REGISTERED".equalsIgnoreCase(tier) && !"NONE".equalsIgnoreCase(tier);
+
+        // Only show subscription and loyalty notifications if member has actually subscribed
+        if (isSubscriber) {
             list.add(new NotificationDto(
                     idCounter++,
                     "gift",
-                    "VIP Membership Activated",
-                    "Welcome " + profile.getFullName() + "! Your " + profile.getMembershipType() + " benefits are ready.",
-                    "Active now"
+                    tier + " VIP Subscription Active",
+                    "Welcome " + profile.getFullName() + "! Your " + tier + " privileges and 12-coupon vault are active.",
+                    "Active"
             ));
 
             if (profile.getLoyaltyPoints() != null && profile.getLoyaltyPoints() > 0) {
                 list.add(new NotificationDto(
                         idCounter++,
                         "sparkle",
-                        "Privilege Points Credited",
-                        profile.getLoyaltyPoints() + " loyalty points available in your wallet.",
-                        "Recent"
+                        "Loyalty Points Available",
+                        profile.getLoyaltyPoints() + " loyalty points available in your Sizzlo wallet.",
+                        "Wallet"
                 ));
             }
-        } else {
-            list.add(new NotificationDto(
-                    idCounter++,
-                    "gift",
-                    "Welcome to Sizzlo",
-                    "Unlock exclusive 50% dining discounts and VIP privileges across Yanki outlets.",
-                    "Today"
-            ));
+
+            // Real user's available coupons
+            List<Coupon> userCoupons = couponRepository.findByMembershipIdAndStatus(profile.getMembershipId(), "available");
+            for (Coupon c : userCoupons) {
+                if (list.size() >= 5) break;
+                list.add(new NotificationDto(
+                        idCounter++,
+                        "tag",
+                        c.getName(),
+                        c.getSubtitle() + " · Valid at " + c.getOutlet(),
+                        "Expires " + c.getExpiryDate()
+                ));
+            }
         }
 
-        // 2. Add Recent Reservations
-        String searchMobile = profile != null ? profile.getMobile() : (mobile != null ? mobile : "");
-        if (!searchMobile.isEmpty()) {
+        // Real user's dining reservations
+        String searchMobile = profile.getMobile();
+        if (searchMobile != null && !searchMobile.trim().isEmpty()) {
             String cleanPhone = searchMobile.replaceAll("\\D", "");
             for (Reservation r : reservationRepository.findAllByOrderByCreatedAtDesc()) {
-                String rPhone = r.getCustomerMobile().replaceAll("\\D", "");
-                if (rPhone.equals(cleanPhone) || (rPhone.length() >= 10 && rPhone.endsWith(cleanPhone))) {
+                String rPhone = r.getCustomerMobile() != null ? r.getCustomerMobile().replaceAll("\\D", "") : "";
+                if (!cleanPhone.isEmpty() && (rPhone.equals(cleanPhone) || (rPhone.length() >= 10 && rPhone.endsWith(cleanPhone)))) {
                     list.add(new NotificationDto(
                             idCounter++,
                             "calendar",
@@ -104,28 +118,6 @@ public class NotificationController {
                 }
             }
         }
-
-        // 3. Add Top Available Coupons
-        List<Coupon> availableCoupons = couponRepository.findByStatus("available");
-        for (Coupon c : availableCoupons) {
-            if (list.size() >= 6) break;
-            list.add(new NotificationDto(
-                    idCounter++,
-                    "tag",
-                    c.getName(),
-                    c.getSubtitle() + " · Valid at " + c.getOutlet(),
-                    "Expires " + c.getExpiryDate()
-            ));
-        }
-
-        // 4. Default promotional notification
-        list.add(new NotificationDto(
-                idCounter++,
-                "alert",
-                "Weekend Chef's Sizzler Tasting",
-                "Reserve your priority VIP table for this Saturday evening at Yanki Signature.",
-                "Upcoming"
-        ));
 
         return ResponseEntity.ok(ApiResponse.success(list));
     }

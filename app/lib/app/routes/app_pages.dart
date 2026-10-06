@@ -33,6 +33,10 @@ import '../modules/profile/views/subviews/savings_summary_view.dart';
 import '../modules/profile/views/subviews/transaction_history_view.dart';
 import '../modules/profile/views/subviews/support_view.dart';
 import '../modules/profile/views/subviews/terms_conditions_view.dart';
+import '../modules/billing/bindings/billing_binding.dart';
+import '../modules/billing/views/billing_view.dart';
+import '../modules/outlets/bindings/outlets_binding.dart';
+import '../modules/outlets/views/outlets_view.dart';
 
 class AppPages {
   static const INITIAL = AppRoutes.SPLASH;
@@ -134,6 +138,16 @@ class AppPages {
     GetPage(
       name: AppRoutes.TERMS,
       page: () => const TermsConditionsView(),
+    ),
+    GetPage(
+      name: AppRoutes.BILLING,
+      page: () => const BillingView(),
+      binding: BillingBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.OUTLETS,
+      page: () => const OutletsView(),
+      binding: OutletsBinding(),
     ),
   ];
 }

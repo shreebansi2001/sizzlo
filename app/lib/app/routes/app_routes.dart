@@ -22,4 +22,6 @@ abstract class AppRoutes {
   static const TRANSACTION_HISTORY = '/transaction-history';
   static const SUPPORT = '/support';
   static const TERMS = '/terms';
+  static const BILLING = '/billing';
+  static const OUTLETS = '/outlets';
 }

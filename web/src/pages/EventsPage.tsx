@@ -1,66 +1,128 @@
-import React, { useState } from 'react';
-import { PartyPopper, TrendingUp, Calendar, Truck, Plus, CheckCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PartyPopper, TrendingUp, Calendar, Truck, UserCheck, ShieldAlert, Sparkles, Phone, Mail } from 'lucide-react';
+import { fetchBanquetLeads, assignBanquetLead, BanquetLeadDTO } from '../api/client';
 import { EventItem } from '../types';
 
 interface EventsPageProps {
-  events: EventItem[];
+  events?: EventItem[];
 }
 
-export const EventsPage: React.FC<EventsPageProps> = ({ events }) => {
-  const [eventList, setEventList] = useState<EventItem[]>(events);
-  const [showModal, setShowModal] = useState(false);
-  const [newEvent, setNewEvent] = useState({
-    name: '',
-    type: 'Banquet' as 'Banquet' | 'ODC',
-    date: '',
-    guests: 100,
-    value: 250000,
-  });
+export const EventsPage: React.FC<EventsPageProps> = () => {
+  const [leads, setLeads] = useState<BanquetLeadDTO[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const totalValue = eventList.reduce((acc, e) => acc + e.value, 0);
-
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    const created: EventItem = {
-      id: `E-${100 + eventList.length + 1}`,
-      name: newEvent.name,
-      type: newEvent.type,
-      date: newEvent.date,
-      guests: Number(newEvent.guests),
-      value: Number(newEvent.value),
-      status: 'Pipeline',
-    };
-    setEventList([...eventList, created]);
-    setShowModal(false);
+  const loadLeads = async () => {
+    try {
+      const data = await fetchBanquetLeads();
+      setLeads(data);
+    } catch (_) {}
   };
+
+  useEffect(() => {
+    loadLeads();
+  }, []);
+
+  const handleAssign = async (id: number) => {
+    const rep = window.prompt('Assign lead to sales representative:', 'BDE Amit Trivedi');
+    if (!rep) return;
+    try {
+      const res = await assignBanquetLead(id, rep);
+      if (res.success) {
+        setNotice(`Lead #${id} assigned to ${rep}!`);
+        await loadLeads();
+      }
+    } catch (e: any) {
+      setNotice(`Assignment error: ${e.message}`);
+    }
+    setTimeout(() => setNotice(null), 3500);
+  };
+
+  const totalGuests = leads.reduce((acc, l) => acc + (l.paxCount || 0), 0);
 
   return (
     <div>
-      {/* 4 KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        {[
-          { label: 'UPCOMING EVENTS', val: String(eventList.length), sub: 'Next 60 days pipeline', icon: Calendar },
-          { label: 'TOTAL PIPELINE VALUE', val: `₹${(totalValue / 100000).toFixed(2)} Lakh`, sub: '+24% YoY surge', icon: TrendingUp, delta: '+24%' },
-          { label: 'CONFIRMED BOOKINGS', val: String(eventList.filter(e => e.status === 'Confirmed').length), sub: 'Contracts signed & advances received', icon: PartyPopper },
-          { label: 'OUTDOOR CATERING (ODC)', val: String(eventList.filter(e => e.type === 'ODC').length), sub: 'High-margin corporate & weddings', icon: Truck },
-        ].map((s) => {
-          const Icon = s.icon;
-          return (
-            <div key={s.label} className="kpi-card">
-              <div className="kpi-header">
-                <span className="kpi-label">{s.label}</span>
-                <Icon size={16} color="var(--gold)" />
-              </div>
-              <div className="kpi-value" style={{ marginTop: 6, fontSize: 24 }}>{s.val}</div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-                {s.sub}
-              </span>
-            </div>
-          );
-        })}
+      {/* Toast Alert */}
+      {notice && (
+        <div style={{
+          background: 'rgba(232, 184, 74, 0.15)',
+          border: '1px solid var(--gold)',
+          color: 'var(--primary)',
+          padding: '12px 18px',
+          borderRadius: 12,
+          marginBottom: 20,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 13,
+          fontWeight: 600
+        }}>
+          {notice}
+        </div>
+      )}
+
+      {/* Header and Compliance Banner */}
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)' }}>
+          House of Yanki Banquet &amp; Outdoor Catering (ODC) Desk
+        </h2>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+          SRS Chapter 07: Large Gatherings (20+ Covers) &amp; Outdoor Catering Management
+        </p>
       </div>
 
-      {/* Main Table Card */}
+      {/* Strict Zero-Points Compliance Banner */}
+      <div style={{
+        background: 'rgba(255, 138, 0, 0.08)',
+        border: '1px solid var(--primary)',
+        borderRadius: 14,
+        padding: '14px 18px',
+        marginBottom: 24,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12
+      }}>
+        <ShieldAlert size={20} color="var(--primary)" />
+        <div style={{ fontSize: 12, color: 'var(--text-main)' }}>
+          <strong>Strict Zero-Points Compliance Engine (SRS Chapter 7.2):</strong> Banquet and Outdoor Catering (ODC) bookings are eligible for tier card-rate discounts (20% for Signature &amp; Elite) but are strictly excluded from earning loyalty points to prevent outsized liability.
+        </div>
+      </div>
+
+      {/* 4 KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <div className="kpi-card">
+          <span className="kpi-label">INQUIRY PIPELINE</span>
+          <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: 'var(--primary)' }}>
+            {leads.length}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Active leads from mobile app</span>
+        </div>
+
+        <div className="kpi-card">
+          <span className="kpi-label">TOTAL PROJECTED COVERS</span>
+          <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#10B981' }}>
+            {totalGuests.toLocaleString('en-IN')}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Cumulative attendee headcount</span>
+        </div>
+
+        <div className="kpi-card">
+          <span className="kpi-label">ODC &amp; LAWN EVENTS</span>
+          <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#3B82F6' }}>
+            {leads.filter(l => l.eventCategory.toLowerCase().includes('outdoor') || l.eventCategory.toLowerCase().includes('lawn')).length}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>High-margin outdoor catering</span>
+        </div>
+
+        <div className="kpi-card">
+          <span className="kpi-label">QUALIFIED FOR 20% DISCOUNT</span>
+          <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: 'var(--gold-dark)' }}>
+            {leads.filter(l => l.paxCount >= 300).length}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>300+ guests (Elite tier perk)</span>
+        </div>
+      </div>
+
+      {/* Leads Table */}
       <div style={{
         background: 'var(--surface)',
         borderRadius: 20,
@@ -70,65 +132,89 @@ export const EventsPage: React.FC<EventsPageProps> = ({ events }) => {
       }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Banquet &amp; Outdoor Catering Pipeline</h3>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Lead conversion, party sizes, and revenue forecasts</p>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Incoming Event Inquiries</h3>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Routed directly from Sizzlo mobile app 20+ guest trigger</p>
           </div>
-          <button className="primary-btn" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Plus size={16} /> New Booking Inquiry
-          </button>
+          <span style={{ fontSize: 12, fontWeight: 700, background: 'rgba(255, 138, 0, 0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: 20 }}>
+            {leads.length} Leads
+          </span>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Event &amp; Host</th>
-                <th>Concept</th>
-                <th>Event Date</th>
+                <th>Customer Contact</th>
+                <th>Category</th>
+                <th>Target Date &amp; Shift</th>
                 <th>Guest Count</th>
-                <th>Contract Value</th>
-                <th>Pipeline Status</th>
+                <th>Special Notes</th>
+                <th>Sales Desk Assignee</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {eventList.map((e) => (
-                <tr key={e.id}>
+              {leads.map((lead) => (
+                <tr key={lead.id}>
                   <td>
-                    <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{e.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{e.id}</div>
+                    <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{lead.customerName}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{lead.customerMobile}</div>
                   </td>
                   <td>
                     <span style={{
                       fontSize: 11,
                       fontWeight: 700,
+                      background: 'rgba(59, 130, 246, 0.15)',
+                      color: '#3B82F6',
                       padding: '3px 8px',
-                      borderRadius: 6,
-                      background: e.type === 'Banquet' ? 'rgba(255, 138, 0, 0.15)' : 'rgba(201, 162, 77, 0.2)',
-                      color: e.type === 'Banquet' ? 'var(--primary)' : 'var(--gold)'
+                      borderRadius: 6
                     }}>
-                      {e.type}
+                      {lead.eventCategory}
                     </span>
                   </td>
-                  <td style={{ fontSize: 13, fontWeight: 600 }}>{e.date}</td>
-                  <td style={{ fontSize: 13, fontWeight: 700 }}>{e.guests.toLocaleString('en-IN')} Pax</td>
-                  <td style={{ fontSize: 14, fontWeight: 800, color: 'var(--primary)' }}>
-                    ₹{e.value.toLocaleString('en-IN')}
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{lead.targetDate}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{lead.shift} Shift</div>
+                  </td>
+                  <td>
+                    <span style={{ fontWeight: 800, fontSize: 14 }}>
+                      {lead.paxCount} Guests
+                    </span>
+                    {lead.paxCount >= 300 && (
+                      <div style={{ fontSize: 10, fontWeight: 700, color: '#10B981' }}>★ 20% Elite Perk Eligible</div>
+                    )}
+                  </td>
+                  <td style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 220 }}>
+                    {lead.customRequirements || 'Standard banquet package'}
                   </td>
                   <td>
                     <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
                       fontSize: 11,
-                      fontWeight: 700,
-                      padding: '3px 8px',
-                      borderRadius: 20,
-                      background: e.status === 'Confirmed' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                      color: e.status === 'Confirmed' ? '#10B981' : '#F59E0B'
+                      fontWeight: 600,
+                      color: lead.assignedTo ? 'var(--text-main)' : 'var(--warning)'
                     }}>
-                      {e.status === 'Confirmed' ? <CheckCircle size={12} /> : <Clock size={12} />}
-                      {e.status}
+                      {lead.assignedTo || 'Unassigned'}
                     </span>
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => handleAssign(lead.id)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        background: 'var(--surface-alt)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--primary)',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <UserCheck size={12} /> Assign Lead
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -136,111 +222,6 @@ export const EventsPage: React.FC<EventsPageProps> = ({ events }) => {
           </table>
         </div>
       </div>
-
-      {/* Modal Dialog */}
-      {showModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(4px)',
-          display: 'grid',
-          placeItems: 'center',
-          zIndex: 100
-        }}>
-          <div style={{
-            background: 'var(--surface)',
-            borderRadius: 20,
-            padding: 32,
-            width: '100%',
-            maxWidth: 480,
-            border: '1px solid var(--border)',
-            boxShadow: 'var(--shadow-card)'
-          }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--primary)', marginBottom: 6 }}>
-              Create Banquet / ODC Inquiry
-            </h3>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
-              Add a new high-value celebration to the sales pipeline
-            </p>
-
-            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Event Title &amp; Host</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Wedding Reception — Shah Family"
-                  value={newEvent.name}
-                  onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Concept</label>
-                  <select
-                    value={newEvent.type}
-                    onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as any })}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
-                  >
-                    <option value="Banquet">Banquet Hall</option>
-                    <option value="ODC">Outdoor Catering (ODC)</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Event Date</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 15 Nov 2026"
-                    value={newEvent.date}
-                    onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Guest Count</label>
-                  <input
-                    type="number"
-                    required
-                    value={newEvent.guests}
-                    onChange={(e) => setNewEvent({ ...newEvent, guests: Number(e.target.value) })}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--text-main)' }}>Estimated Value (₹)</label>
-                  <input
-                    type="number"
-                    required
-                    value={newEvent.value}
-                    onChange={(e) => setNewEvent({ ...newEvent, value: Number(e.target.value) })}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12 }}>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-alt)', color: 'var(--text-main)', cursor: 'pointer' }}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="primary-btn">
-                  Save to Pipeline
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

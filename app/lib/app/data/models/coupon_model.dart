@@ -7,9 +7,12 @@ class CouponModel {
   final int leftCount;
   final int totalCount;
   final String expiryDate;
-  final String status; // 'available', 'used', 'expired'
+  final String status; // 'available', 'used', 'redeemed', 'expired'
   final String outlet;
   final String color;  // 'royal', 'gold'
+  final String? burnedInvoiceNumber;
+  final String? burnedCashierId;
+  final String? burnedAt;
 
   CouponModel({
     required this.id,
@@ -23,9 +26,12 @@ class CouponModel {
     required this.status,
     required this.outlet,
     required this.color,
+    this.burnedInvoiceNumber,
+    this.burnedCashierId,
+    this.burnedAt,
   });
 
-  bool get isAvailable => status == 'available' && leftCount > 0;
+  bool get isAvailable => status.toLowerCase() == 'available' && leftCount > 0;
 
   factory CouponModel.fromJson(Map<String, dynamic> json) {
     return CouponModel(
@@ -40,6 +46,9 @@ class CouponModel {
       status: json['status'] ?? 'available',
       outlet: json['outlet'] ?? 'All Outlets',
       color: json['color'] ?? 'royal',
+      burnedInvoiceNumber: json['burnedInvoiceNumber']?.toString(),
+      burnedCashierId: json['burnedCashierId']?.toString(),
+      burnedAt: json['burnedAt']?.toString(),
     );
   }
 
@@ -56,6 +65,9 @@ class CouponModel {
       'status': status,
       'outlet': outlet,
       'color': color,
+      'burnedInvoiceNumber': burnedInvoiceNumber,
+      'burnedCashierId': burnedCashierId,
+      'burnedAt': burnedAt,
     };
   }
 }

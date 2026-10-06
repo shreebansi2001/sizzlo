@@ -83,15 +83,25 @@ class CouponTicket extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: isAvailable ? AppColors.success.withOpacity(0.15) : Colors.white.withOpacity(0.06),
+                                color: isAvailable
+                                    ? AppColors.success.withOpacity(0.15)
+                                    : const Color(0xFFE27C38).withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isAvailable
+                                      ? AppColors.success.withOpacity(0.3)
+                                      : const Color(0xFFE27C38).withOpacity(0.3),
+                                  width: 0.8,
+                                ),
                               ),
                               child: Text(
-                                isAvailable ? '${coupon.leftCount} Left' : 'Used',
+                                isAvailable
+                                    ? '${coupon.leftCount} Left'
+                                    : (coupon.status.toLowerCase() == 'expired' ? 'Expired' : 'Used & Burned'),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: isAvailable ? AppColors.success : Colors.white.withOpacity(0.4),
+                                  color: isAvailable ? AppColors.success : const Color(0xFFE27C38),
                                 ),
                               ),
                             ),
@@ -100,10 +110,10 @@ class CouponTicket extends StatelessWidget {
                         const SizedBox(height: 5),
                         Text(
                           coupon.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: isAvailable ? Colors.white : Colors.white70,
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -115,6 +125,17 @@ class CouponTicket extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        if (coupon.burnedInvoiceNumber != null && coupon.burnedInvoiceNumber!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Settled on POS #${coupon.burnedInvoiceNumber}',
+                            style: const TextStyle(
+                              color: Color(0xFFD4AF37),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -150,7 +171,7 @@ class CouponTicket extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Expires: ${coupon.expiryDate}',
+                    isAvailable ? 'Expires: ${coupon.expiryDate}' : 'Status: Used / Expired',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
@@ -175,6 +196,37 @@ class CouponTicket extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withOpacity(0.12)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            coupon.status.toLowerCase() == 'expired'
+                                ? Icons.access_time_rounded
+                                : Icons.check_circle_outline_rounded,
+                            size: 12,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            coupon.status.toLowerCase() == 'expired' ? 'EXPIRED' : 'USED & BURNED',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],

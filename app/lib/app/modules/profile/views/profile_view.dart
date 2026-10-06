@@ -67,34 +67,66 @@ class ProfileView extends GetView<ProfileController> {
               // List of Options
               _buildMenuList(m, isSub),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
 
-              // Logout Button
-              GestureDetector(
-                onTap: controller.logout,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 22),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 16),
-                      SizedBox(width: 8),
-                      Text(
-                        'Logout',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFEF4444),
-                        ),
+              // Action Buttons Row: Logout & Delete Account
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: controller.logout,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            'Logout',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFEF4444),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 14),
+                  GestureDetector(
+                    onTap: controller.deleteAccountConfirm,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.red.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 16),
+                          SizedBox(width: 6),
+                          Text(
+                            'Delete Account',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.redAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               // Breathing room for floating bottom nav
@@ -378,6 +410,19 @@ class ProfileView extends GetView<ProfileController> {
         'icon': Icons.headset_mic_outlined,
         'action': () => Get.toNamed(AppRoutes.SUPPORT),
       },
+      {
+        'title': 'Rate Dining Experience',
+        'subtitle': '45-min post-meal smart review & feedback',
+        'icon': Icons.star_rate_rounded,
+        'action': controller.showReviewDialog,
+      },
+      if (m.loyaltyPoints >= 250000)
+        {
+          'title': 'Free Annual Renewal',
+          'subtitle': 'Unlock 365 days via 250,000 points milestone',
+          'icon': Icons.card_giftcard_rounded,
+          'action': controller.renewWithPoints,
+        },
       {
         'title': 'Terms & Conditions',
         'subtitle': 'Subscription agreement',

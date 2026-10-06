@@ -161,9 +161,13 @@ class MemberModel {
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
     final rawName = (json['fullName'] ?? json['name'] ?? '').toString().trim();
-    final name = rawName.isNotEmpty ? rawName : AppConstants.currentUserName;
+    final name = rawName.isNotEmpty ? rawName : (AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : 'Guest');
     final parts = name.split(RegExp(r'\s+'));
     final derivedFirst = parts.isNotEmpty ? parts.first : name;
+
+    final rawTier = (json['subscriptionTier'] ?? json['planId'] ?? '').toString().toLowerCase();
+    final plan = (rawTier == 'registered' || rawTier == 'none' || rawTier.isEmpty) ? 'none' : rawTier;
+    final bool isSub = plan != 'none';
 
     return MemberModel(
       id: json['id']?.toString() ?? '1',
@@ -172,19 +176,19 @@ class MemberModel {
           ? json['firstName'].toString().trim()
           : derivedFirst,
       membershipId: json['membershipId']?.toString() ?? AppConstants.currentMembershipId,
-      membershipType: json['membershipType']?.toString() ?? 'VIP MEMBER',
+      membershipType: json['membershipType']?.toString() ?? (isSub ? '${plan.toUpperCase()} SUBSCRIBER' : 'REGISTERED USER'),
       mobile: json['mobile']?.toString() ?? AppConstants.currentUserMobile,
       email: json['email']?.toString() ?? '',
       issuedDate: json['issuedDate']?.toString() ?? 'Today',
       expiryDate: json['expiryDate']?.toString() ?? '1 Year',
       totalSavings: (json['totalSavings'] as num?)?.toInt() ?? 0,
       couponsUsed: (json['couponsUsed'] as num?)?.toInt() ?? 0,
-      couponsTotal: (json['couponsTotal'] as num?)?.toInt() ?? 12,
-      loyaltyPoints: (json['loyaltyPoints'] as num?)?.toInt() ?? 5000,
+      couponsTotal: (json['couponsTotal'] as num?)?.toInt() ?? (isSub ? 12 : 0),
+      loyaltyPoints: (json['loyaltyPoints'] as num?)?.toInt() ?? 0,
       loyaltyGoal: (json['loyaltyGoal'] as num?)?.toInt() ?? 250000,
-      daysRemaining: (json['daysRemaining'] as num?)?.toInt() ?? 365,
+      daysRemaining: (json['daysRemaining'] as num?)?.toInt() ?? (isSub ? 365 : 0),
       status: json['status']?.toString() ?? 'Active',
-      planId: json['planId']?.toString() ?? 'signature',
+      planId: plan,
       address: json['address']?.toString() ?? '',
       gender: json['gender']?.toString() ?? '',
       birthday: json['birthday']?.toString() ?? '',
@@ -279,23 +283,23 @@ class MemberModel {
 
   static MemberModel defaultProfile() {
     return MemberModel(
-      id: '1',
-      fullName: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : 'VIP Guest',
+      id: '0',
+      fullName: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : 'Guest',
       firstName: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName.split(' ').first : 'Guest',
       membershipId: AppConstants.currentMembershipId,
-      membershipType: 'VIP MEMBER',
+      membershipType: 'REGISTERED USER',
       mobile: AppConstants.currentUserMobile,
       email: AppConstants.currentUserEmail,
       issuedDate: 'Today',
       expiryDate: '1 Year',
       totalSavings: 0,
       couponsUsed: 0,
-      couponsTotal: 12,
-      loyaltyPoints: 5000,
+      couponsTotal: 0,
+      loyaltyPoints: 0,
       loyaltyGoal: 250000,
-      daysRemaining: 365,
+      daysRemaining: 0,
       status: 'Active',
-      planId: 'signature',
+      planId: 'none',
     );
   }
 }

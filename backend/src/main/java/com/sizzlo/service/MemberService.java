@@ -14,4 +14,6 @@ public interface MemberService {
     MemberProfile updateProfile(String membershipId, MemberProfile updatedProfile);
     List<LoyaltyTransaction> getLoyaltyHistory(String membershipId);
     List<MemberProfile> getAllMembers();
+    boolean deleteAccount(String mobile);
+    MemberProfile renewWithPoints(String membershipId);
 }

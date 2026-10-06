@@ -40,7 +40,7 @@ public class ReservationController {
         return ResponseEntity.ok(ApiResponse.success("Table reserved successfully!", created));
     }
 
-    @PatchMapping("/{id}/status")
+    @RequestMapping(value = "/{id}/status", method = {RequestMethod.PATCH, RequestMethod.PUT})
     public ResponseEntity<ApiResponse<Reservation>> updateStatus(
             @PathVariable Long id,
             @RequestParam String status) {

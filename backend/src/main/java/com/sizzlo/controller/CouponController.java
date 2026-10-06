@@ -2,11 +2,15 @@ package com.sizzlo.controller;
 
 import com.sizzlo.dto.ApiResponse;
 import com.sizzlo.entity.Coupon;
+import com.sizzlo.entity.MemberProfile;
+import com.sizzlo.repository.CouponRepository;
+import com.sizzlo.repository.MemberProfileRepository;
 import com.sizzlo.service.CouponService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -15,20 +19,75 @@ import java.util.List;
 public class CouponController {
 
     private final CouponService couponService;
+    private final CouponRepository couponRepository;
+    private final MemberProfileRepository memberProfileRepository;
 
     @Autowired
-    public CouponController(CouponService couponService) {
+    public CouponController(CouponService couponService,
+                            CouponRepository couponRepository,
+                            MemberProfileRepository memberProfileRepository) {
         this.couponService = couponService;
+        this.couponRepository = couponRepository;
+        this.memberProfileRepository = memberProfileRepository;
     }
 
+    /**
+     * Strict requirement: Coupons ONLY show after a plan has been purchased.
+     * If user is unregistered, or on the free "REGISTERED" tier, return an empty list.
+     */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Coupon>>> getAllCoupons() {
-        return ResponseEntity.ok(ApiResponse.success(couponService.getAllCoupons()));
+    public ResponseEntity<ApiResponse<List<Coupon>>> getAllCoupons(
+            @RequestParam(required = false) String membershipId,
+            @RequestParam(required = false) String mobile) {
+        
+        MemberProfile profile = resolveProfile(membershipId, mobile);
+        if (profile == null) {
+            return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
+        }
+
+        String tier = profile.getSubscriptionTier();
+        if (tier == null || "REGISTERED".equalsIgnoreCase(tier) || "NONE".equalsIgnoreCase(tier)) {
+            return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
+        }
+
+        List<Coupon> userCoupons = couponRepository.findByMembershipId(profile.getMembershipId());
+        return ResponseEntity.ok(ApiResponse.success(userCoupons));
     }
 
     @GetMapping("/available")
-    public ResponseEntity<ApiResponse<List<Coupon>>> getAvailableCoupons() {
-        return ResponseEntity.ok(ApiResponse.success(couponService.getAvailableCoupons()));
+    public ResponseEntity<ApiResponse<List<Coupon>>> getAvailableCoupons(
+            @RequestParam(required = false) String membershipId,
+            @RequestParam(required = false) String mobile) {
+        
+        MemberProfile profile = resolveProfile(membershipId, mobile);
+        if (profile == null) {
+            return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
+        }
+
+        String tier = profile.getSubscriptionTier();
+        if (tier == null || "REGISTERED".equalsIgnoreCase(tier) || "NONE".equalsIgnoreCase(tier)) {
+            return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
+        }
+
+        List<Coupon> available = couponRepository.findByMembershipIdAndStatus(profile.getMembershipId(), "available");
+        return ResponseEntity.ok(ApiResponse.success(available));
+    }
+
+    private MemberProfile resolveProfile(String membershipId, String mobile) {
+        if (membershipId != null && !membershipId.trim().isEmpty()) {
+            MemberProfile m = memberProfileRepository.findByMembershipId(membershipId.trim()).orElse(null);
+            if (m != null) return m;
+        }
+        if (mobile != null && !mobile.trim().isEmpty()) {
+            String digits = mobile.replaceAll("\\D", "");
+            for (MemberProfile m : memberProfileRepository.findAll()) {
+                String mDigits = m.getMobile().replaceAll("\\D", "");
+                if (!digits.isEmpty() && (mDigits.equals(digits) || (mDigits.length() >= 10 && mDigits.endsWith(digits)))) {
+                    return m;
+                }
+            }
+        }
+        return null;
     }
 
     @GetMapping("/{code}")
