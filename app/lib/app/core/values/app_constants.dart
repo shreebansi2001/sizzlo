@@ -7,20 +7,12 @@ class AppConstants {
   
   static const String _envApiUrl = String.fromEnvironment('API_URL');
 
-  // Platform-adaptive local backend API URL (Port 8080)
+  // Live backend API URL
   static String get baseUrl {
     if (_envApiUrl.isNotEmpty) {
       return _envApiUrl;
     }
-    if (kIsWeb) {
-      return '/api';
-    }
-    try {
-      if (Platform.isAndroid) {
-        return 'http://192.168.0.33:8080/api';
-      }
-    } catch (_) {}
-    return 'http://localhost:8080/api';
+    return 'https://cheeragskitchen.in/Sizzlo/api';
   }
 
   static const String defaultMembershipId = '';
