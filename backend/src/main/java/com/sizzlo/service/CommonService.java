@@ -35,4 +35,9 @@ public interface CommonService {
      * Validates OTP against email if provided.
      */
     boolean verifyOtpByEmail(String email, String otp);
+
+    /**
+     * Sends custom transactional and marketing notification via WhatsApp gateway.
+     */
+    String sendNotificationWhatsApp(String mobileNo, String title, String body);
 }

@@ -23,6 +23,8 @@ public class PaymentController {
     private final MemberProfileRepository memberProfileRepository;
     private final CouponRepository couponRepository;
     private final LoyaltyTransactionRepository loyaltyTransactionRepository;
+    private final com.sizzlo.repository.NotificationRepository notificationRepository;
+    private final com.sizzlo.service.CommonService commonService;
 
     // Standard Razorpay Test / Production Key Configuration
     private static final String RAZORPAY_KEY_ID = "rzp_test_SIZZLO_VIP2026";
@@ -32,10 +34,14 @@ public class PaymentController {
     public PaymentController(
             MemberProfileRepository memberProfileRepository,
             CouponRepository couponRepository,
-            LoyaltyTransactionRepository loyaltyTransactionRepository) {
+            LoyaltyTransactionRepository loyaltyTransactionRepository,
+            com.sizzlo.repository.NotificationRepository notificationRepository,
+            com.sizzlo.service.CommonService commonService) {
         this.memberProfileRepository = memberProfileRepository;
         this.couponRepository = couponRepository;
         this.loyaltyTransactionRepository = loyaltyTransactionRepository;
+        this.notificationRepository = notificationRepository;
+        this.commonService = commonService;
     }
 
     @GetMapping("/razorpay/config")
@@ -171,6 +177,29 @@ public class PaymentController {
         txRecord.put("channel", "RAZORPAY_VERIFIED");
         txRecord.put("timestamp", LocalDateTime.now().toString());
         razorpayTransactions.add(0, txRecord);
+
+        // 1. Save In-App Notification
+        try {
+            com.sizzlo.entity.NotificationEntity notif = new com.sizzlo.entity.NotificationEntity(
+                    "card",
+                    tier + " VIP Subscription Activated!",
+                    "Congratulations " + savedProfile.getFullName() + "! Your " + tier + " privilege card and 12-coupon vault are now live in your Sizzlo wallet.",
+                    "SPECIFIC",
+                    savedProfile.getMembershipId(),
+                    savedProfile.getMobile(),
+                    true
+            );
+            notificationRepository.save(notif);
+        } catch (Exception ignored) {}
+
+        // 2. Dispatch WhatsApp Notification to registered number
+        try {
+            if (savedProfile.getMobile() != null && !savedProfile.getMobile().trim().isEmpty()) {
+                String title = "Sizzlo " + tier + " Card Activated";
+                String body = "Dear " + savedProfile.getFullName() + ", your " + tier + " membership is active! Enjoy VIP discounts and exclusive vouchers across all Yanki outlets.";
+                commonService.sendNotificationWhatsApp(savedProfile.getMobile(), title, body);
+            }
+        } catch (Exception ignored) {}
 
         return ResponseEntity.ok(ApiResponse.success("Payment verified! Subscription activated for 365 days.", result));
     }

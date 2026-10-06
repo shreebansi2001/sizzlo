@@ -227,6 +227,37 @@ public class CommonServiceImpl implements CommonService, WhatsAppOtpService {
         return false;
     }
 
+    @Override
+    public String sendNotificationWhatsApp(String mobileNo, String title, String body) {
+        if (mobileNo == null || mobileNo.trim().isEmpty()) {
+            return "{\"status\":\"error\",\"message\":\"Mobile number required\"}";
+        }
+        String cleanDigits = cleanMobile(mobileNo);
+        String to = cleanDigits.startsWith("91") ? cleanDigits : "91" + cleanDigits;
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("appkey", getAppKey());
+        formData.add("authkey", getAuthKey());
+        formData.add("to", to);
+        formData.add("template_id", getTemplateId());
+        formData.add("variables[{variableKey1}]", title != null ? title : "Sizzlo Privilege");
+        formData.add("variables[{variableKey2}]", body != null ? body : "");
+        formData.add("language", "en");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formData, headers);
+
+        try {
+            log.info("Dispatching WhatsApp Notification to {} | {} : {}", to, title, body);
+            ResponseEntity<String> response = restTemplate.exchange(getApiUrl(), HttpMethod.POST, request, String.class);
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("Failed to deliver WhatsApp message to {}: {}", to, e.getMessage());
+            return "{\"status\":\"error\",\"message\":\"" + e.getMessage() + "\"}";
+        }
+    }
+
     private String cleanMobile(String mobile) {
         if (mobile == null) return "";
         String clean = mobile.replaceAll("[^0-9]", "");

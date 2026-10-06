@@ -5,6 +5,7 @@ import '../../../routes/app_routes.dart';
 import '../../../data/services/api_service.dart';
 import '../../../core/values/app_constants.dart';
 import '../../home/controllers/home_controller.dart';
+import '../../../data/services/local_storage_service.dart';
 
 class AuthController extends GetxController {
   final ApiService _apiService = ApiService();
@@ -62,7 +63,16 @@ class AuthController extends GetxController {
     }
   }
 
-  void quickDemoLogin() {
+  void quickDemoLogin() async {
+    await LocalStorageService.saveUserSession(
+      mobile: '9825012345',
+      membershipId: 'YSM-2024-04821',
+      name: 'Rahul Mehta',
+      tier: 'SIGNATURE',
+    );
+    AppConstants.currentUserMobile = '9825012345';
+    AppConstants.currentMembershipId = 'YSM-2024-04821';
+    AppConstants.currentUserName = 'Rahul Mehta';
     Get.offAllNamed(AppRoutes.HOME);
   }
 
@@ -106,6 +116,16 @@ class AuthController extends GetxController {
       final authResult = await _apiService.verifyOtp(currentPhone.value, enteredOtp);
       if (authResult != null && authResult['member'] != null) {
         final member = authResult['member'];
+        await LocalStorageService.saveUserSession(
+          mobile: member.mobile ?? currentPhone.value,
+          membershipId: member.membershipId ?? '',
+          name: member.fullName ?? '',
+          tier: member.subscriptionTier,
+        );
+        AppConstants.currentUserMobile = member.mobile ?? currentPhone.value;
+        AppConstants.currentMembershipId = member.membershipId ?? '';
+        AppConstants.currentUserName = member.fullName ?? 'Guest';
+
         if (Get.isRegistered<HomeController>()) {
           Get.find<HomeController>().member.value = member;
           Get.find<HomeController>().activePlan.value = member.planId;

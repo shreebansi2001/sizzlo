@@ -514,3 +514,26 @@ export async function fetchRazorpaySummary(): Promise<RazorpaySummaryDTO | null>
   return null;
 }
 
+export interface SendNotificationPayload {
+  targetType: 'ALL' | 'SPECIFIC';
+  targetMembershipId?: string;
+  targetMobile?: string;
+  title: string;
+  message: string;
+  type?: 'tag' | 'gift' | 'sparkle' | 'alert' | 'bill' | 'card';
+  sendWhatsApp?: boolean;
+}
+
+export async function sendNotification(payload: SendNotificationPayload) {
+  try {
+    const res = await apiClient.post('/notifications/send', payload);
+    return res.data;
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.response?.data?.message || err.message || 'Failed to dispatch notification',
+    };
+  }
+}
+
+

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../routes/app_routes.dart';
+import '../../../data/services/local_storage_service.dart';
 
 class OnboardingSlide {
   final String badge;
@@ -81,7 +82,8 @@ class OnboardingController extends GetxController {
     finishOnboarding();
   }
 
-  void finishOnboarding() {
-    Get.offNamed(AppRoutes.LOGIN);
+  void finishOnboarding() async {
+    await LocalStorageService.setHasSeenOnboarding(true);
+    Get.offAllNamed(AppRoutes.LOGIN);
   }
 }

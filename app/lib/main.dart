@@ -6,8 +6,9 @@ import 'app/core/values/app_constants.dart';
 import 'app/routes/app_pages.dart';
 import 'app/controllers/navigation_controller.dart';
 import 'app/modules/home/controllers/home_controller.dart';
+import 'app/data/services/notification_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -15,6 +16,7 @@ void main() {
       statusBarIconBrightness: Brightness.light,
     ),
   );
+  await Get.putAsync(() => NotificationService().init());
   runApp(const SizzloApp());
 }
 

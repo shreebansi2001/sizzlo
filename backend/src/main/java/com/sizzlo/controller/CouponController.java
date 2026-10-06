@@ -6,6 +6,8 @@ import com.sizzlo.entity.MemberProfile;
 import com.sizzlo.repository.CouponRepository;
 import com.sizzlo.repository.MemberProfileRepository;
 import com.sizzlo.service.CouponService;
+import com.sizzlo.entity.NotificationEntity;
+import com.sizzlo.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,14 +23,17 @@ public class CouponController {
     private final CouponService couponService;
     private final CouponRepository couponRepository;
     private final MemberProfileRepository memberProfileRepository;
+    private final NotificationRepository notificationRepository;
 
     @Autowired
     public CouponController(CouponService couponService,
                             CouponRepository couponRepository,
-                            MemberProfileRepository memberProfileRepository) {
+                            MemberProfileRepository memberProfileRepository,
+                            NotificationRepository notificationRepository) {
         this.couponService = couponService;
         this.couponRepository = couponRepository;
         this.memberProfileRepository = memberProfileRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     /**
@@ -106,6 +111,21 @@ public class CouponController {
     @PostMapping
     public ResponseEntity<ApiResponse<Coupon>> createCoupon(@RequestBody Coupon coupon) {
         Coupon created = couponService.createCoupon(coupon);
+
+        // Auto-broadcast push notification for newly created coupon
+        try {
+            NotificationEntity notif = new NotificationEntity(
+                    "tag",
+                    "New Offer: " + (created.getName() != null ? created.getName() : created.getCode()),
+                    (created.getSubtitle() != null ? created.getSubtitle() : "Exclusive dining voucher available") + " · Valid at " + (created.getOutlet() != null ? created.getOutlet() : "All Outlets"),
+                    "ALL",
+                    null,
+                    null,
+                    false
+            );
+            notificationRepository.save(notif);
+        } catch (Exception ignored) {}
+
         return ResponseEntity.ok(ApiResponse.success("Coupon created successfully", created));
     }
 

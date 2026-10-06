@@ -25,17 +25,23 @@ public class BillSettlementController {
     private final CouponRepository couponRepository;
     private final MemberProfileRepository memberProfileRepository;
     private final LoyaltyTransactionRepository loyaltyTransactionRepository;
+    private final com.sizzlo.repository.NotificationRepository notificationRepository;
+    private final com.sizzlo.service.CommonService commonService;
 
     @Autowired
     public BillSettlementController(
             BillSettlementRepository billSettlementRepository,
             CouponRepository couponRepository,
             MemberProfileRepository memberProfileRepository,
-            LoyaltyTransactionRepository loyaltyTransactionRepository) {
+            LoyaltyTransactionRepository loyaltyTransactionRepository,
+            com.sizzlo.repository.NotificationRepository notificationRepository,
+            com.sizzlo.service.CommonService commonService) {
         this.billSettlementRepository = billSettlementRepository;
         this.couponRepository = couponRepository;
         this.memberProfileRepository = memberProfileRepository;
         this.loyaltyTransactionRepository = loyaltyTransactionRepository;
+        this.notificationRepository = notificationRepository;
+        this.commonService = commonService;
     }
 
     public static class SettleBillRequest {
@@ -249,6 +255,29 @@ public class BillSettlementController {
                 tx.setTransactionTime(LocalDateTime.now());
                 loyaltyTransactionRepository.save(tx);
             }
+
+            // 1. Save In-App Notification
+            try {
+                com.sizzlo.entity.NotificationEntity notif = new com.sizzlo.entity.NotificationEntity(
+                        "bill",
+                        "Bill Settled at " + bill.getOutletName(),
+                        "POS Invoice #" + bill.getPosInvoiceNumber() + " for Rs. " + bill.getNetPayable() + " settled. You earned " + pointsToCredit + " Sizzlo points!",
+                        "SPECIFIC",
+                        m.getMembershipId(),
+                        m.getMobile(),
+                        true
+                );
+                notificationRepository.save(notif);
+            } catch (Exception ignored) {}
+
+            // 2. Dispatch WhatsApp Notification to registered mobile
+            try {
+                if (m.getMobile() != null && !m.getMobile().trim().isEmpty()) {
+                    String title = "Bill Receipt - " + bill.getOutletName();
+                    String body = "Dear " + m.getFullName() + ", your bill of Rs. " + bill.getNetPayable() + " (Inv #" + bill.getPosInvoiceNumber() + ") is settled. You earned " + pointsToCredit + " points. Total points: " + m.getLoyaltyPoints() + ".";
+                    commonService.sendNotificationWhatsApp(m.getMobile(), title, body);
+                }
+            } catch (Exception ignored) {}
         }
     }
 

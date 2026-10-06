@@ -17,6 +17,7 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons, onRefresh }) 
   const [newOutlet, setNewOutlet] = useState('All Yanki Outlets');
   const [newTotalCount, setNewTotalCount] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notificationNotice, setNotificationNotice] = useState<string | null>(null);
 
   const fetchLiveCoupons = () => {
     axios.get('/api/coupons')
@@ -60,6 +61,8 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons, onRefresh }) 
       setShowAddModal(false);
       setNewCode('');
       setNewName('');
+      setNotificationNotice(`✅ Privilege Voucher "${payload.name}" published! Automatic Push Notification dispatched to all users.`);
+      setTimeout(() => setNotificationNotice(null), 5000);
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Failed to create coupon', err);
@@ -81,6 +84,25 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons, onRefresh }) 
 
   return (
     <div>
+      {notificationNotice && (
+        <div style={{
+          background: 'rgba(16, 185, 129, 0.12)',
+          border: '1px solid #10B981',
+          color: '#10B981',
+          padding: '12px 18px',
+          borderRadius: 12,
+          marginBottom: 20,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 13,
+          fontWeight: 600
+        }}>
+          <CheckCircle2 size={16} color="#10B981" />
+          {notificationNotice}
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--primary)' }}>Privilege Vouchers & Promotions</h2>

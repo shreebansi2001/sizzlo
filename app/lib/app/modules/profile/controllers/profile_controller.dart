@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/models/member_model.dart';
 import '../../../data/services/api_service.dart';
 import '../../../routes/app_routes.dart';
@@ -259,9 +260,21 @@ class ProfileController extends GetxController {
 
   void logout() {
     SizzloDialogs.showLogoutConfirm(
-      onConfirm: () {
+      onConfirm: () async {
+        await comClearSession();
         Get.offAllNamed(AppRoutes.LOGIN);
       },
     );
+  }
+
+  Future<void> comClearSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', false);
+      await prefs.remove('user_mobile');
+      await prefs.remove('membership_id');
+      await prefs.remove('user_name');
+      await prefs.remove('user_tier');
+    } catch (_) {}
   }
 }
