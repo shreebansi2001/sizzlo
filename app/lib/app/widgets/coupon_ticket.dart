@@ -71,15 +71,20 @@ class CouponTicket extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              coupon.code,
-                              style: const TextStyle(
-                                color: AppColors.gold,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                letterSpacing: 1.2,
+                            Expanded(
+                              child: Text(
+                                coupon.code,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.gold,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  letterSpacing: 1.2,
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
