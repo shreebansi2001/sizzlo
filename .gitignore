@@ -38,3 +38,6 @@ cookies.txt
 *.apk
 backend/data/
 
+# IDE files
+.idea/libraries/
+.idea/caches/

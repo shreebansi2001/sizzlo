@@ -103,6 +103,9 @@ public class MemberServiceImpl implements MemberService {
         profile.setSpouseBirthday(request.getSpouseBirthday());
         profile.setAnniversaryDate(request.getAnniversaryDate());
         profile.setIsMarried(request.getIsMarried());
+        if (request.getProfilePictureUrl() != null && !request.getProfilePictureUrl().isEmpty()) {
+            profile.setProfilePictureUrl(request.getProfilePictureUrl());
+        }
         profile.setMembershipType(profile.getSubscriptionTier() != null && !profile.getSubscriptionTier().equals("REGISTERED")
                 ? profile.getSubscriptionTier() + " SUBSCRIBER" : "REGISTERED USER");
         profile.setLastVisit("Just Joined");
@@ -159,9 +162,18 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public MemberProfile updateProfile(String membershipId, MemberProfile updatedProfile) {
-        MemberProfile existing = getProfileByMembershipId(membershipId);
+        MemberProfile existing;
+        try {
+            existing = getProfileByMembershipId(membershipId);
+        } catch (ResourceNotFoundException e) {
+            if (updatedProfile.getMobile() != null && !updatedProfile.getMobile().trim().isEmpty()) {
+                existing = getProfileByMobile(updatedProfile.getMobile());
+            } else {
+                throw e;
+            }
+        }
         if (updatedProfile.getFullName() != null) {
-            existing.setFullName(updatedProfile.getFullName());
+            existing.setFullName(updatedProfile.getFullName().trim());
             String[] parts = updatedProfile.getFullName().trim().split("\\s+");
             existing.setFirstName(parts.length > 0 ? parts[0] : updatedProfile.getFullName().trim());
         }
@@ -170,6 +182,7 @@ public class MemberServiceImpl implements MemberService {
         if (updatedProfile.getMobile() != null) existing.setMobile(updatedProfile.getMobile());
         if (updatedProfile.getAddress() != null) existing.setAddress(updatedProfile.getAddress());
         if (updatedProfile.getGender() != null) existing.setGender(updatedProfile.getGender());
+        if (updatedProfile.getProfilePictureUrl() != null) existing.setProfilePictureUrl(updatedProfile.getProfilePictureUrl());
         
         // Strict DOB lock constraint: cannot modify once locked!
         if (Boolean.TRUE.equals(existing.getDobLocked())) {

@@ -421,10 +421,16 @@ class AuthController extends GetxController {
           membershipId: member.membershipId,
           name: member.fullName,
           tier: member.subscriptionTier,
+          profilePic: member.profilePictureUrl,
         );
         AppConstants.currentUserMobile = member.mobile.isNotEmpty ? member.mobile : currentPhone.value;
         AppConstants.currentMembershipId = member.membershipId;
-        AppConstants.currentUserName = member.fullName.isNotEmpty ? member.fullName : 'Guest';
+        if (member.fullName.isNotEmpty && member.fullName != 'Guest') {
+          AppConstants.currentUserName = member.fullName;
+        }
+        if (member.profilePictureUrl.isNotEmpty) {
+          AppConstants.currentUserProfilePic = member.profilePictureUrl;
+        }
 
         if (Get.isRegistered<HomeController>()) {
           Get.find<HomeController>().member.value = member;

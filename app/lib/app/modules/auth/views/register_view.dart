@@ -6,6 +6,9 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../data/services/api_service.dart';
+import '../../../data/services/local_storage_service.dart';
+import '../../../data/models/member_model.dart';
+import '../../../core/values/app_constants.dart';
 import '../../home/controllers/home_controller.dart';
 
 class RegisterView extends StatefulWidget {
@@ -93,9 +96,24 @@ class _RegisterViewState extends State<RegisterView> {
     });
 
     if (result['success'] == true) {
-      if (result['member'] != null && Get.isRegistered<HomeController>()) {
-        Get.find<HomeController>().member.value = result['member'];
-        Get.find<HomeController>().loadDashboardData();
+      if (result['member'] != null) {
+        final dynamic m = result['member'];
+        if (m is MemberModel) {
+          await LocalStorageService.saveUserSession(
+            mobile: m.mobile.isNotEmpty ? m.mobile : phone,
+            membershipId: m.membershipId,
+            name: m.fullName,
+            tier: m.subscriptionTier,
+            profilePic: m.profilePictureUrl,
+          );
+          AppConstants.currentUserMobile = m.mobile.isNotEmpty ? m.mobile : phone;
+          AppConstants.currentMembershipId = m.membershipId;
+          AppConstants.currentUserName = m.fullName;
+          if (Get.isRegistered<HomeController>()) {
+            Get.find<HomeController>().member.value = m;
+            Get.find<HomeController>().loadDashboardData();
+          }
+        }
       }
 
       // Proceed directly to OTP verification (VerifyView displays confirmation)

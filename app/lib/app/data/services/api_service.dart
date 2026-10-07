@@ -10,6 +10,7 @@ import '../models/outlet_model.dart';
 import '../models/bill_settlement_model.dart';
 import '../models/banquet_inquiry_model.dart';
 import '../../core/values/app_constants.dart';
+import 'local_storage_service.dart';
 
 class ApiService {
   final http.Client _client = http.Client();
@@ -179,24 +180,79 @@ class ApiService {
   }
 
   void _updateSessionFromMember(MemberModel member, String? token) {
-    AppConstants.currentMembershipId = member.membershipId;
-    AppConstants.currentUserMobile = member.mobile;
-    AppConstants.currentUserName = member.fullName;
-    AppConstants.currentUserEmail = member.email;
+    if (member.membershipId.isNotEmpty) {
+      AppConstants.currentMembershipId = member.membershipId;
+    }
+    if (member.mobile.isNotEmpty) {
+      AppConstants.currentUserMobile = member.mobile;
+    }
+    if (member.fullName.isNotEmpty && member.fullName != 'Guest') {
+      AppConstants.currentUserName = member.fullName;
+    }
+    if (member.email.isNotEmpty) {
+      AppConstants.currentUserEmail = member.email;
+    }
+    if (member.profilePictureUrl.isNotEmpty) {
+      AppConstants.currentUserProfilePic = member.profilePictureUrl;
+    }
     if (token != null) {
       AppConstants.currentAuthToken = token;
     }
+
+    // Persist to local storage
+    if (member.fullName.isNotEmpty && member.fullName != 'Guest') {
+      LocalStorageService.saveUserSession(
+        mobile: member.mobile,
+        membershipId: member.membershipId,
+        name: member.fullName,
+        tier: member.subscriptionTier,
+        profilePic: member.profilePictureUrl,
+      );
+    }
   }
 
-  Future<MemberModel> getMemberProfile([String? membershipId]) async {
-    final id = membershipId ?? AppConstants.currentMembershipId;
+  Future<MemberModel> getMemberProfile([String? membershipId, String? mobile]) async {
+    String id = membershipId ?? AppConstants.currentMembershipId;
+    String phone = mobile ?? AppConstants.currentUserMobile;
+
+    // Check LocalStorage if in-memory constants are empty
+    if (id.isEmpty && phone.isEmpty) {
+      try {
+        final session = await LocalStorageService.getUserSession();
+        if (session['membershipId'] != null && session['membershipId']!.isNotEmpty) {
+          id = session['membershipId']!;
+          AppConstants.currentMembershipId = id;
+        }
+        if (session['mobile'] != null && session['mobile']!.isNotEmpty) {
+          phone = session['mobile']!;
+          AppConstants.currentUserMobile = phone;
+        }
+        if (session['name'] != null && session['name']!.isNotEmpty) {
+          AppConstants.currentUserName = session['name']!;
+        }
+        if (session['profilePic'] != null && session['profilePic']!.isNotEmpty) {
+          AppConstants.currentUserProfilePic = session['profilePic']!;
+        }
+      } catch (_) {}
+    }
+
     try {
-      final res = await _client.get(Uri.parse('${AppConstants.baseUrl}/members/$id'), headers: _headers)
+      String url;
+      if (id.isNotEmpty) {
+        url = '${AppConstants.baseUrl}/members/me?membershipId=${Uri.encodeComponent(id)}';
+      } else if (phone.isNotEmpty) {
+        final clean = phone.replaceAll(RegExp(r'\D'), '');
+        url = '${AppConstants.baseUrl}/members/me?mobile=${Uri.encodeComponent(clean)}';
+      } else {
+        return MemberModel.defaultProfile();
+      }
+
+      final res = await _client.get(Uri.parse(url), headers: _headers)
           .timeout(const Duration(seconds: 4));
       if (res.statusCode == 200) {
         final body = json.decode(res.body);
-        if (body['success'] == true && body['data'] != null) {
-          final m = MemberModel.fromJson(body['data']);
+        if (body['success'] == true && body['data'] != null && body['data'] is Map) {
+          final m = MemberModel.fromJson(Map<String, dynamic>.from(body['data']));
           _updateSessionFromMember(m, null);
           return m;
         }
@@ -205,18 +261,31 @@ class ApiService {
     return MemberModel.defaultProfile();
   }
 
-  Future<bool> updateMemberProfile(Map<String, dynamic> data, [String? membershipId]) async {
-    final id = membershipId ?? AppConstants.currentMembershipId;
+  Future<MemberModel?> updateMemberProfile(Map<String, dynamic> data, [String? membershipId]) async {
+    final id = (membershipId != null && membershipId.isNotEmpty)
+        ? membershipId
+        : AppConstants.currentMembershipId;
     try {
+      final url = id.isNotEmpty
+          ? '${AppConstants.baseUrl}/members/${Uri.encodeComponent(id)}'
+          : '${AppConstants.baseUrl}/members/${Uri.encodeComponent(AppConstants.currentUserMobile)}';
       final res = await _client.put(
-        Uri.parse('${AppConstants.baseUrl}/members/$id'),
+        Uri.parse(url),
         headers: _headers,
         body: json.encode(data),
-      ).timeout(const Duration(seconds: 4));
-      return res.statusCode == 200;
-    } catch (_) {
-      return false;
+      ).timeout(const Duration(seconds: 6));
+      if (res.statusCode == 200) {
+        final body = json.decode(res.body);
+        if (body['success'] == true && body['data'] != null && body['data'] is Map) {
+          final updated = MemberModel.fromJson(Map<String, dynamic>.from(body['data']));
+          _updateSessionFromMember(updated, null);
+          return updated;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error updating member profile: $e');
     }
+    return null;
   }
 
   Future<bool> deleteAccount(String mobile) async {

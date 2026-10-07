@@ -8,6 +8,8 @@ import 'app/controllers/navigation_controller.dart';
 import 'app/modules/home/controllers/home_controller.dart';
 import 'app/data/services/notification_service.dart';
 
+import 'app/data/services/local_storage_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
@@ -17,6 +19,21 @@ void main() async {
     ),
   );
   await Get.putAsync(() => NotificationService().init());
+  try {
+    final session = await LocalStorageService.getUserSession();
+    if (session['mobile'] != null && session['mobile']!.isNotEmpty) {
+      AppConstants.currentUserMobile = session['mobile']!;
+    }
+    if (session['membershipId'] != null && session['membershipId']!.isNotEmpty) {
+      AppConstants.currentMembershipId = session['membershipId']!;
+    }
+    if (session['name'] != null && session['name']!.isNotEmpty) {
+      AppConstants.currentUserName = session['name']!;
+    }
+    if (session['profilePic'] != null && session['profilePic']!.isNotEmpty) {
+      AppConstants.currentUserProfilePic = session['profilePic']!;
+    }
+  } catch (_) {}
   runApp(const SizzloApp());
 }
 

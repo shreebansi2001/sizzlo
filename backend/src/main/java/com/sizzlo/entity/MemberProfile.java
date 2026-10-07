@@ -199,12 +199,19 @@ public class MemberProfile {
     public String getIsMarried() { return isMarried; }
     public void setIsMarried(String isMarried) { this.isMarried = isMarried; }
 
+    @Lob
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
     public String getReferredByStaffId() { return referredByStaffId; }
     public void setReferredByStaffId(String referredByStaffId) { this.referredByStaffId = referredByStaffId; }
 
     public Long getCorporateId() { return corporateId; }
     public void setCorporateId(Long corporateId) { this.corporateId = corporateId; }
 
-    public String getAvatarUrl() { return avatarUrl; }
+    public String getAvatarUrl() { return avatarUrl != null ? avatarUrl : profilePictureUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl != null ? profilePictureUrl : avatarUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 }

@@ -18,6 +18,8 @@ import '../../loyalty/views/loyalty_view.dart';
 import '../../notifications/views/notifications_view.dart';
 import '../../profile/views/profile_view.dart';
 import '../../reservations/controllers/reservations_controller.dart';
+import '../../../core/values/app_constants.dart';
+import '../../../widgets/profile_avatar_widget.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({Key? key}) : super(key: key);
@@ -118,7 +120,7 @@ class HomeView extends GetView<HomeController> {
                         children: [
                           Flexible(
                             child: Text(
-                              'Hello, ${m.firstName}',
+                              'Hello, ${m.firstName.isNotEmpty && m.firstName != 'Guest' ? m.firstName : (AppConstants.currentUserName != 'Guest' ? AppConstants.currentUserName.split(' ').first : 'Member')}',
                               style: AppTextStyles.displayMedium.copyWith(
                                 color: Colors.white,
                                 fontSize: 26,
@@ -158,41 +160,57 @@ class HomeView extends GetView<HomeController> {
                     ],
                   ),
                 ),
-                // Bell Notification Button matching demo_code
-                GestureDetector(
-                  onTap: () => Get.find<NavigationController>().changeTab(3),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white.withOpacity(0.15)),
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Avatar Button navigating to Profile
+                    GestureDetector(
+                      onTap: () => Get.find<NavigationController>().changeTab(3),
+                      child: ProfileAvatarWidget(
+                        radius: 20,
+                        imageUrl: m.profilePictureUrl,
+                        name: m.fullName,
+                        showEditBadge: false,
                       ),
-                      if (isSub)
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: Container(
-                            width: 9,
-                            height: 9,
-                            decoration: const BoxDecoration(
-                              color: AppColors.gold,
+                    ),
+                    const SizedBox(width: 10),
+                    // Bell Notification Button matching demo_code
+                    GestureDetector(
+                      onTap: () => Get.find<NavigationController>().changeTab(3),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.08),
                               shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white.withOpacity(0.15)),
+                            ),
+                            child: const Icon(
+                              Icons.notifications_none_rounded,
+                              color: Colors.white,
+                              size: 22,
                             ),
                           ),
-                        ),
-                    ],
-                  ),
+                          if (isSub)
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: Container(
+                                width: 9,
+                                height: 9,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.gold,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
