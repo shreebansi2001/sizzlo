@@ -9,6 +9,10 @@ class ReservationModel {
   final String status;
   final bool vip;
   final String? specialRequests;
+  final String? tierPriorityTag;
+  final double bookingAdvance;
+  final bool advancePaid;
+  final bool advanceDeducted;
 
   ReservationModel({
     required this.id,
@@ -21,6 +25,10 @@ class ReservationModel {
     required this.status,
     required this.vip,
     this.specialRequests,
+    this.tierPriorityTag,
+    this.bookingAdvance = 0.0,
+    this.advancePaid = false,
+    this.advanceDeducted = false,
   });
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +43,10 @@ class ReservationModel {
       status: json['status'] ?? 'Confirmed',
       vip: json['vip'] ?? false,
       specialRequests: json['specialRequests'],
+      tierPriorityTag: json['tierPriorityTag'],
+      bookingAdvance: (json['bookingAdvance'] as num?)?.toDouble() ?? 0.0,
+      advancePaid: json['advancePaid'] ?? false,
+      advanceDeducted: json['advanceDeducted'] ?? false,
     );
   }
 }

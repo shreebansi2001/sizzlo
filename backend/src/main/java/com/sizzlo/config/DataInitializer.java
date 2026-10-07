@@ -25,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private CorporateLeadRepository corporateLeadRepository;
     @Autowired private SalesTargetRepository salesTargetRepository;
     @Autowired private FeedbackTicketRepository feedbackTicketRepository;
+    @Autowired private OutletTimeSlotRepository outletTimeSlotRepository;
 
     @Override
     public void run(String... args) {
@@ -75,6 +76,22 @@ public class DataInitializer implements CommandLineRunner {
         }
         if (floorTableRepository.count() == 0) {
             seedFloorTables();
+        }
+        if (outletTimeSlotRepository.count() == 0) {
+            seedTimeSlots();
+        }
+    }
+
+    private void seedTimeSlots() {
+        String[] lunchSlots = {"12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM", "03:00 PM"};
+        String[] dinnerSlots = {"07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM", "09:00 PM", "09:30 PM", "10:00 PM", "10:30 PM"};
+
+        int order = 1;
+        for (String slot : lunchSlots) {
+            outletTimeSlotRepository.save(new OutletTimeSlot("All Outlets", slot, "LUNCH", true, order++));
+        }
+        for (String slot : dinnerSlots) {
+            outletTimeSlotRepository.save(new OutletTimeSlot("All Outlets", slot, "DINNER", true, order++));
         }
     }
 
@@ -254,6 +271,9 @@ public class DataInitializer implements CommandLineRunner {
         r.setTierPriorityTag(tier);
         r.setOccasionTag(occasion);
         r.setSpecialRequests(notes);
+        r.setBookingAdvance(vip ? 0.0 : 100.0);
+        r.setAdvancePaid(true);
+        r.setAdvanceDeducted(false);
         reservationRepository.save(r);
     }
 

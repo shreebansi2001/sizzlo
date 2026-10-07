@@ -21,6 +21,10 @@ public class ReservationRequest {
 
     private Boolean vip;
     private String specialRequests;
+    private Double bookingAdvance;
+    private Boolean advancePaid;
+    private String tierPriorityTag;
+    private String occasionTag;
 
     public ReservationRequest() {}
 
@@ -44,4 +48,16 @@ public class ReservationRequest {
 
     public String getSpecialRequests() { return specialRequests; }
     public void setSpecialRequests(String specialRequests) { this.specialRequests = specialRequests; }
+
+    public Double getBookingAdvance() { return bookingAdvance; }
+    public void setBookingAdvance(Double bookingAdvance) { this.bookingAdvance = bookingAdvance; }
+
+    public Boolean getAdvancePaid() { return advancePaid; }
+    public void setAdvancePaid(Boolean advancePaid) { this.advancePaid = advancePaid; }
+
+    public String getTierPriorityTag() { return tierPriorityTag; }
+    public void setTierPriorityTag(String tierPriorityTag) { this.tierPriorityTag = tierPriorityTag; }
+
+    public String getOccasionTag() { return occasionTag; }
+    public void setOccasionTag(String occasionTag) { this.occasionTag = occasionTag; }
 }

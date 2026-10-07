@@ -424,6 +424,75 @@ class ReservationsView extends GetView<ReservationsController> {
           ),
           const SizedBox(height: 12),
 
+          // Table Holding & VIP Priority Status Banner
+          Obx(() {
+            final isSub = controller.isSubscribedMember.value;
+            if (isSub) {
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2C241B),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF6B4E22)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.workspace_premium_rounded, color: AppColors.goldAccent, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'VIP Priority Table · Complimentary (₹0)',
+                            style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.goldAccent),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Active subscriber privilege: Priority seating and VIP booth allocation at host desk.',
+                            style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[400]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF14241F),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF1B4D3E)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF4EE3B8), size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Table Holding Deposit: ₹100 (Deductible at POS)',
+                            style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF4EE3B8)),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Deposit secures your table and is automatically deducted from your final dining bill.',
+                            style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[400]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+          }),
+          const SizedBox(height: 12),
+
           // Table Holding Policy Notice (Chapter 06.1)
           Row(
             children: [
@@ -431,7 +500,7 @@ class ReservationsView extends GetView<ReservationsController> {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Tables held for 15 minutes past slot time before marking as No-Show. Earns loyalty points on bill.',
+                  'Tables held for 15 minutes past slot time before marking as No-Show. Net bill settled inside app.',
                   style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
                 ),
               ),
@@ -441,7 +510,11 @@ class ReservationsView extends GetView<ReservationsController> {
 
           // Book Button
           Obx(() => SizzloButton(
-            text: controller.isSubmitting.value ? 'Reserving...' : 'Confirm Table Booking',
+            text: controller.isSubmitting.value 
+              ? 'Reserving...' 
+              : controller.isSubscribedMember.value 
+                  ? 'Confirm VIP Priority Table (₹0)'
+                  : 'Pay ₹100 Deposit & Reserve Table',
             isLoading: controller.isSubmitting.value,
             onPressed: controller.confirmAndBookTable,
           )),

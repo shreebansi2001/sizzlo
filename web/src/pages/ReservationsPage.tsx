@@ -25,7 +25,8 @@ import {
   Tooltip, 
   CartesianGrid 
 } from 'recharts';
-import { Reservation } from '../types';
+import { Reservation, OutletTimeSlot } from '../types';
+import { fetchAllTimeSlots, createTimeSlot, toggleTimeSlot, deleteTimeSlot } from '../api/client';
 
 interface ReservationsPageProps {
   reservations: Reservation[];
@@ -42,46 +43,70 @@ const peakHoursData = [
   { h: '10 PM', v: 0 }
 ];
 
-const kpiStats = [
-  { k: 'Total Reservations', v: '0', icon: Calendar, delta: '0%' },
-  { k: 'VIP Bookings', v: '0', icon: Crown, delta: '0% VIP share' },
-  { k: 'Peak Hour', v: '--', icon: Clock, delta: 'No data' },
-  { k: 'Popular Outlet', v: '--', icon: MapPin, delta: 'No data' },
-  { k: 'Avg Guests', v: '0', icon: Users, delta: 'No data' },
-  { k: 'Cancellation Rate', v: '0%', icon: TrendingUp, delta: 'No data' }
-];
-
 interface UpcomingItem {
   dbId: string | number;
   id: string;
   customer: string;
+  mobile?: string;
   outlet: string;
   date: string;
   guests: number;
   status: 'Confirmed' | 'Pending' | 'Completed' | 'Cancelled';
   vip: boolean;
+  tierPriorityTag?: string;
+  bookingAdvance?: number;
+  advancePaid?: boolean;
+  advanceDeducted?: boolean;
   notes?: string;
 }
 
 export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations: initialReservations, onRefresh }) => {
   const mapReservations = (list: Reservation[]): UpcomingItem[] => {
-    return list.map(r => ({
+    const mapped = list.map(r => ({
       dbId: r.id,
       id: r.bookingReference || `R-${r.id}`,
       customer: r.customerName,
+      mobile: r.customerMobile,
       outlet: r.outlet,
       date: r.reservationTime,
       guests: r.guests,
       status: (r.status as any) || 'Confirmed',
-      vip: r.vip,
+      vip: Boolean(r.vip) || (r.tierPriorityTag !== 'Non-Subscriber' && r.tierPriorityTag !== 'GUEST' && Boolean(r.tierPriorityTag)),
+      tierPriorityTag: r.tierPriorityTag || (r.vip ? 'Signature' : 'Non-Subscriber'),
+      bookingAdvance: r.bookingAdvance !== undefined ? r.bookingAdvance : (r.vip ? 0 : 100),
+      advancePaid: r.advancePaid !== undefined ? r.advancePaid : true,
+      advanceDeducted: r.advanceDeducted || false,
       notes: r.specialRequests,
     }));
+
+    // VIP Subscriber Priority: Subscribed VIPs always go to top of queue!
+    return mapped.sort((a, b) => {
+      if (a.vip && !b.vip) return -1;
+      if (!a.vip && b.vip) return 1;
+      return 0;
+    });
   };
 
   const [upcomingList, setUpcomingList] = useState<UpcomingItem[]>(() => mapReservations(initialReservations));
   const [selectedOutlet, setSelectedOutlet] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // Dynamic Slots State
+  const [slotsList, setSlotsList] = useState<OutletTimeSlot[]>([]);
+  const [showSlotModal, setShowSlotModal] = useState(false);
+  const [newSlotTime, setNewSlotTime] = useState('08:00 PM');
+  const [newSlotSession, setNewSlotSession] = useState<'LUNCH' | 'DINNER'>('DINNER');
+  const [newSlotOutlet, setNewSlotOutlet] = useState('All Outlets');
+  const [isSavingSlot, setIsSavingSlot] = useState(false);
+  const [slotNotice, setSlotNotice] = useState<string | null>(null);
+
+  const loadSlots = async () => {
+    try {
+      const data = await fetchAllTimeSlots();
+      setSlotsList(data);
+    } catch (_) {}
+  };
 
   const fetchLiveReservations = async () => {
     try {
@@ -94,6 +119,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
 
   useEffect(() => {
     fetchLiveReservations();
+    loadSlots();
   }, []);
 
   useEffect(() => {
@@ -101,6 +127,49 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
       setUpcomingList(mapReservations(initialReservations));
     }
   }, [initialReservations]);
+
+  const handleToggleSlot = async (id: number) => {
+    try {
+      await toggleTimeSlot(id);
+      setSlotsList(prev => prev.map(s => s.id === id ? { ...s, active: !s.active } : s));
+      setSlotNotice('Time slot visibility updated in mobile app!');
+      setTimeout(() => setSlotNotice(null), 3000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteSlot = async (id: number) => {
+    if (!window.confirm('Are you sure you want to remove this time slot?')) return;
+    try {
+      await deleteTimeSlot(id);
+      setSlotsList(prev => prev.filter(s => s.id !== id));
+      setSlotNotice('Slot removed.');
+      setTimeout(() => setSlotNotice(null), 3000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCreateSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSlot(true);
+    try {
+      await createTimeSlot({
+        outlet: newSlotOutlet,
+        slotTime: newSlotTime,
+        session: newSlotSession,
+        active: true
+      });
+      await loadSlots();
+      setSlotNotice(`Slot ${newSlotTime} added successfully! It is now live in the mobile app.`);
+      setTimeout(() => setSlotNotice(null), 4000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingSlot(false);
+    }
+  };
 
   const updateUpcomingStatus = async (target: UpcomingItem | string | number, newStatus: 'Confirmed' | 'Completed' | 'Cancelled') => {
     const targetItem = typeof target === 'object' ? target : upcomingList.find(u => u.id === target || u.dbId === target);
@@ -127,13 +196,20 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     return matchesOutlet && matchesStatus && matchesSearch;
   });
 
+  const vipCount = upcomingList.filter(u => u.vip).length;
+  const nonVipCount = upcomingList.length - vipCount;
+  const totalGuests = upcomingList.reduce((sum, r) => sum + (r.guests || 2), 0);
+  const totalAdvance = upcomingList
+    .filter(u => !u.vip && u.advancePaid)
+    .reduce((sum, r) => sum + (r.bookingAdvance || 100), 0);
+
   const dynamicKpiStats = [
-    { k: 'Total Reservations', v: `${upcomingList.length}`, icon: Calendar, delta: 'Live in-system bookings' },
-    { k: 'VIP Bookings', v: `${upcomingList.filter(u => u.vip).length}`, icon: Crown, delta: `${upcomingList.length ? Math.round((upcomingList.filter(u => u.vip).length / upcomingList.length) * 100) : 0}% VIP share` },
+    { k: 'Total Guests Today', v: `${totalGuests}`, icon: Users, delta: `${upcomingList.length} total party bookings` },
+    { k: '👑 Subscribed VIPs', v: `${vipCount}`, icon: Crown, delta: 'High Priority Desk Seating' },
+    { k: '🎯 Non-Subscribers', v: `${nonVipCount}`, icon: Calendar, delta: `Holding deposit ₹100 collected` },
+    { k: 'Advance Held at Desk', v: `₹${totalAdvance}`, icon: TrendingUp, delta: 'Deductible at POS billing' },
     { k: 'Peak Hour', v: '8 PM', icon: Clock, delta: 'Dinner peak rush' },
-    { k: 'Popular Outlet', v: 'Yanki Sizzlerr', icon: MapPin, delta: 'Top destination' },
-    { k: 'Avg Party Size', v: `${(upcomingList.reduce((sum, r) => sum + (r.guests || 2), 0) / (upcomingList.length || 1)).toFixed(1)}`, icon: Users, delta: 'Guests per table' },
-    { k: 'Confirmed', v: `${upcomingList.filter(u => u.status === 'Confirmed').length}`, icon: TrendingUp, delta: 'Ready for seating' }
+    { k: 'Dynamic Slots Active', v: `${slotsList.filter(s => s.active).length} / ${slotsList.length}`, icon: MapPin, delta: 'Synced with mobile app' }
   ];
 
   return (
@@ -445,6 +521,27 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Manage Dynamic Slots Button */}
+            <button
+              onClick={() => setShowSlotModal(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 14px',
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 700,
+                background: 'var(--surface-alt)',
+                color: 'var(--primary)',
+                border: '1px solid var(--gold)',
+                cursor: 'pointer'
+              }}
+            >
+              <Clock size={14} color="var(--gold)" />
+              Manage Time Slots ({slotsList.filter(s => s.active).length} Active)
+            </button>
+
             {/* Search Input */}
             <div style={{
               display: 'flex',
@@ -527,7 +624,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
                 <th style={{ padding: '12px 14px' }}>Ref</th>
-                <th style={{ padding: '12px 14px' }}>Customer</th>
+                <th style={{ padding: '12px 14px' }}>Customer & Priority Tier</th>
                 <th style={{ padding: '12px 14px' }}>Outlet</th>
                 <th style={{ padding: '12px 14px' }}>Date & Time</th>
                 <th style={{ padding: '12px 14px' }}>Party Size</th>
@@ -538,29 +635,65 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             </thead>
             <tbody>
               {filteredUpcoming.map((item) => (
-                <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <tr key={item.id} style={{ 
+                  borderBottom: '1px solid var(--border)',
+                  background: item.vip ? 'rgba(201, 162, 77, 0.04)' : 'transparent' 
+                }}>
                   <td style={{ padding: '14px', fontWeight: 700, color: 'var(--primary)', fontSize: 13 }}>
                     {item.id}
                   </td>
                   <td style={{ padding: '14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{item.customer}</span>
-                      {item.vip && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, fontSize: 13 }}>{item.customer}</span>
+                      {item.vip ? (
                         <span style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 2,
-                          background: 'rgba(201, 162, 77, 0.15)',
+                          gap: 3,
+                          background: 'rgba(201, 162, 77, 0.18)',
                           color: 'var(--gold-dark)',
+                          border: '1px solid rgba(201, 162, 77, 0.4)',
                           borderRadius: 9999,
-                          padding: '1px 6px',
+                          padding: '2px 8px',
                           fontSize: 10,
-                          fontWeight: 700
+                          fontWeight: 800
                         }}>
-                          <Crown size={10} color="var(--gold)" /> VIP
+                          <Crown size={11} color="var(--gold)" /> ★ VIP PRIORITY · {item.tierPriorityTag || 'VIP'}
                         </span>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            color: '#10B981',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            borderRadius: 9999,
+                            padding: '2px 8px',
+                            fontSize: 10,
+                            fontWeight: 700
+                          }}>
+                            🎯 Guest Diner
+                          </span>
+                          <span style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: item.advanceDeducted ? 'var(--text-muted)' : '#10B981',
+                            background: item.advanceDeducted ? 'var(--surface-alt)' : 'rgba(16, 185, 129, 0.08)',
+                            padding: '2px 6px',
+                            borderRadius: 6
+                          }}>
+                            {item.advanceDeducted ? '✓ ₹100 Advance Deducted' : '₹100 Holding Advance (POS Deductible)'}
+                          </span>
+                        </div>
                       )}
                     </div>
+                    {item.mobile && (
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginTop: 3 }}>
+                        {item.mobile}
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '14px', fontSize: 13 }}>{item.outlet}</td>
                   <td style={{ padding: '14px', fontSize: 13, color: 'var(--text-main)', fontWeight: 500 }}>
@@ -660,6 +793,211 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
           </table>
         </div>
       </div>
+
+      {/* Dynamic Outlet Time Slots Modal */}
+      {showSlotModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.75)',
+          display: 'grid',
+          placeItems: 'center',
+          zIndex: 110,
+          padding: 20
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            width: 600,
+            maxWidth: '100%',
+            borderRadius: 20,
+            padding: 28,
+            border: '1px solid var(--border)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+            maxHeight: '85vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>
+                  Dynamic Outlet Time Slots
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Configure available reservation slots. Active slots reflect instantly in the mobile app.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowSlotModal(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 6 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {slotNotice && (
+              <div style={{
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid #10B981',
+                color: '#10B981',
+                padding: '10px 14px',
+                borderRadius: 10,
+                fontSize: 12,
+                fontWeight: 600,
+                marginBottom: 16
+              }}>
+                {slotNotice}
+              </div>
+            )}
+
+            {/* Add New Slot Form */}
+            <form onSubmit={handleCreateSlot} style={{ 
+              background: 'var(--surface-alt)', 
+              padding: 16, 
+              borderRadius: 14, 
+              border: '1px solid var(--border)',
+              marginBottom: 20 
+            }}>
+              <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'var(--text-main)' }}>Add New Slot</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr auto', gap: 10, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="e.g. 01:15 PM"
+                  value={newSlotTime}
+                  onChange={(e) => setNewSlotTime(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--background)',
+                    fontSize: 12,
+                    color: 'var(--text-main)'
+                  }}
+                  required
+                />
+                <select
+                  value={newSlotSession}
+                  onChange={(e) => setNewSlotSession(e.target.value as any)}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--background)',
+                    fontSize: 12,
+                    color: 'var(--text-main)'
+                  }}
+                >
+                  <option value="LUNCH">Lunch Session</option>
+                  <option value="DINNER">Dinner Session</option>
+                </select>
+                <select
+                  value={newSlotOutlet}
+                  onChange={(e) => setNewSlotOutlet(e.target.value)}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--background)',
+                    fontSize: 12,
+                    color: 'var(--text-main)'
+                  }}
+                >
+                  <option value="All Outlets">All Outlets</option>
+                  <option value="Yanki Sizzlerr Bodakdev">Bodakdev</option>
+                  <option value="Yanki Sizzlerr SG Highway">SG Highway</option>
+                  <option value="Dough by Yanki CG Road">CG Road</option>
+                </select>
+                <button
+                  type="submit"
+                  className="btn btn-gold"
+                  disabled={isSavingSlot}
+                  style={{ padding: '8px 14px', fontSize: 12, whiteSpace: 'nowrap' }}
+                >
+                  + Add
+                </button>
+              </div>
+            </form>
+
+            {/* List of Existing Slots */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>Configured Slots</h4>
+              {slotsList.length === 0 ? (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>No slots configured yet.</p>
+              ) : (
+                slotsList.map((slot) => (
+                  <div
+                    key={slot.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      background: slot.active ? 'var(--surface-alt)' : 'rgba(255, 255, 255, 0.02)',
+                      border: slot.active ? '1px solid var(--border)' : '1px dashed rgba(255, 255, 255, 0.08)',
+                      opacity: slot.active ? 1 : 0.6
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-main)', minWidth: 70 }}>
+                        {slot.slotTime}
+                      </span>
+                      <span style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        background: slot.session === 'LUNCH' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                        color: slot.session === 'LUNCH' ? '#F59E0B' : '#3B82F6'
+                      }}>
+                        {slot.session}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {slot.outlet}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button
+                        onClick={() => handleToggleSlot(slot.id)}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: slot.active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                          color: slot.active ? '#10B981' : '#EF4444'
+                        }}
+                      >
+                        {slot.active ? 'ACTIVE IN APP' : 'HIDDEN'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSlot(slot.id)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: 4
+                        }}
+                        title="Delete slot"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn btn-outline" onClick={() => setShowSlotModal(false)}>
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

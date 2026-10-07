@@ -53,12 +53,18 @@ class CouponTicket extends StatelessWidget {
                       color: const Color(0xFF1B221E),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isGold ? AppColors.gold.withOpacity(0.3) : Colors.white.withOpacity(0.06),
+                        color: coupon.isVipExclusive
+                            ? AppColors.gold.withOpacity(0.5)
+                            : (isGold ? AppColors.gold.withOpacity(0.3) : Colors.white.withOpacity(0.06)),
                       ),
                     ),
                     child: Icon(
-                      isGold ? Icons.cake_outlined : Icons.confirmation_number_outlined,
-                      color: isGold ? AppColors.gold : AppColors.flame,
+                      coupon.isVipExclusive
+                          ? Icons.lock_outline_rounded
+                          : (isGold ? Icons.cake_outlined : Icons.confirmation_number_outlined),
+                      color: coupon.isVipExclusive
+                          ? AppColors.gold
+                          : (isGold ? AppColors.gold : AppColors.flame),
                       size: 24,
                     ),
                   ),
@@ -72,16 +78,59 @@ class CouponTicket extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              child: Text(
-                                coupon.code,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: AppColors.gold,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  letterSpacing: 1.2,
-                                ),
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      coupon.code,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppColors.gold,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                  if (coupon.isVipExclusive) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF38290D),
+                                        borderRadius: BorderRadius.circular(5),
+                                        border: Border.all(color: AppColors.gold.withOpacity(0.5), width: 0.7),
+                                      ),
+                                      child: const Text(
+                                        'VIP',
+                                        style: TextStyle(
+                                          color: AppColors.gold,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else if (coupon.targetAudience == 'NON_SUBSCRIBED') ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF163E33),
+                                        borderRadius: BorderRadius.circular(5),
+                                        border: Border.all(color: const Color(0xFF286D5A), width: 0.7),
+                                      ),
+                                      child: const Text(
+                                        'GUEST',
+                                        style: TextStyle(
+                                          color: Color(0xFF4EE3B8),
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -189,17 +238,32 @@ class CouponTicket extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF163E33),
+                          color: coupon.isVipExclusive
+                              ? const Color(0xFF38290D)
+                              : const Color(0xFF163E33),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF286D5A)),
-                        ),
-                        child: const Text(
-                          'Redeem',
-                          style: TextStyle(
-                            color: Color(0xFF4EE3B8),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                          border: Border.all(
+                            color: coupon.isVipExclusive
+                                ? AppColors.gold.withOpacity(0.8)
+                                : const Color(0xFF286D5A),
                           ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (coupon.isVipExclusive) ...[
+                              const Icon(Icons.lock_outline_rounded, size: 12, color: AppColors.gold),
+                              const SizedBox(width: 4),
+                            ],
+                            Text(
+                              coupon.isVipExclusive ? 'Unlock VIP' : 'Redeem',
+                              style: TextStyle(
+                                color: coupon.isVipExclusive ? AppColors.gold : const Color(0xFF4EE3B8),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     )

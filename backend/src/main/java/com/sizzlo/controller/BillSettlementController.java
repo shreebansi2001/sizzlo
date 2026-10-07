@@ -5,6 +5,7 @@ import com.sizzlo.entity.BillSettlement;
 import com.sizzlo.entity.Coupon;
 import com.sizzlo.entity.LoyaltyTransaction;
 import com.sizzlo.entity.MemberProfile;
+import com.sizzlo.entity.Reservation;
 import com.sizzlo.repository.BillSettlementRepository;
 import com.sizzlo.repository.CouponRepository;
 import com.sizzlo.repository.LoyaltyTransactionRepository;
@@ -27,6 +28,7 @@ public class BillSettlementController {
     private final LoyaltyTransactionRepository loyaltyTransactionRepository;
     private final com.sizzlo.repository.NotificationRepository notificationRepository;
     private final com.sizzlo.service.CommonService commonService;
+    private final com.sizzlo.repository.ReservationRepository reservationRepository;
 
     @Autowired
     public BillSettlementController(
@@ -35,13 +37,15 @@ public class BillSettlementController {
             MemberProfileRepository memberProfileRepository,
             LoyaltyTransactionRepository loyaltyTransactionRepository,
             com.sizzlo.repository.NotificationRepository notificationRepository,
-            com.sizzlo.service.CommonService commonService) {
+            com.sizzlo.service.CommonService commonService,
+            com.sizzlo.repository.ReservationRepository reservationRepository) {
         this.billSettlementRepository = billSettlementRepository;
         this.couponRepository = couponRepository;
         this.memberProfileRepository = memberProfileRepository;
         this.loyaltyTransactionRepository = loyaltyTransactionRepository;
         this.notificationRepository = notificationRepository;
         this.commonService = commonService;
+        this.reservationRepository = reservationRepository;
     }
 
     public static class SettleBillRequest {
@@ -55,14 +59,17 @@ public class BillSettlementController {
         public String paymentMode; // CASH, CARD, ONLINE, STORE_QR
         public String upiUtr;
         public String razorpayPaymentId;
+        public Double tableAdvanceDeduction;
+        public String receiptImageUrl;
+        public String bookingReference;
     }
 
     @PostMapping("/settle")
     public ResponseEntity<ApiResponse<BillSettlement>> initiateSettlement(@RequestBody SettleBillRequest req) {
         BillSettlement bill = new BillSettlement();
         bill.setCustomerMobile(req.customerMobile != null ? req.customerMobile : "+91 98250 12345");
-        bill.setCustomerName(req.customerName != null ? req.customerName : "VIP Patron");
-        bill.setMembershipId(req.membershipId != null ? req.membershipId : "YSM-2024-04821");
+        bill.setCustomerName(req.customerName != null ? req.customerName : "Guest Diner");
+        bill.setMembershipId(req.membershipId != null ? req.membershipId : "");
         bill.setOutletName(req.outletName != null ? req.outletName : "Yanki Sizzlerr Bodakdev");
         bill.setPosInvoiceNumber(req.posInvoiceNumber != null ? req.posInvoiceNumber : "POS-" + (System.currentTimeMillis() % 100000));
         
@@ -72,6 +79,27 @@ public class BillSettlementController {
         bill.setPaymentMode(req.paymentMode != null ? req.paymentMode.toUpperCase() : "CASH");
         bill.setUpiUtr(req.upiUtr);
         bill.setRazorpayPaymentId(req.razorpayPaymentId);
+        bill.setReceiptImageUrl(req.receiptImageUrl);
+
+        // Check for table holding advance deduction (e.g. ₹100 from booking)
+        double tableAdvance = 0.0;
+        if (req.tableAdvanceDeduction != null && req.tableAdvanceDeduction > 0) {
+            tableAdvance = req.tableAdvanceDeduction;
+            bill.setBookingReference(req.bookingReference);
+        } else {
+            // Auto lookup active reservation for customer today with advance paid
+            String cleanPhone = bill.getCustomerMobile().replaceAll("\\D", "");
+            for (Reservation r : reservationRepository.findAll()) {
+                String rPhone = r.getCustomerMobile() != null ? r.getCustomerMobile().replaceAll("\\D", "") : "";
+                if (!cleanPhone.isEmpty() && (rPhone.equals(cleanPhone) || rPhone.endsWith(cleanPhone)) &&
+                    Boolean.TRUE.equals(r.getAdvancePaid()) && !Boolean.TRUE.equals(r.getAdvanceDeducted())) {
+                    tableAdvance = r.getBookingAdvance() != null ? r.getBookingAdvance() : 100.0;
+                    bill.setBookingReference(r.getBookingReference());
+                    break;
+                }
+            }
+        }
+        bill.setTableAdvanceDeduction(tableAdvance);
 
         // Compute discount
         double discount = 0.0;
@@ -93,7 +121,9 @@ public class BillSettlementController {
             }
         }
         bill.setDiscountAmount(discount);
-        double net = gross - discount;
+        
+        // Final Net: Gross - Discount - Table Advance Deposit
+        double net = gross - discount - tableAdvance;
         bill.setNetPayable(net > 0 ? net : 0.0);
 
         // If online payment verified via razorpay, auto approve!
@@ -279,6 +309,33 @@ public class BillSettlementController {
                 }
             } catch (Exception ignored) {}
         }
+
+        // 3. Mark table holding advance as deducted on reservation
+        try {
+            if (bill.getTableAdvanceDeduction() != null && bill.getTableAdvanceDeduction() > 0) {
+                if (bill.getBookingReference() != null && !bill.getBookingReference().trim().isEmpty()) {
+                    reservationRepository.findByBookingReference(bill.getBookingReference().trim()).ifPresent(r -> {
+                        r.setAdvanceDeducted(true);
+                        r.setStatus("Completed");
+                        r.setPosSettlementId(bill.getId());
+                        reservationRepository.save(r);
+                    });
+                } else if (bill.getCustomerMobile() != null) {
+                    String cleanPhone = bill.getCustomerMobile().replaceAll("\\D", "");
+                    for (Reservation r : reservationRepository.findAll()) {
+                        String rPhone = r.getCustomerMobile() != null ? r.getCustomerMobile().replaceAll("\\D", "") : "";
+                        if (!cleanPhone.isEmpty() && (rPhone.equals(cleanPhone) || rPhone.endsWith(cleanPhone)) &&
+                                Boolean.TRUE.equals(r.getAdvancePaid()) && !Boolean.TRUE.equals(r.getAdvanceDeducted())) {
+                            r.setAdvanceDeducted(true);
+                            r.setStatus("Completed");
+                            r.setPosSettlementId(bill.getId());
+                            reservationRepository.save(r);
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     @GetMapping("/shift-summary")

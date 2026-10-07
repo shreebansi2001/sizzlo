@@ -89,6 +89,12 @@ public class CouponServiceImpl implements CouponService {
         existing.setStatus(coupon.getStatus());
         existing.setOutlet(coupon.getOutlet());
         existing.setColor(coupon.getColor());
+        existing.setTargetAudience(coupon.getTargetAudience());
+        existing.setVipOnly(coupon.getVipOnly());
+        existing.setImageUrl(coupon.getImageUrl());
+        if (coupon.getDiscountType() != null) existing.setDiscountType(coupon.getDiscountType());
+        if (coupon.getDiscountValue() != null) existing.setDiscountValue(coupon.getDiscountValue());
+        if (coupon.getCode() != null) existing.setCode(coupon.getCode());
         return couponRepository.save(existing);
     }
 

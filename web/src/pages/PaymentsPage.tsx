@@ -441,6 +441,22 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                       </div>
                     )}
 
+                    {b.tableAdvanceDeduction && b.tableAdvanceDeduction > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#10B981', marginBottom: 4 }}>
+                        <span>Table Holding Advance {b.bookingReference ? `[${b.bookingReference}]` : ''}:</span>
+                        <span style={{ fontWeight: 700 }}>-₹{b.tableAdvanceDeduction.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+
+                    {b.receiptImageUrl && (
+                      <div style={{ marginTop: 6, marginBottom: 6, padding: '6px 10px', borderRadius: 8, background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 11, color: '#3B82F6', fontWeight: 600 }}>📸 Customer Receipt Photo</span>
+                        <a href={b.receiptImageUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#3B82F6', fontWeight: 700, textDecoration: 'underline' }}>
+                          View Image
+                        </a>
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 800, color: 'var(--primary)', borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 4 }}>
                       <span>Net Payable:</span>
                       <span style={{ fontSize: 16 }}>₹{b.netPayable.toLocaleString('en-IN')}</span>
