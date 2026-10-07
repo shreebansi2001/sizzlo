@@ -115,11 +115,11 @@ class SubscriptionDetailsView extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'ID: ${m.membershipId}',
+                      isSub && m.membershipId.isNotEmpty ? 'ID: ${m.membershipId}' : 'ID: Not Assigned (VIP Only)',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: Colors.white.withOpacity(0.6),
-                        letterSpacing: 1.2,
+                        letterSpacing: 1.0,
                         fontFamily: 'monospace',
                       ),
                     ),
@@ -136,7 +136,7 @@ class SubscriptionDetailsView extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              m.issuedDate.isNotEmpty ? m.issuedDate : '01/01/2024',
+                              m.issuedDate.isNotEmpty ? m.issuedDate : 'Today',
                               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
                             ),
                           ],
@@ -150,7 +150,7 @@ class SubscriptionDetailsView extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              m.expiryDate.isNotEmpty ? m.expiryDate : '31/12/2025',
+                              isSub && m.expiryDate.isNotEmpty && m.expiryDate != '—' ? m.expiryDate : '—',
                               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFDF9E5B)),
                             ),
                           ],
@@ -164,7 +164,7 @@ class SubscriptionDetailsView extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Membership Perks Section
-              _sectionHeader('ACTIVE VIP PRIVILEGES'),
+              _sectionHeader(isSub ? 'ACTIVE VIP PRIVILEGES' : 'VIP PRIVILEGES (SUBSCRIBE TO UNLOCK)'),
               const SizedBox(height: 10),
               _perkTile(
                 Icons.restaurant_menu_rounded,

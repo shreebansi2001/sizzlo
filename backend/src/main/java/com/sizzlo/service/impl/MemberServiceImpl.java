@@ -58,6 +58,29 @@ public class MemberServiceImpl implements MemberService {
         return Optional.empty();
     }
 
+    private MemberProfile sanitizeProfile(MemberProfile p) {
+        if (p == null) return null;
+        boolean changed = false;
+        if (p.getEmail() != null && p.getEmail().toLowerCase().endsWith("@sizzlo.in")) {
+            p.setEmail(null);
+            changed = true;
+        }
+        if (p.getSubscriptionTier() == null || "REGISTERED".equalsIgnoreCase(p.getSubscriptionTier())) {
+            if (!"Registered".equals(p.getStatus())) {
+                p.setStatus("Registered");
+                changed = true;
+            }
+            if (!"REGISTERED USER".equals(p.getMembershipType())) {
+                p.setMembershipType("REGISTERED USER");
+                changed = true;
+            }
+        }
+        if (changed) {
+            return memberProfileRepository.save(p);
+        }
+        return p;
+    }
+
     @Override
     public AuthResponse register(RegisterRequest request) {
         String cleanPhone = cleanMobile(request.getMobile());
@@ -66,9 +89,9 @@ public class MemberServiceImpl implements MemberService {
         MemberProfile profile = findMemberByPhone(request.getMobile())
                 .orElseGet(() -> {
                     MemberProfile p = new MemberProfile();
-                    p.setMembershipId("YSM-2024-" + (1000 + (int)(Math.random() * 9000)));
+                    p.setMembershipId("REG-" + (1000 + (int)(Math.random() * 9000)));
                     p.setIssuedDate(LocalDate.now());
-                    p.setExpiryDate(LocalDate.now().plusYears(1));
+                    p.setExpiryDate(null);
                     p.setTotalSavings(0);
                     p.setCouponsUsed(0);
                     p.setCouponsTotal(0);
@@ -76,7 +99,7 @@ public class MemberServiceImpl implements MemberService {
                     p.setLoyaltyGoal(250000);
                     p.setTotalSpend(0);
                     p.setPendingDues(0);
-                    p.setStatus("Active");
+                    p.setStatus("Registered");
                     p.setSubscriptionTier("REGISTERED");
                     return p;
                 });
@@ -85,11 +108,14 @@ public class MemberServiceImpl implements MemberService {
         String[] parts = request.getFullName().trim().split("\\s+");
         profile.setFirstName(parts.length > 0 ? parts[0] : request.getFullName().trim());
         profile.setMobile(formattedPhone);
-        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+
+        // Never generate synthetic dummy emails - only store real user-provided email
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty() && !request.getEmail().trim().toLowerCase().endsWith("@sizzlo.in")) {
             profile.setEmail(request.getEmail().trim());
-        } else if (profile.getEmail() == null || profile.getEmail().isEmpty()) {
-            profile.setEmail(profile.getFirstName().toLowerCase() + "." + (cleanPhone.length() >= 4 ? cleanPhone.substring(cleanPhone.length() - 4) : "guest") + "@sizzlo.in");
+        } else {
+            profile.setEmail(null);
         }
+
         profile.setAddress(request.getAddress());
         profile.setGender(request.getGender());
         
@@ -150,26 +176,30 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public MemberProfile getProfileByMembershipId(String membershipId) {
-        return memberProfileRepository.findByMembershipId(membershipId)
+        MemberProfile p = memberProfileRepository.findByMembershipId(membershipId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found with ID: " + membershipId));
+        return sanitizeProfile(p);
     }
 
     @Override
     public MemberProfile getProfileByMobile(String mobile) {
-        return findMemberByPhone(mobile)
+        MemberProfile p = findMemberByPhone(mobile)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found with mobile: " + mobile));
+        return sanitizeProfile(p);
     }
 
     @Override
     public MemberProfile updateProfile(String membershipId, MemberProfile updatedProfile) {
         MemberProfile existing;
         try {
-            existing = getProfileByMembershipId(membershipId);
-        } catch (ResourceNotFoundException e) {
+            existing = memberProfileRepository.findByMembershipId(membershipId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Member not found with ID: " + membershipId));
+        } catch (Exception e) {
             if (updatedProfile.getMobile() != null && !updatedProfile.getMobile().trim().isEmpty()) {
-                existing = getProfileByMobile(updatedProfile.getMobile());
+                existing = findMemberByPhone(updatedProfile.getMobile())
+                        .orElseThrow(() -> new ResourceNotFoundException("Member not found with mobile: " + updatedProfile.getMobile()));
             } else {
-                throw e;
+                throw new ResourceNotFoundException("Member not found: " + membershipId);
             }
         }
         if (updatedProfile.getFullName() != null) {
@@ -178,7 +208,10 @@ public class MemberServiceImpl implements MemberService {
             existing.setFirstName(parts.length > 0 ? parts[0] : updatedProfile.getFullName().trim());
         }
         if (updatedProfile.getFirstName() != null) existing.setFirstName(updatedProfile.getFirstName());
-        if (updatedProfile.getEmail() != null) existing.setEmail(updatedProfile.getEmail());
+        if (updatedProfile.getEmail() != null) {
+            String em = updatedProfile.getEmail().trim();
+            existing.setEmail(em.isEmpty() || em.toLowerCase().endsWith("@sizzlo.in") ? null : em);
+        }
         if (updatedProfile.getMobile() != null) existing.setMobile(updatedProfile.getMobile());
         if (updatedProfile.getAddress() != null) existing.setAddress(updatedProfile.getAddress());
         if (updatedProfile.getGender() != null) existing.setGender(updatedProfile.getGender());
@@ -196,7 +229,8 @@ public class MemberServiceImpl implements MemberService {
         if (updatedProfile.getSpouseBirthday() != null) existing.setSpouseBirthday(updatedProfile.getSpouseBirthday());
         if (updatedProfile.getAnniversaryDate() != null) existing.setAnniversaryDate(updatedProfile.getAnniversaryDate());
         if (updatedProfile.getIsMarried() != null) existing.setIsMarried(updatedProfile.getIsMarried());
-        return memberProfileRepository.save(existing);
+        MemberProfile saved = memberProfileRepository.save(existing);
+        return sanitizeProfile(saved);
     }
 
     @Override
@@ -206,7 +240,11 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public List<MemberProfile> getAllMembers() {
-        return memberProfileRepository.findAll();
+        List<MemberProfile> all = memberProfileRepository.findAll();
+        for (MemberProfile p : all) {
+            sanitizeProfile(p);
+        }
+        return all;
     }
 
     @Override

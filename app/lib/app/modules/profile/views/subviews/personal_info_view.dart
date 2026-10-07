@@ -7,6 +7,7 @@ import '../../../../data/models/member_model.dart';
 import '../../../../data/services/api_service.dart';
 import '../../../../data/services/local_storage_service.dart';
 import '../../../../widgets/profile_avatar_widget.dart';
+import '../../../../routes/app_routes.dart';
 import '../../controllers/profile_controller.dart';
 import '../../../home/controllers/home_controller.dart';
 
@@ -43,7 +44,11 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
     final displayName = (m.fullName.isNotEmpty && m.fullName != 'Guest')
         ? m.fullName
         : (AppConstants.currentUserName != 'Guest' ? AppConstants.currentUserName : '');
-    final displayEmail = m.email.isNotEmpty ? m.email : AppConstants.currentUserEmail;
+    final displayEmail = (m.email.isNotEmpty && !m.email.endsWith('@sizzlo.in'))
+        ? m.email
+        : (AppConstants.currentUserEmail.isNotEmpty && !AppConstants.currentUserEmail.endsWith('@sizzlo.in')
+            ? AppConstants.currentUserEmail
+            : '');
 
     _nameController = TextEditingController(text: displayName);
     _emailController = TextEditingController(text: displayEmail);
@@ -63,7 +68,7 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
         if (mounted) {
           setState(() {
             _nameController.text = fresh.fullName;
-            _emailController.text = fresh.email;
+            _emailController.text = (fresh.email.isNotEmpty && !fresh.email.endsWith('@sizzlo.in')) ? fresh.email : '';
             _addressController.text = fresh.address;
             _birthdayController.text = fresh.birthday;
             _spouseNameController.text = fresh.spouseName;
@@ -340,7 +345,7 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            m.membershipId.isNotEmpty ? m.membershipId : 'MEMBER',
+                            m.isSubscriber && m.membershipId.isNotEmpty ? m.membershipId : 'Free Account · Standard Guest',
                             style: TextStyle(
                               fontSize: 11.5,
                               color: Colors.white.withOpacity(0.45),
@@ -351,22 +356,26 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF281C10),
+                              color: m.isSubscriber ? const Color(0xFF281C10) : Colors.white.withOpacity(0.06),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFF6B4520)),
+                              border: Border.all(color: m.isSubscriber ? const Color(0xFF6B4520) : Colors.white.withOpacity(0.12)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.verified, size: 10, color: Color(0xFFDF9E5B)),
+                                Icon(
+                                  m.isSubscriber ? Icons.verified : Icons.person_outline,
+                                  size: 10,
+                                  color: m.isSubscriber ? const Color(0xFFDF9E5B) : Colors.white.withOpacity(0.6),
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  m.status.toUpperCase(),
-                                  style: const TextStyle(
+                                  m.isSubscriber ? '${m.subscriptionTier} VIP' : 'FREE ACCOUNT',
+                                  style: TextStyle(
                                     fontSize: 9,
                                     letterSpacing: 1.0,
                                     fontWeight: FontWeight.w800,
-                                    color: Color(0xFFDF9E5B),
+                                    color: m.isSubscriber ? const Color(0xFFDF9E5B) : Colors.white.withOpacity(0.7),
                                   ),
                                 ),
                               ],
@@ -404,8 +413,8 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                     ),
                     _divider(),
                     _isEditing
-                        ? _editField('Email Address', _emailController, Icons.mail_outline)
-                        : _viewField('Email Address', m.email.isNotEmpty ? m.email : 'Not linked', Icons.mail_outline),
+                        ? _editField('Email Address', _emailController, Icons.mail_outline, hint: 'Enter email address (Optional)')
+                        : _viewField('Email Address', (m.email.isNotEmpty && !m.email.endsWith('@sizzlo.in')) ? m.email : 'Not provided', Icons.mail_outline),
                     _divider(),
                     _isEditing
                         ? _editField('Delivery Address', _addressController, Icons.location_on_outlined)
@@ -465,13 +474,43 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                 ),
                 child: Column(
                   children: [
-                    _viewField('Membership ID', m.membershipId.isNotEmpty ? m.membershipId : 'YSM-MEMBER', Icons.badge_outlined, isReadOnly: true),
+                    _viewField(
+                      'Membership Status',
+                      m.isSubscriber ? 'Active VIP Subscriber' : 'Free Account (No Active Plan)',
+                      m.isSubscriber ? Icons.verified_outlined : Icons.info_outline,
+                      isReadOnly: true,
+                      valueColor: m.isSubscriber ? const Color(0xFF4EE3B8) : Colors.white70,
+                    ),
                     _divider(),
-                    _viewField('Membership Tier', m.membershipType.isNotEmpty ? m.membershipType : 'REGISTERED USER', Icons.workspace_premium_outlined, isReadOnly: true),
+                    _viewField(
+                      'Membership ID',
+                      m.isSubscriber && m.membershipId.isNotEmpty ? m.membershipId : 'Available with VIP Membership',
+                      Icons.badge_outlined,
+                      isReadOnly: true,
+                    ),
                     _divider(),
-                    _viewField('Member Since', m.issuedDate.isNotEmpty ? m.issuedDate : '01/01/2024', Icons.calendar_today_outlined, isReadOnly: true),
+                    _viewField(
+                      'Membership Tier',
+                      m.isSubscriber ? m.membershipType : 'Standard Guest (Tap to Explore Plans)',
+                      Icons.workspace_premium_outlined,
+                      isReadOnly: true,
+                      valueColor: const Color(0xFFDF9E5B),
+                      onTap: !m.isSubscriber ? () => Get.toNamed(AppRoutes.PLANS) : null,
+                    ),
                     _divider(),
-                    _viewField('Valid Till', m.expiryDate.isNotEmpty ? m.expiryDate : '31/12/2025', Icons.event_available_outlined, isReadOnly: true),
+                    _viewField(
+                      'Member Since',
+                      m.issuedDate.isNotEmpty ? m.issuedDate : 'Today',
+                      Icons.calendar_today_outlined,
+                      isReadOnly: true,
+                    ),
+                    _divider(),
+                    _viewField(
+                      'Valid Till',
+                      m.isSubscriber && m.expiryDate.isNotEmpty && m.expiryDate != '—' ? m.expiryDate : '—',
+                      Icons.event_available_outlined,
+                      isReadOnly: true,
+                    ),
                   ],
                 ),
               ),
@@ -499,8 +538,15 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
     );
   }
 
-  Widget _viewField(String label, String value, IconData icon, {bool isReadOnly = false}) {
-    return Padding(
+  Widget _viewField(
+    String label,
+    String value,
+    IconData icon, {
+    bool isReadOnly = false,
+    VoidCallback? onTap,
+    Color? valueColor,
+  }) {
+    final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
@@ -528,16 +574,29 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isReadOnly ? Colors.white70 : Colors.white,
+                color: valueColor ?? (isReadOnly ? Colors.white70 : Colors.white),
               ),
             ),
           ),
+          if (onTap != null) ...[
+            const SizedBox(width: 6),
+            Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.gold.withOpacity(0.8)),
+          ],
         ],
       ),
     );
+
+    if (onTap != null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: content,
+      );
+    }
+    return content;
   }
 
-  Widget _editField(String label, TextEditingController controller, IconData icon) {
+  Widget _editField(String label, TextEditingController controller, IconData icon, {String? hint}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(
@@ -567,7 +626,7 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                hintText: 'Enter $label',
+                hintText: hint ?? 'Enter $label',
                 hintStyle: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 12),
               ),
             ),
