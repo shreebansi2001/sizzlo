@@ -824,80 +824,107 @@ class HomeView extends GetView<HomeController> {
           Dialog(
             backgroundColor: AppColors.surface,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.flame.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.celebration_rounded, color: AppColors.flame, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Yanki Sunday Brunch',
-                          style: TextStyle(fontFamily: 'Playfair Display', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Indulge in our signature Sunday Brunch buffet featuring live sizzler grill stations, chef-crafted desserts, artisanal mocktails, and live jazz music.',
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Column(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Timings:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                            Text('12:00 PM – 4:00 PM (Sundays)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                          ],
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.flame.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.celebration_rounded, color: AppColors.flame, size: 22),
                         ),
-                        SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Subscriber Benefit:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                            Text('Flat 20% Off + Welcome Sizzler', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.gold)),
-                          ],
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Yanki Sunday Brunch',
+                            style: TextStyle(fontFamily: 'Playfair Display', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(Icons.close_rounded, color: AppColors.textMuted, size: 20),
+                          onPressed: () => Get.back(),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.flame,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: () {
-                        Get.back();
-                        Get.find<NavigationController>().changeTab(3);
-                      },
-                      child: const Text('Reserve Table for Brunch', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Indulge in our signature Sunday Brunch buffet featuring live sizzler grill stations, chef-crafted desserts, artisanal mocktails, and live jazz music.',
+                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.gold.withOpacity(0.12)),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('Timings:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '12:00 PM – 4:00 PM (Sundays)',
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Divider(color: Colors.white10, height: 1),
+                          ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('Subscriber Benefit:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Flat 20% Off + Welcome Sizzler',
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.gold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.flame,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: () {
+                          Get.back();
+                          Get.find<NavigationController>().changeTab(3);
+                        },
+                        child: const Text('Reserve Table for Brunch', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
