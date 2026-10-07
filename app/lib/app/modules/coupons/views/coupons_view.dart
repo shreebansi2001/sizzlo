@@ -79,14 +79,18 @@ class CouponsView extends GetView<CouponsController> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Choose a plan · No active benefits',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFDF9E5B),
+                    const Expanded(
+                      child: Text(
+                        'Choose a plan · No active benefits',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFDF9E5B),
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 14,
@@ -276,13 +280,19 @@ class CouponsView extends GetView<CouponsController> {
                   ]
                 : [],
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? const Color(0xFF070A09) : Colors.white60,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? const Color(0xFF070A09) : Colors.white60,
+                ),
+              ),
             ),
           ),
         ),

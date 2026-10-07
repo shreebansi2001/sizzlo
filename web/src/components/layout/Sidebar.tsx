@@ -18,16 +18,18 @@ import {
   Activity,
   ScanLine,
   LogOut,
-  UserCheck
+  UserCheck,
+  X
 } from 'lucide-react';
 
 interface SidebarProps {
   currentTab: string;
   onTabChange: (tab: string) => void;
   onLogout?: () => void;
+  onClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout, onClose }) => {
   const navGroups = [
     {
       group: 'Overview',
@@ -72,25 +74,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLog
     <aside className="admin-sidebar">
       {/* Brand Header */}
       <div className="sidebar-brand">
-        <div style={{ position: 'relative' }}>
-          <img 
-            src="/sizzlo-mascot.png" 
-            alt="Sizzlo" 
-            className="animate-float"
-            style={{ width: 44, height: 44, objectFit: 'contain', filter: 'drop-shadow(0 4px 12px rgba(255, 138, 0, 0.4))' }} 
-          />
-        </div>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, fontWeight: 700, color: 'var(--text-main)', letterSpacing: 0.5 }}>
-              YANKI
-            </span>
-            <span className="brand-badge">SUPER ADMIN</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+          <div style={{ position: 'relative' }}>
+            <img 
+              src="/sizzlo-mascot.png" 
+              alt="Sizzlo" 
+              className="animate-float"
+              style={{ width: 44, height: 44, objectFit: 'contain', filter: 'drop-shadow(0 4px 12px rgba(255, 138, 0, 0.4))' }} 
+            />
           </div>
-          <p style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 0.5, marginTop: 2 }}>
-            Privilege & Dining Console
-          </p>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, fontWeight: 700, color: 'var(--text-main)', letterSpacing: 0.5 }}>
+                YANKI
+              </span>
+              <span className="brand-badge">SUPER ADMIN</span>
+            </div>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 0.5, marginTop: 2 }}>
+              Privilege & Dining Console
+            </p>
+          </div>
         </div>
+        {onClose && (
+          <button 
+            className="mobile-sidebar-close" 
+            onClick={onClose}
+            aria-label="Close sidebar"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       {/* Navigation Groups */}

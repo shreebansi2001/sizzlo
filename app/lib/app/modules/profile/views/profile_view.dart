@@ -70,14 +70,16 @@ class ProfileView extends GetView<ProfileController> {
 
               const SizedBox(height: 20),
 
-              // Action Buttons Row: Logout & Delete Account
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              // Action Buttons: Logout & Delete Account
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 10,
                 children: [
                   GestureDetector(
                     onTap: controller.logout,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 22),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEF4444).withOpacity(0.08),
                         borderRadius: BorderRadius.circular(14),
@@ -100,11 +102,10 @@ class ProfileView extends GetView<ProfileController> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 14),
                   GestureDetector(
                     onTap: controller.deleteAccountConfirm,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
                       decoration: BoxDecoration(
                         color: Colors.red.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(14),
@@ -280,12 +281,15 @@ class ProfileView extends GetView<ProfileController> {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                value,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFDF9E5B),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFDF9E5B),
+                  ),
                 ),
               ),
             ],

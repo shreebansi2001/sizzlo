@@ -116,13 +116,16 @@ class HomeView extends GetView<HomeController> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Text(
-                            'Hello, ${m.firstName}',
-                            style: AppTextStyles.displayMedium.copyWith(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontFamily: 'Playfair Display',
-                              fontWeight: FontWeight.bold,
+                          Flexible(
+                            child: Text(
+                              'Hello, ${m.firstName}',
+                              style: AppTextStyles.displayMedium.copyWith(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontFamily: 'Playfair Display',
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -362,7 +365,10 @@ class HomeView extends GetView<HomeController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
                           const Text(
                             'Settle Table Bill',
@@ -373,7 +379,6 @@ class HomeView extends GetView<HomeController> {
                               fontFamily: 'Playfair Display',
                             ),
                           ),
-                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
@@ -666,7 +671,10 @@ class HomeView extends GetView<HomeController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
                       const Text(
                         'VIP Coupon Vault',
@@ -677,7 +685,6 @@ class HomeView extends GetView<HomeController> {
                           fontFamily: 'Playfair Display',
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
