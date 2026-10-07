@@ -83,15 +83,6 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons: initialCoupon
       setIsSubmitting(false);
     }
   };
-      setTimeout(() => setNotificationNotice(null), 5000);
-      if (onRefresh) onRefresh();
-    } catch (err: any) {
-      console.error('Failed to create coupon', err);
-      alert('Failed to save coupon: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleDeleteCoupon = async (id: number | string) => {
     if (!window.confirm('Are you sure you want to delete and deactivate this voucher?')) return;
