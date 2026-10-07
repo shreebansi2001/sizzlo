@@ -23,15 +23,23 @@ export const LoyaltyPage: React.FC = () => {
 
   const topLoyaltyMembers = [...members]
     .sort((a, b) => (b.loyaltyPoints || 0) - (a.loyaltyPoints || 0))
-    .slice(0, 5)
-    .map((m, i) => ({
-      rank: i + 1,
-      name: m.fullName,
-      id: m.membershipId,
-      points: (m.loyaltyPoints || 0).toLocaleString(),
-      tier: m.membershipType,
-      renewals: (m.loyaltyPoints || 0) >= 250000 ? 1 : 0,
-    }));
+    .slice(0, 10)
+    .map((m, i) => {
+      const pts = m.loyaltyPoints || 0;
+      const goal = m.loyaltyGoal || 250000;
+      const progressPercent = Math.min(100, Math.round((pts / goal) * 100));
+      return {
+        rank: i + 1,
+        name: m.fullName,
+        id: m.membershipId,
+        pts,
+        goal,
+        progressPercent,
+        points: pts.toLocaleString('en-IN'),
+        tier: m.membershipType,
+        renewals: pts >= goal ? 1 : 0,
+      };
+    });
 
   const distributionData = [
     { name: '0 – 25k', value: members.filter(m => (m.loyaltyPoints || 0) < 25000).length, color: '#3B82F6' },
@@ -183,9 +191,19 @@ export const LoyaltyPage: React.FC = () => {
                       </span>
                     </td>
                     <td>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--success)' }}>
-                        {m.renewals > 0 ? `${m.renewals} Free Years` : 'In Progress (50%)'}
-                      </span>
+                      {m.pts >= m.goal ? (
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--success)' }}>
+                          Achieved (1 Year Free)
+                        </span>
+                      ) : m.pts > 0 ? (
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>
+                          In Progress ({m.progressPercent}%)
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>
+                          0% (250,000 pts needed)
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

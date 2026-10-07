@@ -75,8 +75,11 @@ class CardView extends GetView<CardController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
                     children: [
                       const Text(
                         'Verification',
@@ -95,6 +98,7 @@ class CardView extends GetView<CardController> {
                           border: Border.all(color: AppColors.success.withOpacity(0.4)),
                         ),
                         child: const Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.check_circle_rounded, size: 12, color: AppColors.success),
                             SizedBox(width: 4),
@@ -139,9 +143,11 @@ class CardView extends GetView<CardController> {
                     children: [
                       const Icon(Icons.shield_outlined, size: 14, color: AppColors.success),
                       const SizedBox(width: 6),
-                      Text(
-                        'Secured by Yanki Hospitality · Tamper-proof signature',
-                        style: TextStyle(fontSize: 11, color: AppColors.textSecondary.withOpacity(0.8)),
+                      Expanded(
+                        child: Text(
+                          'Secured by Yanki Hospitality · Tamper-proof signature',
+                          style: TextStyle(fontSize: 11, color: AppColors.textSecondary.withOpacity(0.8)),
+                        ),
                       ),
                     ],
                   ),

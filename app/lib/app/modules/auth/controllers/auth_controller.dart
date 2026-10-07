@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../routes/app_routes.dart';
 import '../../../data/models/member_model.dart';
 import '../../../data/services/api_service.dart';
 import '../../../core/values/app_constants.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../home/controllers/home_controller.dart';
 import '../../../data/services/local_storage_service.dart';
 
@@ -17,7 +19,8 @@ class AuthController extends GetxController {
   final RxString errorMessage = ''.obs;
   final RxString registeredSuccessMessage = ''.obs;
   final RxBool isLoading = false.obs;
-  final RxInt resendTimer = 23.obs;
+  final RxBool isResending = false.obs;
+  final RxInt resendTimer = 60.obs;
   final RxString currentPhone = ''.obs;
   Timer? _countdownTimer;
 
@@ -32,7 +35,11 @@ class AuthController extends GetxController {
             'Details saved. Verify your phone number to complete registration.';
       }
       if (args['phone'] != null) {
-        phoneController.text = args['phone'].toString();
+        final ph = args['phone'].toString().replaceAll(RegExp(r'\D'), '');
+        phoneController.text = ph;
+        currentPhone.value = ph;
+        AppConstants.currentUserMobile = ph;
+        startResendTimer(force: true);
       }
     }
   }
@@ -50,21 +57,258 @@ class AuthController extends GetxController {
 
     isLoading.value = true;
     try {
+      // 1. Check if user is registered in MySQL first
+      final exists = await _apiService.checkMemberExists(phone);
+      if (!exists) {
+        isLoading.value = false;
+        _showNotRegisteredPrompt(phone);
+        return;
+      }
+
+      // 2. User exists -> request OTP and navigate to VerifyView
       final res = await _apiService.requestOtp(phone);
-      startResendTimer(force: true);
-      Get.snackbar(
-        'OTP Sent Successfully',
-        res['message']?.toString() ?? 'Please enter the OTP sent to your WhatsApp',
-        backgroundColor: const Color(0xFF001D4A),
-        colorText: const Color(0xFFE8B84A),
-        duration: const Duration(seconds: 4),
-      );
-      Get.toNamed(AppRoutes.VERIFY, arguments: {'phone': phone});
+      if (res['success'] == true) {
+        startResendTimer(force: true);
+        Get.snackbar(
+          'OTP Sent',
+          'A verification code has been dispatched to +91 $phone on WhatsApp',
+          backgroundColor: const Color(0xFF0F261E),
+          colorText: const Color(0xFF4EE3B8),
+          icon: const Icon(Icons.mark_chat_read_rounded, color: Color(0xFF4EE3B8)),
+          duration: const Duration(seconds: 3),
+          snackPosition: SnackPosition.TOP,
+        );
+        Get.toNamed(AppRoutes.VERIFY, arguments: {'phone': phone});
+      } else if (res['userNotFound'] == true) {
+        _showNotRegisteredPrompt(phone);
+      } else {
+        errorMessage.value = res['message']?.toString() ?? 'Failed to send OTP. Please try again.';
+      }
     } catch (e) {
       errorMessage.value = 'Failed to send OTP. Please try again.';
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void _showNotRegisteredPrompt(String phone) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111614),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(
+            top: BorderSide(color: AppColors.flame.withOpacity(0.55), width: 1.5),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.8),
+              blurRadius: 32,
+              offset: const Offset(0, -10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Center drag handle
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header: Flame Avatar Badge + Title
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.flameGradient,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.flame.withOpacity(0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.person_add_rounded, color: Color(0xFF070A09), size: 24),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Account Not Found',
+                        style: GoogleFonts.playfairDisplay(
+                          color: Colors.white,
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(Icons.phone_iphone_rounded, size: 13, color: AppColors.flame),
+                          const SizedBox(width: 4),
+                          Text(
+                            '+91 $phone',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: AppColors.flame,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Unregistered',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white70,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 18),
+            Text(
+              'No Yanki VIP dining account was found for this number. Complete your quick profile to unlock dining privileges, free birthday rewards, and exclusive coupons.',
+              style: GoogleFonts.plusJakartaSans(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.45,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            // Privilege highlight pill
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              decoration: BoxDecoration(
+                color: const Color(0xFF171E1A),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withOpacity(0.06)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.stars_rounded, color: AppColors.flame, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Includes 12 Welcome Vault Coupons & Birthday Privileges',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 22),
+
+            // Actions: Cancel & Flame Gradient Sign Up Button
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.white.withOpacity(0.18)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: () => Get.back(),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.flameGradient,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.flame.withOpacity(0.35),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: () {
+                        Get.back();
+                        Get.toNamed(AppRoutes.REGISTER, arguments: {'phone': phone});
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Sign Up Now',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFF070A09),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward_rounded, color: Color(0xFF070A09), size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
   }
 
   void quickDemoLogin() async {
@@ -85,7 +329,7 @@ class AuthController extends GetxController {
       return;
     }
     _countdownTimer?.cancel();
-    resendTimer.value = 30;
+    resendTimer.value = 60;
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (resendTimer.value > 0) {
         resendTimer.value--;
@@ -96,21 +340,53 @@ class AuthController extends GetxController {
   }
 
   void resendOtp() async {
-    if (isLoading.value) return;
-    if (resendTimer.value == 0) {
-      isLoading.value = true;
-      try {
-        startResendTimer(force: true);
-        final res = await _apiService.requestOtp(currentPhone.value);
+    if (isResending.value || isLoading.value) return;
+    final phone = (Get.arguments is Map && Get.arguments['phone'] != null)
+        ? Get.arguments['phone'].toString().replaceAll(RegExp(r'\D'), '')
+        : (currentPhone.value.isNotEmpty ? currentPhone.value : AppConstants.currentUserMobile);
+
+    if (phone.isEmpty) {
+      Get.snackbar(
+        'Phone Missing',
+        'Mobile number not found. Please go back and retry.',
+        backgroundColor: const Color(0xFF141917),
+        colorText: AppColors.error,
+      );
+      return;
+    }
+
+    isResending.value = true;
+    try {
+      final res = await _apiService.resendOtp(phone);
+      if (res['success'] == true) {
+        startResendTimer(force: true); // Reset back to 60s
         Get.snackbar(
-          'OTP Resent',
-          res['message']?.toString() ?? 'A new OTP has been sent to +91 ${currentPhone.value}',
-          backgroundColor: const Color(0xFF141917),
-          colorText: const Color(0xFFE8B84A),
+          'WhatsApp OTP Resent',
+          res['message']?.toString() ?? 'A new verification code has been dispatched to +91 $phone on WhatsApp.',
+          backgroundColor: const Color(0xFF0F261E),
+          colorText: const Color(0xFF4EE3B8),
+          icon: const Icon(Icons.mark_chat_read_rounded, color: Color(0xFF4EE3B8)),
+          duration: const Duration(seconds: 4),
+          snackPosition: SnackPosition.TOP,
         );
-      } finally {
-        isLoading.value = false;
+      } else {
+        Get.snackbar(
+          'Failed to Resend',
+          res['message']?.toString() ?? 'Could not send OTP. Please try again.',
+          backgroundColor: const Color(0xFF141917),
+          colorText: AppColors.error,
+          duration: const Duration(seconds: 3),
+        );
       }
+    } catch (_) {
+      Get.snackbar(
+        'Error',
+        'Unable to resend OTP. Please check server connection.',
+        backgroundColor: const Color(0xFF141917),
+        colorText: AppColors.error,
+      );
+    } finally {
+      isResending.value = false;
     }
   }
 
@@ -122,9 +398,20 @@ class AuthController extends GetxController {
           backgroundColor: Colors.redAccent, colorText: Colors.white);
       return;
     }
+
+    final phoneToVerify = (Get.arguments is Map && Get.arguments['phone'] != null)
+        ? Get.arguments['phone'].toString().replaceAll(RegExp(r'\D'), '')
+        : (currentPhone.value.isNotEmpty ? currentPhone.value : AppConstants.currentUserMobile);
+
+    if (phoneToVerify.isEmpty) {
+      Get.snackbar('Error', 'Mobile number missing. Please go back and retry.',
+          backgroundColor: Colors.redAccent, colorText: Colors.white);
+      return;
+    }
+
     isLoading.value = true;
     try {
-      final authResult = await _apiService.verifyOtp(currentPhone.value, enteredOtp);
+      final authResult = await _apiService.verifyOtp(phoneToVerify, enteredOtp);
       if (authResult != null && authResult['member'] != null) {
         final MemberModel member = authResult['member'] is MemberModel
             ? authResult['member']
@@ -152,8 +439,8 @@ class AuthController extends GetxController {
           duration: const Duration(seconds: 3),
         );
 
-        // Directly route to HOME upon successful authentication
-        Get.offAllNamed(AppRoutes.HOME);
+        // Route to SUBSCRIPTION PLANS first upon successful login / OTP verification
+        Get.offAllNamed(AppRoutes.PLANS, arguments: {'fromLogin': true});
       } else {
         Get.snackbar('Verification Failed', 'Invalid or expired OTP. Please try again.',
             backgroundColor: Colors.redAccent, colorText: Colors.white);

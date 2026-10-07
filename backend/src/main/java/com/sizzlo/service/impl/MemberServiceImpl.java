@@ -129,30 +129,7 @@ public class MemberServiceImpl implements MemberService {
         String formattedPhone = cleanPhone.length() == 10 ? "+91 " + cleanPhone : mobile;
 
         MemberProfile profile = findMemberByPhone(mobile)
-                .orElseGet(() -> {
-                    // Create standard registered user record
-                    MemberProfile newProfile = new MemberProfile();
-                    newProfile.setMobile(formattedPhone);
-                    String suffix = cleanPhone.length() >= 4 ? cleanPhone.substring(cleanPhone.length() - 4) : "User";
-                    newProfile.setFullName("Guest " + suffix);
-                    newProfile.setFirstName("Guest");
-                    newProfile.setEmail("guest." + suffix.toLowerCase() + "@sizzlo.in");
-                    newProfile.setMembershipId("YSM-2024-" + (1000 + (int)(Math.random() * 9000)));
-                    newProfile.setMembershipType("REGISTERED USER");
-                    newProfile.setSubscriptionTier("REGISTERED");
-                    newProfile.setStatus("Active");
-                    newProfile.setIssuedDate(LocalDate.now());
-                    newProfile.setExpiryDate(LocalDate.now().plusYears(1));
-                    newProfile.setTotalSavings(0);
-                    newProfile.setCouponsUsed(0);
-                    newProfile.setCouponsTotal(0);
-                    newProfile.setLoyaltyPoints(0);
-                    newProfile.setLoyaltyGoal(250000);
-                    newProfile.setTotalSpend(0);
-                    newProfile.setPendingDues(0);
-                    newProfile.setLastVisit("Today");
-                    return memberProfileRepository.save(newProfile);
-                });
+                .orElseThrow(() -> new ResourceNotFoundException("No account registered with mobile: " + mobile));
 
         // Activity log for login
         ActivityLog log = new ActivityLog();

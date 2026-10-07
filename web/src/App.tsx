@@ -17,16 +17,53 @@ import { FeedbackPage } from './pages/FeedbackPage';
 import { FloorPage } from './pages/FloorPage';
 import { RedemptionPage } from './pages/RedemptionPage';
 import { ActivityPage } from './pages/ActivityPage';
-import { 
-  fallbackInsights,
-  fallbackEvents,
-  fallbackPendingPayments,
-  fallbackStaffRoles,
-  fallbackFeedback,
-  fallbackMarketingChannels,
-  fallbackCampaignPresets,
-} from './api/client';
 import { LoginPage } from './pages/LoginPage';
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: any }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Admin portal view error caught by boundary:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 20,
+          padding: '40px 24px',
+          textAlign: 'center',
+          maxWidth: 600,
+          margin: '40px auto',
+          boxShadow: 'var(--shadow-card)'
+        }}>
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)', marginBottom: 8 }}>
+            Telemetry Display Refresh Needed
+          </h3>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+            {this.state.error?.message || 'A data synchronization discrepancy occurred while loading this view.'}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            className="primary-btn"
+          >
+            Refresh Live View
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -126,57 +163,59 @@ export function App() {
       isLoading={false}
       onLogout={handleLogout}
     >
-      {currentTab === 'dashboard' && (
-        <DashboardPage key={`dashboard-${refreshKey}`} />
-      )}
-      {currentTab === 'insights' && (
-        <InsightsPage insights={fallbackInsights} />
-      )}
-      {currentTab === 'ceo' && (
-        <CeoPage key={`ceo-${refreshKey}`} />
-      )}
-      {currentTab === 'customers' && (
-        <CustomersPage key={`customers-${refreshKey}`} onRefresh={handleRefresh} />
-      )}
-      {currentTab === 'memberships' && (
-        <MembershipsPage />
-      )}
-      {currentTab === 'loyalty' && (
-        <LoyaltyPage />
-      )}
-      {currentTab === 'coupons' && (
-        <CouponsPage key={`coupons-${refreshKey}`} coupons={[]} onRefresh={handleRefresh} />
-      )}
-      {currentTab === 'payments' && (
-        <PaymentsPage payments={fallbackPendingPayments} />
-      )}
-      {currentTab === 'reservations' && (
-        <ReservationsPage key={`reservations-${refreshKey}`} reservations={[]} onRefresh={handleRefresh} />
-      )}
-      {currentTab === 'floor' && (
-        <FloorPage key={`floor-${refreshKey}`} />
-      )}
-      {currentTab === 'activity' && (
-        <ActivityPage key={`activity-${refreshKey}`} onNavigate={setCurrentTab} />
-      )}
-      {currentTab === 'redemption' && (
-        <RedemptionPage key={`redemption-${refreshKey}`} />
-      )}
-      {currentTab === 'outlets' && (
-        <OutletsPage key={`outlets-${refreshKey}`} />
-      )}
-      {currentTab === 'events' && (
-        <EventsPage events={fallbackEvents} />
-      )}
-      {currentTab === 'marketing' && (
-        <MarketingPage channels={fallbackMarketingChannels} presets={fallbackCampaignPresets} />
-      )}
-      {currentTab === 'staff' && (
-        <StaffPage roles={fallbackStaffRoles} />
-      )}
-      {currentTab === 'feedback' && (
-        <FeedbackPage feedbacks={fallbackFeedback} />
-      )}
+      <ErrorBoundary>
+        {currentTab === 'dashboard' && (
+          <DashboardPage key={`dashboard-${refreshKey}`} />
+        )}
+        {currentTab === 'insights' && (
+          <InsightsPage insights={[]} />
+        )}
+        {currentTab === 'ceo' && (
+          <CeoPage key={`ceo-${refreshKey}`} />
+        )}
+        {currentTab === 'customers' && (
+          <CustomersPage key={`customers-${refreshKey}`} onRefresh={handleRefresh} />
+        )}
+        {currentTab === 'memberships' && (
+          <MembershipsPage />
+        )}
+        {currentTab === 'loyalty' && (
+          <LoyaltyPage />
+        )}
+        {currentTab === 'coupons' && (
+          <CouponsPage key={`coupons-${refreshKey}`} coupons={[]} onRefresh={handleRefresh} />
+        )}
+        {currentTab === 'payments' && (
+          <PaymentsPage payments={[]} />
+        )}
+        {currentTab === 'reservations' && (
+          <ReservationsPage key={`reservations-${refreshKey}`} reservations={[]} onRefresh={handleRefresh} />
+        )}
+        {currentTab === 'floor' && (
+          <FloorPage key={`floor-${refreshKey}`} />
+        )}
+        {currentTab === 'activity' && (
+          <ActivityPage key={`activity-${refreshKey}`} onNavigate={setCurrentTab} />
+        )}
+        {currentTab === 'redemption' && (
+          <RedemptionPage key={`redemption-${refreshKey}`} />
+        )}
+        {currentTab === 'outlets' && (
+          <OutletsPage key={`outlets-${refreshKey}`} />
+        )}
+        {currentTab === 'events' && (
+          <EventsPage events={[]} />
+        )}
+        {currentTab === 'marketing' && (
+          <MarketingPage channels={[]} presets={[]} />
+        )}
+        {currentTab === 'staff' && (
+          <StaffPage roles={[]} />
+        )}
+        {currentTab === 'feedback' && (
+          <FeedbackPage feedbacks={[]} />
+        )}
+      </ErrorBoundary>
     </AdminLayout>
   );
 }

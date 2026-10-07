@@ -36,32 +36,34 @@ class _SizzloMascotAnimatedState extends State<SizzloMascotAnimated>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final t = _controller.value;
-          // Smooth sine curve for floating motion
-          final floatOffset = sin(t * pi) * 5.0; // moves up and down by 5px
-          final tiltAngle = sin(t * pi) * 0.05; // gentle tilt ±3 degrees
-          final scale = 1.0 + sin(t * pi) * 0.035; // gentle breathing scale
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final t = _controller.value;
+            // Smooth sine curve for floating motion
+            final floatOffset = sin(t * pi) * 5.0; // moves up and down by 5px
+            final tiltAngle = sin(t * pi) * 0.05; // gentle tilt ±3 degrees
+            final scale = 1.0 + sin(t * pi) * 0.035; // gentle breathing scale
 
-          return Transform.translate(
-            offset: Offset(0, -floatOffset),
-            child: Transform.rotate(
-              angle: tiltAngle,
-              child: Transform.scale(
-                scale: scale,
-                child: child,
+            return Transform.translate(
+              offset: Offset(0, -floatOffset),
+              child: Transform.rotate(
+                angle: tiltAngle,
+                child: Transform.scale(
+                  scale: scale,
+                  child: child,
+                ),
               ),
-            ),
-          );
-        },
-        child: Image.asset(
-          'assets/images/sizzlo-mascot.png',
-          height: widget.height,
-          fit: BoxFit.contain,
+            );
+          },
+          child: Image.asset(
+            'assets/images/sizzlo-mascot.png',
+            height: widget.height,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );

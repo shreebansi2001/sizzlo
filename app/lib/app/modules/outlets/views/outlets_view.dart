@@ -83,34 +83,37 @@ class OutletsView extends GetView<OutletsController> {
                           borderRadius: BorderRadius.circular(12),
                           border: isSelected ? Border.all(color: AppColors.goldAccent, width: 1) : null,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Coming Soon',
-                              style: GoogleFonts.outfit(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: isSelected ? AppColors.goldAccent : Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD4AF37),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'NEW',
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Coming Soon',
                                 style: GoogleFonts.outfit(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: isSelected ? AppColors.goldAccent : Colors.grey,
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD4AF37),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'NEW',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -332,31 +335,49 @@ class OutletsView extends GetView<OutletsController> {
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.navigation_rounded, size: 16, color: AppColors.goldAccent),
-                        label: Text('Directions', style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
+                      child: OutlinedButton(
                         onPressed: () {
                           Get.snackbar('Google Maps', 'Deep-linking to driving route for ${outlet.name}', backgroundColor: const Color(0xFF1E1A16), colorText: Colors.white);
                         },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFF3B2E1E)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.navigation_rounded, size: 14, color: AppColors.goldAccent),
+                              const SizedBox(width: 4),
+                              Text('Directions', style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.call_rounded, size: 16, color: Color(0xFF4EE3B8)),
-                        label: Text('Call Desk', style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
+                      child: OutlinedButton(
                         onPressed: () {
                           Get.snackbar('Calling Outlet', 'Dialing hostess desk at ${outlet.contactNumber}', backgroundColor: const Color(0xFF0F261E), colorText: Colors.white);
                         },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFF1E4D3C)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.call_rounded, size: 14, color: Color(0xFF4EE3B8)),
+                              const SizedBox(width: 4),
+                              Text('Call Desk', style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -367,9 +388,12 @@ class OutletsView extends GetView<OutletsController> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.goldAccent,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                         ),
-                        child: Text('Book Table', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black)),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Book Table', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black)),
+                        ),
                       ),
                     ),
                   ],

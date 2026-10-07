@@ -582,7 +582,7 @@ class BillingView extends GetView<BillingController> {
         crossAxisCount: 2,
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
-        childAspectRatio: 1.6,
+        childAspectRatio: 1.45,
       ),
       itemCount: modes.length,
       itemBuilder: (ctx, i) {

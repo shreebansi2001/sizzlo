@@ -85,27 +85,33 @@ class ReservationsView extends GetView<ReservationsController> {
                             borderRadius: BorderRadius.circular(12),
                             border: isSelected ? Border.all(color: AppColors.goldAccent, width: 1) : null,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Banquet & ODC (20+)',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: isSelected ? AppColors.goldAccent : Colors.grey,
-                                ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Banquet & ODC (20+)',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected ? AppColors.goldAccent : Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF4EE3B8),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text('EVENTS', style: GoogleFonts.outfit(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black)),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4EE3B8),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text('EVENTS', style: GoogleFonts.outfit(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black)),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       );
@@ -183,10 +189,14 @@ class ReservationsView extends GetView<ReservationsController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Regular Table Reservation',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+              Expanded(
+                child: Text(
+                  'Regular Table Reservation',
+                  style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -195,6 +205,7 @@ class ReservationsView extends GetView<ReservationsController> {
                   border: Border.all(color: const Color(0xFF1E4D3C)),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.star, size: 12, color: Color(0xFF4EE3B8)),
                     const SizedBox(width: 4),
@@ -262,19 +273,25 @@ class ReservationsView extends GetView<ReservationsController> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('BOOKING DAY', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey, letterSpacing: 1.0)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2D1808),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFF6B3E18)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.timer_outlined, size: 10, color: Color(0xFFFFA726)),
-                    const SizedBox(width: 4),
-                    Text('1-HR ADVANCE REQUIRED', style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.w800, color: const Color(0xFFFFA726))),
-                  ],
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D1808),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF6B3E18)),
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.timer_outlined, size: 10, color: Color(0xFFFFA726)),
+                        const SizedBox(width: 4),
+                        Text('1-HR ADVANCE REQUIRED', style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.w800, color: const Color(0xFFFFA726))),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -396,9 +413,15 @@ class ReservationsView extends GetView<ReservationsController> {
                       border: Border.all(color: isSelected ? const Color(0xFF4EE3B8) : const Color(0xFF332B22)),
                     ),
                     child: Center(
-                      child: Text(
-                        tag,
-                        style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, color: isSelected ? const Color(0xFF4EE3B8) : Colors.grey[400]),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Text(
+                            tag,
+                            style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, color: isSelected ? const Color(0xFF4EE3B8) : Colors.grey[400]),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -709,10 +732,14 @@ class ReservationsView extends GetView<ReservationsController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                r.outlet,
-                style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+              Expanded(
+                child: Text(
+                  r.outlet,
+                  style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -731,7 +758,13 @@ class ReservationsView extends GetView<ReservationsController> {
             children: [
               Icon(Icons.calendar_today_rounded, size: 13, color: Colors.grey[500]),
               const SizedBox(width: 6),
-              Text(r.reservationTime, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[400])),
+              Flexible(
+                child: Text(
+                  r.reservationTime,
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[400]),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               const SizedBox(width: 14),
               Icon(Icons.people_outline_rounded, size: 14, color: Colors.grey[500]),
               const SizedBox(width: 6),

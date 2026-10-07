@@ -31,6 +31,16 @@ import {
 import { PendingPayment, Member } from '../types';
 import axios from 'axios';
 
+const safeCurrency = (val: any): string => {
+  const num = Number(val);
+  return isNaN(num) ? '₹0' : `₹${num.toLocaleString('en-IN')}`;
+};
+
+const safeNumber = (val: any): string => {
+  const num = Number(val);
+  return isNaN(num) ? '0' : num.toLocaleString('en-IN');
+};
+
 interface PaymentsPageProps {
   payments?: PendingPayment[];
 }
@@ -431,13 +441,13 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
                       <span>Gross Bill Amount:</span>
-                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>₹{b.grossAmount.toLocaleString('en-IN')}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{safeCurrency(b.grossAmount)}</span>
                     </div>
 
                     {b.couponCode && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#10B981', marginBottom: 4 }}>
                         <span>Coupon [{b.couponCode}]:</span>
-                        <span style={{ fontWeight: 700 }}>-₹{b.discountAmount.toLocaleString('en-IN')}</span>
+                        <span style={{ fontWeight: 700 }}>-{safeCurrency(b.discountAmount)}</span>
                       </div>
                     )}
 
@@ -459,7 +469,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 800, color: 'var(--primary)', borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 4 }}>
                       <span>Net Payable:</span>
-                      <span style={{ fontSize: 16 }}>₹{b.netPayable.toLocaleString('en-IN')}</span>
+                      <span style={{ fontSize: 16 }}>{safeCurrency(b.netPayable)}</span>
                     </div>
                   </div>
 
@@ -561,119 +571,135 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
       {/* ======================================================== */}
       {/* TAB 2: SHIFT RECONCILIATION CLOSEOUT (SRS CHAPTER 18.2)   */}
       {/* ======================================================== */}
-      {activeTab === 'shift' && shiftSummary && (
-        <div>
-          <div style={{
-            background: 'var(--surface)',
-            borderRadius: 20,
-            border: '1px solid var(--border)',
-            padding: 24,
-            marginBottom: 24,
-            boxShadow: 'var(--shadow-card)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>
-                  End-of-Shift Reconciliation Report
-                </h3>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  Operational Date: {shiftSummary.shiftDate} · Shift Counter Desk #1
-                </p>
-              </div>
+      {/* ======================================================== */}
+      {/* TAB 2: SHIFT RECONCILIATION CLOSEOUT (SRS CHAPTER 18.2)   */}
+      {/* ======================================================== */}
+      {activeTab === 'shift' && (() => {
+        const raw = (shiftSummary || {}) as any;
+        const cashRev = Number(raw.cashRevenue ?? raw.cashCollected ?? 0);
+        const cardRev = Number(raw.cardRevenue ?? raw.cardEdcSlips ?? 0);
+        const qrRev = Number(raw.qrRevenue ?? raw.storeCounterQrTotal ?? 0);
+        const onlineRev = Number(raw.onlineRevenue ?? raw.onlineGatewayTotal ?? 0);
+        const discountRev = Number(raw.totalDiscounts ?? raw.totalPromotionalDiscount ?? 0);
+        const totalTx = Number(raw.totalTransactions ?? raw.approvedCount ?? 0);
+        const shiftDate = raw.shiftDate || new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const recStatus = raw.reconciliationStatus || 'Balanced (0.00 Variance)';
+        const newSubs = Number(raw.newSubscriptionsEnrolled ?? 0);
 
-              <div style={{ display: 'flex', gap: 10 }}>
-                <span style={{
-                  padding: '6px 14px',
-                  borderRadius: 20,
-                  fontSize: 11,
-                  fontWeight: 800,
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  color: '#10B981',
-                  border: '1px solid rgba(16, 185, 129, 0.3)'
-                }}>
-                  Status: {shiftSummary.reconciliationStatus}
-                </span>
-
-                <button
-                  onClick={() => alert('Shift reconciliation PDF exported.')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 12px',
-                    borderRadius: 8,
-                    background: 'var(--primary)',
-                    border: 'none',
-                    color: '#070A09',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <Download size={14} /> Export Shift PDF
-                </button>
-              </div>
-            </div>
-
-            {/* Metrics Breakdown */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-              <div className="kpi-card">
-                <span className="kpi-label">TOTAL SIZZLO BILLS</span>
-                <div className="kpi-value" style={{ marginTop: 6, fontSize: 24 }}>{shiftSummary.totalTransactions}</div>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Verified dining settlements</span>
-              </div>
-
-              <div className="kpi-card">
-                <span className="kpi-label">CASH COLLECTED</span>
-                <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#10B981' }}>
-                  ₹{shiftSummary.cashRevenue.toLocaleString('en-IN')}
+        return (
+          <div>
+            <div style={{
+              background: 'var(--surface)',
+              borderRadius: 20,
+              border: '1px solid var(--border)',
+              padding: 24,
+              marginBottom: 24,
+              boxShadow: 'var(--shadow-card)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>
+                    End-of-Shift Reconciliation Report
+                  </h3>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    Operational Date: {shiftDate} · Shift Counter Desk #1
+                  </p>
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Physical cash in drawer</span>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <span style={{
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    color: '#10B981',
+                    border: '1px solid rgba(16, 185, 129, 0.3)'
+                  }}>
+                    Status: {recStatus}
+                  </span>
+
+                  <button
+                    onClick={() => alert('Shift reconciliation PDF exported.')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      background: 'var(--primary)',
+                      border: 'none',
+                      color: '#070A09',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Download size={14} /> Export Shift PDF
+                  </button>
+                </div>
               </div>
 
-              <div className="kpi-card">
-                <span className="kpi-label">CARD EDC SLIPS</span>
-                <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#3B82F6' }}>
-                  ₹{shiftSummary.cardRevenue.toLocaleString('en-IN')}
+              {/* Metrics Breakdown */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                <div className="kpi-card">
+                  <span className="kpi-label">TOTAL SIZZLO BILLS</span>
+                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24 }}>{totalTx}</div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Verified dining settlements</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Counter EDC machine total</span>
-              </div>
 
-              <div className="kpi-card">
-                <span className="kpi-label">STORE COUNTER QR</span>
-                <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#FF8A00' }}>
-                  ₹{shiftSummary.qrRevenue.toLocaleString('en-IN')}
+                <div className="kpi-card">
+                  <span className="kpi-label">CASH COLLECTED</span>
+                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#10B981' }}>
+                    {safeCurrency(cashRev)}
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Physical cash in drawer</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>UPI Soundbox / QR transfers</span>
-              </div>
 
-              <div className="kpi-card">
-                <span className="kpi-label">ONLINE GATEWAY</span>
-                <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#A855F7' }}>
-                  ₹{shiftSummary.onlineRevenue.toLocaleString('en-IN')}
+                <div className="kpi-card">
+                  <span className="kpi-label">CARD EDC SLIPS</span>
+                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#3B82F6' }}>
+                    {safeCurrency(cardRev)}
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Counter EDC machine total</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>In-App Razorpay settlements</span>
-              </div>
 
-              <div className="kpi-card">
-                <span className="kpi-label">COUPON DISCOUNTS</span>
-                <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#EF4444' }}>
-                  ₹{shiftSummary.totalDiscounts.toLocaleString('en-IN')}
+                <div className="kpi-card">
+                  <span className="kpi-label">STORE COUNTER QR</span>
+                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#FF8A00' }}>
+                    {safeCurrency(qrRev)}
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>UPI Soundbox / QR transfers</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Burned subscriber vouchers</span>
-              </div>
 
-              <div className="kpi-card">
-                <span className="kpi-label">FLOOR SUBSCRIPTIONS</span>
-                <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: 'var(--primary)' }}>
-                  {shiftSummary.newSubscriptionsEnrolled}
+                <div className="kpi-card">
+                  <span className="kpi-label">ONLINE GATEWAY</span>
+                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#A855F7' }}>
+                    {safeCurrency(onlineRev)}
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>In-App Razorpay settlements</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Enrolled by captains today</span>
+
+                <div className="kpi-card">
+                  <span className="kpi-label">COUPON DISCOUNTS</span>
+                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#EF4444' }}>
+                    {safeCurrency(discountRev)}
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Burned subscriber vouchers</span>
+                </div>
+
+                <div className="kpi-card">
+                  <span className="kpi-label">FLOOR SUBSCRIPTIONS</span>
+                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: 'var(--primary)' }}>
+                    {newSubs}
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Enrolled by captains today</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ======================================================== */}
       {/* TAB 3: SUBSCRIBER DUES & REMINDERS                        */}
@@ -716,7 +742,15 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                 </tr>
               </thead>
               <tbody>
-                {paymentList.map((p) => (
+                {paymentList.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+                      <Check size={24} color="#10B981" style={{ display: 'block', margin: '0 auto 8px' }} />
+                      No subscriber dues currently pending. All patron accounts are fully settled and cleared!
+                    </td>
+                  </tr>
+                ) : (
+                  paymentList.map((p) => (
                   <tr key={p.id}>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{p.name}</div>
@@ -724,7 +758,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                     </td>
                     <td>
                       <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--danger)' }}>
-                        ₹{p.pending.toLocaleString('en-IN')}
+                        {safeCurrency(p.pending)}
                       </span>
                     </td>
                     <td>
@@ -798,7 +832,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                       </div>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -891,7 +925,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                 TOTAL RAZORPAY VOLUME
               </span>
               <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--primary)', marginTop: 8 }}>
-                ₹{(razorpaySummary?.totalVolumeInRupees || 27450).toLocaleString('en-IN')}
+                {safeCurrency(razorpaySummary?.totalVolumeInRupees ?? 27450)}
               </div>
               <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>
                 ● 100% Verified in Escrow
@@ -1039,7 +1073,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                         {tx.channel || 'GATEWAY_UPI'}
                       </td>
                       <td style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--primary)' }}>
-                        ₹{Number(tx.amount || 0).toLocaleString('en-IN')}
+                        {safeCurrency(tx.amount)}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{

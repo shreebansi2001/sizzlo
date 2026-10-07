@@ -11,6 +11,13 @@ class LoginView extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
+    if (Get.arguments != null && Get.arguments is Map && Get.arguments['phone'] != null) {
+      final p = Get.arguments['phone'].toString().replaceAll(RegExp(r'\D'), '');
+      if (p.isNotEmpty && controller.phoneController.text.isEmpty) {
+        controller.phoneController.text = p;
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -58,7 +65,7 @@ class LoginView extends GetView<AuthController> {
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 3.0,
-                  color: AppColors.gold,
+                  color: AppColors.flame,
                 ),
               ),
               const SizedBox(height: 12),
@@ -137,83 +144,6 @@ class LoginView extends GetView<AuthController> {
                 );
               }),
 
-              // Client Demo Access Card
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF102A22),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFF4EE3B8).withOpacity(0.4)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF4EE3B8).withOpacity(0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.stars_rounded, color: AppColors.gold, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'CLIENT DEMO ACCESS',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                              color: AppColors.gold,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Mobile: 9825012345 · OTP: 1234',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        if (controller.isLoading.value) return;
-                        controller.phoneController.text = '9825012345';
-                        controller.onContinueLogin();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.gold,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '1-Tap Demo',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF070A09),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
               // Input Card Container
               Container(

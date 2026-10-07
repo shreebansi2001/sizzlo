@@ -466,12 +466,15 @@ class PlansView extends GetView<PlansController> {
                         borderRadius: BorderRadius.circular(24),
                       ),
                     ),
-                    child: Text(
-                      'View Benefits',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'View Benefits',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -502,12 +505,15 @@ class PlansView extends GetView<PlansController> {
                           borderRadius: BorderRadius.circular(24),
                         ),
                       ),
-                      child: Text(
-                        isSelected ? 'Selected' : 'Select',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF070A09),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          isSelected ? 'Selected' : 'Select',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF070A09),
+                          ),
                         ),
                       ),
                     ),

@@ -83,8 +83,11 @@ class LoyaltyView extends GetView<LoyaltyController> {
                 const SizedBox(height: 24),
 
                 // Recent Activity Section Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
                     Text(
                       'Recent activity',
@@ -95,6 +98,7 @@ class LoyaltyView extends GetView<LoyaltyController> {
                       ),
                     ),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: const [
                         Icon(Icons.trending_up, size: 16, color: Color(0xFF4EE3B8)),
                         SizedBox(width: 4),
@@ -345,12 +349,15 @@ class LoyaltyView extends GetView<LoyaltyController> {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              value,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFDF9E5B),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFDF9E5B),
+                ),
               ),
             ),
           ],

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Search, RefreshCw, RotateCcw, Key, Check, LogOut } from 'lucide-react';
+import { Bell, Search, RefreshCw, RotateCcw, Key, Check, LogOut, Menu } from 'lucide-react';
 import { resetAllData } from '../../api/client';
 
 interface HeaderProps {
@@ -8,9 +8,10 @@ interface HeaderProps {
   onRefresh?: () => void;
   isLoading?: boolean;
   onLogout?: () => void;
+  onToggleSidebar?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLoading, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLoading, onLogout, onToggleSidebar }) => {
   const [selectedOutlet, setSelectedOutlet] = useState('all');
   const [searchVal, setSearchVal] = useState('');
   const [isResetting, setIsResetting] = useState(false);
@@ -34,16 +35,27 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLo
 
   return (
     <header className="admin-header">
-      <div>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 700, color: 'var(--text-main)', letterSpacing: -0.3 }}>
-          {title}
-        </h1>
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-          {subtitle}
-        </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {onToggleSidebar && (
+          <button 
+            className="mobile-sidebar-toggle"
+            onClick={onToggleSidebar}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={22} color="var(--primary)" />
+          </button>
+        )}
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 700, color: 'var(--text-main)', letterSpacing: -0.3 }}>
+            {title}
+          </h1>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+            {subtitle}
+          </p>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         {/* Reset Feedback Notification */}
         {resetStatus && (
           <div style={{

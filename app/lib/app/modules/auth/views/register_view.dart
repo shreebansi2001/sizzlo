@@ -30,6 +30,17 @@ class _RegisterViewState extends State<RegisterView> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    if (Get.arguments != null && Get.arguments is Map && Get.arguments['phone'] != null) {
+      final ph = Get.arguments['phone'].toString().replaceAll(RegExp(r'\D'), '');
+      if (ph.isNotEmpty) {
+        _phoneController.text = ph;
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
@@ -81,26 +92,36 @@ class _RegisterViewState extends State<RegisterView> {
       _isLoading = false;
     });
 
-    if (result['member'] != null) {
-      if (Get.isRegistered<HomeController>()) {
+    if (result['success'] == true) {
+      if (result['member'] != null && Get.isRegistered<HomeController>()) {
         Get.find<HomeController>().member.value = result['member'];
         Get.find<HomeController>().loadDashboardData();
       }
+
+      // Proceed directly to OTP verification (VerifyView displays confirmation)
+      Get.offNamed(
+        AppRoutes.VERIFY,
+        arguments: {'phone': phone, 'registered': true},
+      );
+    } else {
+      final msg = result['message']?.toString() ?? 'Registration failed. Please try again.';
+      setState(() {
+        _errorMessage = msg;
+      });
+      if (result['alreadyExists'] == true) {
+        Get.snackbar(
+          'Already Registered',
+          'An account with this number already exists. Please log in.',
+          backgroundColor: const Color(0xFF141917),
+          colorText: const Color(0xFFE8B84A),
+          mainButton: TextButton(
+            onPressed: () => Get.offNamed(AppRoutes.LOGIN, arguments: {'phone': phone}),
+            child: const Text('Login', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          duration: const Duration(seconds: 5),
+        );
+      }
     }
-
-    Get.snackbar(
-      'Account Created!',
-      'VIP account activated for $name',
-      backgroundColor: const Color(0xFF0E3B32),
-      colorText: const Color(0xFFE8B84A),
-      duration: const Duration(seconds: 3),
-    );
-
-    // Proceed to OTP verification
-    Get.offNamed(
-      AppRoutes.VERIFY,
-      arguments: {'phone': phone, 'registered': true},
-    );
   }
 
   Future<void> _pickDate(Function(DateTime) onSelected, {DateTime? initial}) async {
@@ -175,7 +196,7 @@ class _RegisterViewState extends State<RegisterView> {
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 3.0,
-                  color: AppColors.gold,
+                  color: AppColors.flame,
                 ),
               ),
               const SizedBox(height: 8),
@@ -489,7 +510,7 @@ class _RegisterViewState extends State<RegisterView> {
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 2.0,
-                                color: AppColors.gold,
+                                color: AppColors.flame,
                               ),
                             ),
                           ),
