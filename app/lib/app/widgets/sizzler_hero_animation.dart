@@ -28,32 +28,32 @@ class _SizzlerHeroAnimationState extends State<SizzlerHeroAnimation>
   void initState() {
     super.initState();
 
-    // 1. Smoke cycle controller (looping continuously)
+    // 1. Smoke cycle controller (looping smoothly)
     _smokeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3200),
     )..repeat();
 
-    // 2. Cast iron hot sizzle vibration controller
+    // 2. Smooth gentle floating platter motion (prevents 140ms continuous scroll invalidations)
     _sizzleVibeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 140),
+      duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
 
     // 3. Flame / amber glow breathing
     _glowController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 2400),
     )..repeat(reverse: true);
 
     // 4. Smooth entrance animation on page open
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 800),
     )..forward();
 
-    // Initialize realistic billowy steam puffs
-    for (int i = 0; i < 32; i++) {
+    // Initialize 10 lightweight steam puffs (avoids scroll jank)
+    for (int i = 0; i < 10; i++) {
       _steamPuffs.add(_createPuff(initial: true));
     }
   }
@@ -100,16 +100,17 @@ class _SizzlerHeroAnimationState extends State<SizzlerHeroAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0, 0.12),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: _entranceController,
-          curve: Curves.easeOutCubic,
+    return RepaintBoundary(
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.12),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: Curves.easeOutCubic,
+          ),
         ),
-      ),
       child: FadeTransition(
         opacity: CurvedAnimation(
           parent: _entranceController,
@@ -288,43 +289,47 @@ class _SizzlerHeroAnimationState extends State<SizzlerHeroAnimation>
                         // Hot steam & white smoke rising from platter
                         Positioned.fill(
                           child: IgnorePointer(
-                            child: AnimatedBuilder(
-                              animation: _smokeController,
-                              builder: (context, _) {
-                                // Update steam puffs position
-                                for (var p in _steamPuffs) {
-                                  p.y -= p.speed * 0.016;
-                                  p.x += p.drift * 0.016;
-                                  if (p.y < -0.15) {
-                                    p.y = 1.0;
-                                    p.x = 0.28 + _rnd.nextDouble() * 0.44;
+                            child: RepaintBoundary(
+                              child: AnimatedBuilder(
+                                animation: _smokeController,
+                                builder: (context, _) {
+                                  // Update steam puffs position
+                                  for (var p in _steamPuffs) {
+                                    p.y -= p.speed * 0.016;
+                                    p.x += p.drift * 0.016;
+                                    if (p.y < -0.15) {
+                                      p.y = 1.0;
+                                      p.x = 0.28 + _rnd.nextDouble() * 0.44;
+                                    }
                                   }
-                                }
-                                return CustomPaint(
-                                  painter: _BillowySmokePainter(puffs: _steamPuffs),
-                                );
-                              },
+                                  return CustomPaint(
+                                    painter: _BillowySmokePainter(puffs: _steamPuffs),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         ),
 
                         // Sizzler Platter / Mascot Image with subtle micro-tremor
-                        AnimatedBuilder(
-                          animation: _sizzleVibeController,
-                          builder: (context, child) {
-                            final vibeX = (_sizzleVibeController.value - 0.5) * 1.5;
-                            final vibeY = (_sizzleVibeController.value - 0.5) * 1.0;
-                            return Transform.translate(
-                              offset: Offset(vibeX, vibeY),
-                              child: child,
-                            );
-                          },
-                          child: Hero(
-                            tag: 'sizzlo_mascot_hero',
-                            child: Image.asset(
-                              'assets/images/sizzlo-mascot.png',
-                              fit: BoxFit.contain,
-                              height: 130,
+                        RepaintBoundary(
+                          child: AnimatedBuilder(
+                            animation: _sizzleVibeController,
+                            builder: (context, child) {
+                              final vibeX = (_sizzleVibeController.value - 0.5) * 1.5;
+                              final vibeY = (_sizzleVibeController.value - 0.5) * 1.0;
+                              return Transform.translate(
+                                offset: Offset(vibeX, vibeY),
+                                child: child,
+                              );
+                            },
+                            child: Hero(
+                              tag: 'sizzlo_mascot_hero',
+                              child: Image.asset(
+                                'assets/images/sizzlo-mascot.png',
+                                fit: BoxFit.contain,
+                                height: 130,
+                              ),
                             ),
                           ),
                         ),
@@ -337,6 +342,7 @@ class _SizzlerHeroAnimationState extends State<SizzlerHeroAnimation>
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -363,6 +369,8 @@ class _SteamPuff {
 
 class _BillowySmokePainter extends CustomPainter {
   final List<_SteamPuff> puffs;
+  final Paint _smokePaint = Paint()..style = PaintingStyle.fill;
+  final Paint _emberPaint = Paint()..style = PaintingStyle.fill;
 
   _BillowySmokePainter({required this.puffs});
 
@@ -372,39 +380,16 @@ class _BillowySmokePainter extends CustomPainter {
       final cx = p.x * size.width;
       final cy = p.y * size.height;
 
-      // Realistic puff fade out as it reaches the top
       final fadeFactor = (p.y).clamp(0.0, 1.0);
       final currentOpacity = (p.opacity * fadeFactor).clamp(0.0, 0.85);
 
       if (p.isEmber) {
-        // Golden sizzling fire ember
-        final emberPaint = Paint()
-          ..color = const Color(0xFFFF9E2C).withOpacity(currentOpacity)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
-        canvas.drawCircle(Offset(cx, cy), 2.2, emberPaint);
-
-        final corePaint = Paint()
-          ..color = Colors.white.withOpacity(currentOpacity * 0.9);
-        canvas.drawCircle(Offset(cx, cy), 1.0, corePaint);
+        _emberPaint.color = const Color(0xFFFF9E2C).withOpacity(currentOpacity);
+        canvas.drawCircle(Offset(cx, cy), 1.8, _emberPaint);
       } else {
-        // Soft white steam cloud / smoke puff
-        final currentRadius = p.size * (1.6 - (p.y * 0.6)); // expands as it rises
-        final Rect rect = Rect.fromCircle(center: Offset(cx, cy), radius: currentRadius);
-
-        final Gradient gradient = RadialGradient(
-          colors: [
-            Colors.white.withOpacity(currentOpacity * 0.6),
-            Colors.white.withOpacity(currentOpacity * 0.25),
-            Colors.white.withOpacity(0.0),
-          ],
-          stops: const [0.0, 0.45, 1.0],
-        );
-
-        final Paint smokePaint = Paint()
-          ..shader = gradient.createShader(rect)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-
-        canvas.drawCircle(Offset(cx, cy), currentRadius, smokePaint);
+        final currentRadius = p.size * (1.2 - (p.y * 0.35));
+        _smokePaint.color = Colors.white.withOpacity(currentOpacity * 0.22);
+        canvas.drawCircle(Offset(cx, cy), currentRadius, _smokePaint);
       }
     }
   }

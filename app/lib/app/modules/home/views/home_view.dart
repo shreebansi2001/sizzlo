@@ -66,12 +66,14 @@ class HomeView extends GetView<HomeController> {
       backgroundColor: AppColors.surface,
       onRefresh: () async => controller.refreshData(),
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         child: Column(
           children: [
-            SizzlerSmokeEffect(
-              enableSmoke: true,
-              child: _buildHeader(),
+            RepaintBoundary(
+              child: SizzlerSmokeEffect(
+                enableSmoke: true,
+                child: _buildHeader(),
+              ),
             ),
             _buildBody(context),
             const SizedBox(height: 135),
@@ -265,7 +267,9 @@ class HomeView extends GetView<HomeController> {
               ],
 
               // Hot Sizzler Platter & Rising Smoke Hero Animation
-              const SizzlerHeroAnimation(),
+              const RepaintBoundary(
+                child: SizzlerHeroAnimation(),
+              ),
 
               const SizedBox(height: 20),
 
