@@ -2,17 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-import 'api_service.dart';
-import '../../modules/notifications/controllers/notifications_controller.dart';
 import '../../core/theme/app_colors.dart';
 
 class NotificationService extends GetxService {
   static NotificationService get to => Get.find<NotificationService>();
 
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
-  final ApiService _apiService = ApiService();
-  Timer? _syncTimer;
-  final Set<int> _knownNotificationIds = <int>{};
   bool _initialized = false;
 
   Future<NotificationService> init() async {
@@ -60,56 +55,22 @@ class NotificationService extends GetxService {
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
 
+      // Cancel any stale/queued notifications from system tray
+      await _localNotifications.cancelAll();
+
       _initialized = true;
     } catch (e) {
       debugPrint('Notification service initialization error: $e');
     }
 
-    _startPeriodicSync();
+    // Periodic sync disabled to prevent continuous push notification spam
     return this;
   }
 
-  void _startPeriodicSync() {
-    _syncTimer?.cancel();
-    // Initial fetch to seed known IDs so user doesn't get flooded by old history
-    _seedExistingIds();
-
-    // Check for new notifications every 20 seconds
-    _syncTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-      checkForNewNotifications();
-    });
-  }
-
-  Future<void> _seedExistingIds() async {
+  /// Cancels all active system tray notifications
+  Future<void> cancelAllNotifications() async {
     try {
-      final list = await _apiService.getNotifications();
-      for (final n in list) {
-        _knownNotificationIds.add(n.id);
-      }
-    } catch (_) {}
-  }
-
-  Future<void> checkForNewNotifications() async {
-    try {
-      final list = await _apiService.getNotifications();
-      bool hasNew = false;
-
-      for (final n in list) {
-        if (!_knownNotificationIds.contains(n.id)) {
-          _knownNotificationIds.add(n.id);
-          hasNew = true;
-          // Trigger System Notification & In-App Heads-up
-          await showNotification(
-            id: n.id,
-            title: n.title,
-            body: n.desc,
-          );
-        }
-      }
-
-      if (hasNew && Get.isRegistered<NotificationsController>()) {
-        Get.find<NotificationsController>().loadNotifications();
-      }
+      await _localNotifications.cancelAll();
     } catch (_) {}
   }
 
@@ -177,9 +138,4 @@ class NotificationService extends GetxService {
     } catch (_) {}
   }
 
-  @override
-  void onClose() {
-    _syncTimer?.cancel();
-    super.onClose();
-  }
 }

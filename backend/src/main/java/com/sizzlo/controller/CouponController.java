@@ -45,6 +45,13 @@ public class CouponController {
             @RequestParam(required = false) String membershipId,
             @RequestParam(required = false) String mobile) {
         
+        // Admin / Master portal request (no member specified)
+        if ((membershipId == null || membershipId.trim().isEmpty()) && 
+            (mobile == null || mobile.trim().isEmpty())) {
+            List<Coupon> allCoupons = couponRepository.findAll();
+            return ResponseEntity.ok(ApiResponse.success(allCoupons));
+        }
+
         MemberProfile profile = resolveProfile(membershipId, mobile);
         if (profile == null) {
             return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));

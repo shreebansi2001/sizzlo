@@ -46,6 +46,7 @@ class ProfileView extends GetView<ProfileController> {
                 ),
         ),
         body: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             children: [
@@ -67,7 +68,7 @@ class ProfileView extends GetView<ProfileController> {
               // List of Options
               _buildMenuList(m, isSub),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
 
               // Action Buttons Row: Logout & Delete Account
               Row(
@@ -76,11 +77,11 @@ class ProfileView extends GetView<ProfileController> {
                   GestureDetector(
                     onTap: controller.logout,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 22),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEF4444).withOpacity(0.08),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
+                        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.25)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -103,11 +104,11 @@ class ProfileView extends GetView<ProfileController> {
                   GestureDetector(
                     onTap: controller.deleteAccountConfirm,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                       decoration: BoxDecoration(
                         color: Colors.red.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.red.withOpacity(0.2)),
+                        border: Border.all(color: Colors.red.withOpacity(0.25)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -129,8 +130,8 @@ class ProfileView extends GetView<ProfileController> {
                 ],
               ),
 
-              // Breathing room for floating bottom nav
-              SizedBox(height: isTab ? 80 : 20),
+              // Generous bottom spacing for floating bottom navigation bar
+              SizedBox(height: isTab ? 140 : 40),
             ],
           ),
         ),

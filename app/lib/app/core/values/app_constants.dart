@@ -1,15 +1,26 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
+
 class AppConstants {
   static const String appName = 'Sizzlo';
   static const String appTagline = 'Exclusive Dining & Privileges';
   
   static const String _envApiUrl = String.fromEnvironment('API_URL');
 
-  // Live backend API URL
+  // Backend API URL
   static String get baseUrl {
     if (_envApiUrl.isNotEmpty) {
       return _envApiUrl;
     }
-    return 'https://cheeragskitchen.in/Sizzlo/api';
+    if (kIsWeb) {
+      return '/api';
+    }
+    try {
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:8080/api';
+      }
+    } catch (_) {}
+    return 'http://127.0.0.1:8080/api';
   }
 
   static const String defaultMembershipId = '';

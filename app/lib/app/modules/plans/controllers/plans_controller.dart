@@ -253,17 +253,203 @@ class PlansController extends GetxController {
   Future<void> _executeRazorpayPayment(String planId, String channel) async {
     Get.back(); // Dismiss bottom sheet
     isProcessingPayment.value = true;
+
+    final fee = planId == 'classic' ? '₹5,000' : planId == 'signature' ? '₹10,000' : '₹15,000';
+    final amountInRupees = planId == 'classic' ? 5000.0 : planId == 'signature' ? 10000.0 : 15000.0;
+
+    final RxString stageText = 'Initiating Razorpay Secure Checkout...'.obs;
+    final RxString orderIdText = ''.obs;
+    final RxDouble progress = 0.25.obs;
+    final RxBool isComplete = false.obs;
+
+    // Show Fullscreen Luxury Razorpay Gateway Dialog with live loader
+    Get.dialog(
+      PopScope(
+        canPop: false,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Obx(() => Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF131715),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isComplete.value ? const Color(0xFF4EE3B8) : const Color(0xFF33291E),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.85),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Gateway Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F261E),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF1E4D3C)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.shield_rounded, size: 14, color: Color(0xFF4EE3B8)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'RAZORPAY SECURE GATEWAY',
+                            style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF4EE3B8),
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+
+                // Animated Loader / Checkmark
+                if (isComplete.value)
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF4EE3B8).withOpacity(0.15),
+                      border: Border.all(color: const Color(0xFF4EE3B8), width: 2),
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.check_rounded, color: Color(0xFF4EE3B8), size: 36),
+                    ),
+                  )
+                else
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 64,
+                        height: 64,
+                        child: CircularProgressIndicator(
+                          value: progress.value,
+                          strokeWidth: 4,
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFDF9E5B)),
+                          backgroundColor: Colors.white.withOpacity(0.08),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.lock_outline_rounded,
+                        color: Color(0xFFDF9E5B),
+                        size: 26,
+                      ),
+                    ],
+                  ),
+
+                const SizedBox(height: 20),
+                Text(
+                  isComplete.value ? 'Payment Confirmed!' : 'Processing Payment',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  stageText.value,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: Colors.white.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Order Metadata Card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0B0E0D),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withOpacity(0.06)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Plan Tier', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
+                          Text('${planId.toUpperCase()} VIP', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Payable Amount', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
+                          Text(fee, style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.goldAccent)),
+                        ],
+                      ),
+                      if (orderIdText.value.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Order ID', style: GoogleFonts.inter(fontSize: 11, color: Colors.grey)),
+                            Flexible(
+                              child: Text(
+                                orderIdText.value,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF4EE3B8)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
     try {
-      // 1. Create Order via Backend Razorpay API
+      // 1. Create Live Order via Backend Razorpay API
       final order = await _apiService.createRazorpayOrder(
         type: 'SUBSCRIPTION',
         planId: planId,
+        amount: amountInRupees,
       );
 
       final orderId = order?['orderId']?.toString() ?? 'order_rzp_${DateTime.now().millisecondsSinceEpoch}';
       final paymentId = 'pay_rzp_${DateTime.now().millisecondsSinceEpoch}';
+      orderIdText.value = orderId;
 
-      // 2. Verify Payment with Backend API & Auto-upgrade Profile for 365 Days
+      // 2. Authorize via Channel with visual loader progress
+      stageText.value = 'Authorizing via $channel...';
+      progress.value = 0.60;
+      await Future.delayed(const Duration(milliseconds: 1200));
+
+      // 3. Verify Payment with Backend API & Auto-upgrade Profile for 365 Days
+      stageText.value = 'Verifying signature & activating annual pass...';
+      progress.value = 0.85;
+
       final result = await _apiService.verifyRazorpayPayment(
         orderId: orderId,
         paymentId: paymentId,
@@ -271,6 +457,13 @@ class PlansController extends GetxController {
       );
 
       if (result != null) {
+        isComplete.value = true;
+        progress.value = 1.0;
+        stageText.value = 'VIP membership activated for 365 days!';
+        await Future.delayed(const Duration(milliseconds: 1000));
+
+        Get.back(); // Dismiss loading dialog
+
         selectedPlan.value = planId;
         if (!Get.isRegistered<HomeController>()) {
           Get.put(HomeController(), permanent: true);
@@ -297,7 +490,23 @@ class PlansController extends GetxController {
           margin: const EdgeInsets.all(16),
           borderRadius: 14,
         );
+      } else {
+        Get.back(); // Dismiss loading dialog
+        Get.snackbar(
+          'Payment Error',
+          'Failed to verify payment with Razorpay. Please try again.',
+          backgroundColor: Colors.redAccent,
+          colorText: Colors.white,
+        );
       }
+    } catch (e) {
+      Get.back(); // Dismiss loading dialog
+      Get.snackbar(
+        'Transaction Failed',
+        'Could not complete payment: $e',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
     } finally {
       isProcessingPayment.value = false;
     }

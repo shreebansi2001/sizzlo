@@ -27,33 +27,39 @@ class ApiService {
         Uri.parse('${AppConstants.baseUrl}/auth/register'),
         headers: _headers,
         body: json.encode(registrationData),
-      ).timeout(const Duration(seconds: 6));
+      ).timeout(const Duration(seconds: 20));
 
-      if (res.statusCode == 200) {
-        final body = json.decode(res.body);
-        if (body['success'] == true && body['data'] != null) {
-          final data = body['data'];
-          final token = data['token']?.toString();
-          final profileData = data['profile'];
-          MemberModel? member;
-          if (profileData != null) {
-            member = MemberModel.fromJson(profileData);
-            _updateSessionFromMember(member, token);
-          }
-          return {
-            'success': true,
-            'message': body['message'] ?? 'Registration successful!',
-            'member': member,
-            'token': token,
-          };
+      final body = json.decode(res.body);
+      if (res.statusCode == 200 && body['success'] == true) {
+        final data = body['data'];
+        final token = data?['token']?.toString();
+        final profileData = data?['profile'];
+        MemberModel? member;
+        if (profileData != null) {
+          member = MemberModel.fromJson(profileData);
+          _updateSessionFromMember(member, token);
         }
+        return {
+          'success': true,
+          'message': body['message'] ?? 'Registration successful! OTP sent to WhatsApp.',
+          'member': member,
+          'token': token,
+        };
+      } else {
+        final isConflict = res.statusCode == 409 ||
+            (body['message']?.toString().toLowerCase().contains('already exists') ?? false);
+        return {
+          'success': false,
+          'alreadyExists': isConflict,
+          'message': body['message'] ?? 'Failed to register. Please check details.',
+        };
       }
-    } catch (_) {}
-
-    return {
-      'success': false,
-      'message': 'Failed to register. Please check connection.',
-    };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to connect to Sizzlo server. Please check connection.',
+      };
+    }
   }
 
   /// Request OTP for mobile login (POST /api/auth/login)
@@ -63,23 +69,78 @@ class ApiService {
         Uri.parse('${AppConstants.baseUrl}/auth/login'),
         headers: _headers,
         body: json.encode({'mobile': mobile}),
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(const Duration(seconds: 15));
+
+      final body = json.decode(res.body);
+      if (res.statusCode == 200 && body['success'] == true) {
+        return {
+          'success': true,
+          'message': body['data']?['message'] ?? body['message'] ?? 'OTP sent successfully',
+          'mobile': body['data']?['mobile'] ?? mobile,
+        };
+      } else {
+        final notFound = res.statusCode == 404 ||
+            (body['message']?.toString().toLowerCase().contains('not found') ?? false) ||
+            body['data']?['registered'] == false;
+        return {
+          'success': false,
+          'userNotFound': notFound,
+          'message': body['message'] ?? 'Account not found with this mobile number.',
+          'mobile': mobile,
+        };
+      }
+    } catch (_) {
+      return {
+        'success': false,
+        'message': 'Unable to connect to Sizzlo server. Please check network.',
+        'mobile': mobile,
+      };
+    }
+  }
+
+  /// Resend dynamic OTP via WhatsApp (POST /api/auth/resend-otp)
+  Future<Map<String, dynamic>> resendOtp(String mobile) async {
+    try {
+      final cleanDigits = mobile.replaceAll(RegExp(r'\D'), '');
+      final res = await _client.post(
+        Uri.parse('${AppConstants.baseUrl}/auth/resend-otp'),
+        headers: _headers,
+        body: json.encode({'mobile': cleanDigits}),
+      ).timeout(const Duration(seconds: 15));
+
+      final body = json.decode(res.body);
+      if (res.statusCode == 200 && body['success'] == true) {
+        return {
+          'success': true,
+          'message': body['data']?['message'] ?? body['message'] ?? 'OTP sent via WhatsApp',
+          'mobile': cleanDigits,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': body['message'] ?? 'Failed to resend OTP. Please try again.',
+          'mobile': cleanDigits,
+        };
+      }
+    } catch (_) {
+      return requestOtp(mobile);
+    }
+  }
+
+  /// Check if mobile number is already registered in MySQL
+  Future<bool> checkMemberExists(String mobile) async {
+    try {
+      final cleanDigits = mobile.replaceAll(RegExp(r'\D'), '');
+      final res = await _client.get(
+        Uri.parse('${AppConstants.baseUrl}/members/me?mobile=$cleanDigits'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final body = json.decode(res.body);
-        if (body['success'] == true) {
-          return {
-            'success': true,
-            'message': body['data']?['message'] ?? 'OTP sent successfully',
-            'mobile': body['data']?['mobile'] ?? mobile,
-          };
-        }
+        return body['success'] == true && body['data'] != null;
       }
     } catch (_) {}
-    return {
-      'success': true,
-      'message': 'OTP sent successfully to $mobile (Use demo OTP: 1234)',
-      'mobile': mobile,
-    };
+    return false;
   }
 
   /// Verify OTP and obtain JWT token + Member profile (POST /api/auth/verify-otp)
