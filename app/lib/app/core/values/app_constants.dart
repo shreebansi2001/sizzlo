@@ -32,5 +32,6 @@ class AppConstants {
   static String currentUserMobile = '';
   static String currentUserName = defaultUserName;
   static String currentUserEmail = '';
+  static String currentUserProfilePic = '';
   static String? currentAuthToken;
 }

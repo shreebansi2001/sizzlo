@@ -5,6 +5,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/values/app_constants.dart';
 import '../../../../data/models/member_model.dart';
 import '../../../../data/services/api_service.dart';
+import '../../../../data/services/local_storage_service.dart';
+import '../../../../widgets/profile_avatar_widget.dart';
 import '../../controllers/profile_controller.dart';
 import '../../../home/controllers/home_controller.dart';
 
@@ -33,14 +35,51 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
   void initState() {
     super.initState();
     final m = _getMember();
-    _nameController = TextEditingController(text: m.fullName.isNotEmpty ? m.fullName : AppConstants.currentUserName);
-    _emailController = TextEditingController(text: m.email.isNotEmpty ? m.email : AppConstants.currentUserEmail);
+    _populateControllers(m);
+    _loadProfileFromBackend();
+  }
+
+  void _populateControllers(MemberModel m) {
+    final displayName = (m.fullName.isNotEmpty && m.fullName != 'Guest')
+        ? m.fullName
+        : (AppConstants.currentUserName != 'Guest' ? AppConstants.currentUserName : '');
+    final displayEmail = m.email.isNotEmpty ? m.email : AppConstants.currentUserEmail;
+
+    _nameController = TextEditingController(text: displayName);
+    _emailController = TextEditingController(text: displayEmail);
     _addressController = TextEditingController(text: m.address);
     _birthdayController = TextEditingController(text: m.birthday);
     _spouseNameController = TextEditingController(text: m.spouseName);
     _anniversaryController = TextEditingController(text: m.anniversaryDate);
-    _gender = m.gender.isNotEmpty ? m.gender : 'Male';
-    _isMarried = m.isMarried.isNotEmpty ? m.isMarried : 'No';
+    _gender = (m.gender.isNotEmpty) ? m.gender : 'Male';
+    _isMarried = (m.isMarried.isNotEmpty) ? m.isMarried : 'No';
+  }
+
+  Future<void> _loadProfileFromBackend() async {
+    try {
+      final apiService = ApiService();
+      final fresh = await apiService.getMemberProfile();
+      if (fresh.fullName.isNotEmpty && fresh.fullName != 'Guest') {
+        if (mounted) {
+          setState(() {
+            _nameController.text = fresh.fullName;
+            _emailController.text = fresh.email;
+            _addressController.text = fresh.address;
+            _birthdayController.text = fresh.birthday;
+            _spouseNameController.text = fresh.spouseName;
+            _anniversaryController.text = fresh.anniversaryDate;
+            _gender = fresh.gender.isNotEmpty ? fresh.gender : _gender;
+            _isMarried = fresh.isMarried.isNotEmpty ? fresh.isMarried : _isMarried;
+          });
+        }
+        if (Get.isRegistered<HomeController>()) {
+          Get.find<HomeController>().member.value = fresh;
+        }
+        if (Get.isRegistered<ProfileController>()) {
+          Get.find<ProfileController>().member.value = fresh;
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -56,25 +95,38 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
 
   MemberModel _getMember() {
     if (Get.isRegistered<HomeController>()) {
-      return Get.find<HomeController>().member.value;
+      final hm = Get.find<HomeController>().member.value;
+      if (hm.fullName.isNotEmpty && hm.fullName != 'Guest') return hm;
     }
     if (Get.isRegistered<ProfileController>()) {
-      return Get.find<ProfileController>().member.value;
+      final pm = Get.find<ProfileController>().member.value;
+      if (pm.fullName.isNotEmpty && pm.fullName != 'Guest') return pm;
     }
     return MemberModel.defaultProfile();
   }
 
   Future<void> _saveChanges() async {
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) {
+      Get.snackbar(
+        'Name Required',
+        'Please enter your full name',
+        backgroundColor: const Color(0xFF281C10),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
       final m = _getMember();
       final updated = MemberModel(
         id: m.id,
-        fullName: _nameController.text.trim(),
-        firstName: _nameController.text.trim().split(' ').first,
+        fullName: newName,
+        firstName: newName.split(' ').first,
         membershipId: m.membershipId,
         membershipType: m.membershipType,
-        mobile: m.mobile,
+        mobile: m.mobile.isNotEmpty ? m.mobile : AppConstants.currentUserMobile,
         email: _emailController.text.trim(),
         issuedDate: m.issuedDate,
         expiryDate: m.expiryDate,
@@ -93,13 +145,23 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
         spouseBirthday: m.spouseBirthday,
         anniversaryDate: _anniversaryController.text.trim(),
         isMarried: _isMarried,
+        profilePictureUrl: m.profilePictureUrl,
       );
 
-      // Update in memory session constants
+      // 1. Update in memory session constants
       AppConstants.currentUserName = updated.fullName;
       AppConstants.currentUserEmail = updated.email;
 
-      // Update controllers
+      // 2. Persist to local storage
+      await LocalStorageService.saveUserSession(
+        mobile: updated.mobile,
+        membershipId: updated.membershipId,
+        name: updated.fullName,
+        tier: updated.subscriptionTier,
+        profilePic: updated.profilePictureUrl,
+      );
+
+      // 3. Update controllers
       if (Get.isRegistered<HomeController>()) {
         Get.find<HomeController>().member.value = updated;
       }
@@ -107,10 +169,10 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
         Get.find<ProfileController>().member.value = updated;
       }
 
-      // Persist to backend
+      // 4. Persist to backend via PUT /api/members/{id}
       final apiService = ApiService();
-      await apiService.registerMember({
-        'name': updated.fullName,
+      final savedMember = await apiService.updateMemberProfile({
+        'fullName': updated.fullName,
         'mobile': updated.mobile,
         'email': updated.email,
         'address': updated.address,
@@ -119,7 +181,17 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
         'isMarried': updated.isMarried,
         'spouseName': updated.spouseName,
         'anniversaryDate': updated.anniversaryDate,
-      });
+        'profilePictureUrl': updated.profilePictureUrl,
+      }, updated.membershipId);
+
+      if (savedMember != null) {
+        if (Get.isRegistered<HomeController>()) {
+          Get.find<HomeController>().member.value = savedMember;
+        }
+        if (Get.isRegistered<ProfileController>()) {
+          Get.find<ProfileController>().member.value = savedMember;
+        }
+      }
 
       setState(() {
         _isEditing = false;
@@ -130,14 +202,18 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
         'Profile Updated',
         'Your personal details have been saved successfully.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF131715),
-        colorText: Colors.white,
-        borderColor: const Color(0xFFDF9E5B).withOpacity(0.5),
+        backgroundColor: const Color(0xFF0E382B),
+        colorText: const Color(0xFF4EE3B8),
+        borderColor: const Color(0xFF4EE3B8).withOpacity(0.5),
         borderWidth: 1,
         margin: const EdgeInsets.all(16),
+        borderRadius: 14,
       );
     } catch (e) {
-      setState(() => _isSaving = false);
+      setState(() {
+        _isSaving = false;
+        _isEditing = false;
+      });
       Get.snackbar(
         'Update Notice',
         'Profile details updated locally.',
@@ -146,7 +222,34 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
       );
-      setState(() => _isEditing = false);
+    }
+  }
+
+  Future<void> _pickDateFor(TextEditingController controller) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(1995, 1, 1),
+      firstDate: DateTime(1940),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.flame,
+              onPrimary: Color(0xFF070A09),
+              surface: Color(0xFF141917),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+    if (picked != null) {
+      final formatted = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      setState(() {
+        controller.text = formatted;
+      });
     }
   }
 
@@ -195,7 +298,9 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
       ),
       body: Obx(() {
         final m = _getMember();
-        final avatarLetter = (m.fullName.trim().isNotEmpty) ? m.fullName.trim()[0].toUpperCase() : 'V';
+        final effectiveName = m.fullName.isNotEmpty && m.fullName != 'Guest'
+            ? m.fullName
+            : (AppConstants.currentUserName != 'Guest' ? AppConstants.currentUserName : 'Member');
 
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -213,24 +318,12 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4A301D),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF8F582E), width: 1.5),
-                      ),
-                      child: Center(
-                        child: Text(
-                          avatarLetter,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFDF9E5B),
-                          ),
-                        ),
-                      ),
+                    ProfileAvatarWidget(
+                      radius: 30,
+                      imageUrl: m.profilePictureUrl,
+                      name: effectiveName,
+                      showEditBadge: true,
+                      onAvatarChanged: () => setState(() {}),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -238,16 +331,16 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            m.fullName.isNotEmpty ? m.fullName : 'VIP Guest',
+                            effectiveName,
                             style: GoogleFonts.playfairDisplay(
-                              fontSize: 18,
+                              fontSize: 19,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            m.membershipId,
+                            m.membershipId.isNotEmpty ? m.membershipId : 'MEMBER',
                             style: TextStyle(
                               fontSize: 11.5,
                               color: Colors.white.withOpacity(0.45),
@@ -301,9 +394,14 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                   children: [
                     _isEditing
                         ? _editField('Full Name', _nameController, Icons.person_outline)
-                        : _viewField('Full Name', m.fullName.isNotEmpty ? m.fullName : 'VIP Guest', Icons.person_outline),
+                        : _viewField('Full Name', effectiveName, Icons.person_outline),
                     _divider(),
-                    _viewField('Mobile Number', m.mobile.isNotEmpty ? m.mobile : '+91 98250 12345', Icons.phone_iphone_outlined, isReadOnly: true),
+                    _viewField(
+                      'Mobile Number',
+                      m.mobile.isNotEmpty ? m.mobile : AppConstants.currentUserMobile,
+                      Icons.phone_iphone_outlined,
+                      isReadOnly: true,
+                    ),
                     _divider(),
                     _isEditing
                         ? _editField('Email Address', _emailController, Icons.mail_outline)
@@ -334,12 +432,12 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                         : _viewField('Gender', m.gender.isNotEmpty ? m.gender : 'Not specified', Icons.wc_outlined),
                     _divider(),
                     _isEditing
-                        ? _editField('Birthday (DD/MM/YYYY)', _birthdayController, Icons.cake_outlined)
+                        ? _editDateField('Birthday', _birthdayController, Icons.cake_outlined)
                         : _viewField('Birthday', m.birthday.isNotEmpty ? m.birthday : 'Not specified', Icons.cake_outlined),
                     _divider(),
                     _isEditing
                         ? _maritalStatusPicker()
-                        : _viewField('Marital Status', m.isMarried.isNotEmpty ? m.isMarried : 'Single', Icons.favorite_border_rounded),
+                        : _viewField('Marital Status', m.isMarried.isNotEmpty ? (m.isMarried.toLowerCase() == 'yes' ? 'Married' : 'Single') : 'Single', Icons.favorite_border_rounded),
                     if (_isMarried.toLowerCase() == 'yes' || m.isMarried.toLowerCase() == 'yes') ...[
                       _divider(),
                       _isEditing
@@ -347,7 +445,7 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                           : _viewField('Spouse Name', m.spouseName.isNotEmpty ? m.spouseName : 'Not specified', Icons.person_add_alt),
                       _divider(),
                       _isEditing
-                          ? _editField('Anniversary Date', _anniversaryController, Icons.celebration_outlined)
+                          ? _editDateField('Anniversary Date', _anniversaryController, Icons.celebration_outlined)
                           : _viewField('Anniversary Date', m.anniversaryDate.isNotEmpty ? m.anniversaryDate : 'Not specified', Icons.celebration_outlined),
                     ],
                   ],
@@ -367,9 +465,9 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                 ),
                 child: Column(
                   children: [
-                    _viewField('Membership ID', m.membershipId, Icons.badge_outlined, isReadOnly: true),
+                    _viewField('Membership ID', m.membershipId.isNotEmpty ? m.membershipId : 'YSM-MEMBER', Icons.badge_outlined, isReadOnly: true),
                     _divider(),
-                    _viewField('Membership Tier', m.membershipType.isNotEmpty ? m.membershipType : 'STANDARD GUEST', Icons.workspace_premium_outlined, isReadOnly: true),
+                    _viewField('Membership Tier', m.membershipType.isNotEmpty ? m.membershipType : 'REGISTERED USER', Icons.workspace_premium_outlined, isReadOnly: true),
                     _divider(),
                     _viewField('Member Since', m.issuedDate.isNotEmpty ? m.issuedDate : '01/01/2024', Icons.calendar_today_outlined, isReadOnly: true),
                     _divider(),
@@ -471,6 +569,53 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                 border: InputBorder.none,
                 hintText: 'Enter $label',
                 hintStyle: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _editDateField(String label, TextEditingController controller, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: const Color(0xFFDF9E5B)),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5)),
+            ),
+          ),
+          Expanded(
+            child: InkWell(
+              onTap: () => _pickDateFor(controller),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    controller.text.isNotEmpty ? controller.text : 'Select date',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: controller.text.isNotEmpty ? Colors.white : Colors.white.withOpacity(0.35),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.calendar_month_rounded, size: 15, color: Color(0xFFDF9E5B)),
+                ],
               ),
             ),
           ),

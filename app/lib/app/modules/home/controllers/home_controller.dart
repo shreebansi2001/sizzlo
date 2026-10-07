@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 import '../../../data/models/member_model.dart';
 import '../../../data/models/coupon_model.dart';
 import '../../../data/services/api_service.dart';
-import '../../../core/values/app_constants.dart';
 
 class HomeController extends GetxController {
   final ApiService _apiService = ApiService();
@@ -41,8 +40,13 @@ class HomeController extends GetxController {
   Future<void> loadDashboardData() async {
     isLoading.value = true;
     try {
-      if (AppConstants.currentMembershipId.isNotEmpty || AppConstants.currentUserMobile.isNotEmpty) {
-        final fetchedMember = await _apiService.getMemberProfile();
+      final fetchedMember = await _apiService.getMemberProfile();
+      if (fetchedMember.fullName.isNotEmpty && fetchedMember.fullName != 'Guest') {
+        member.value = fetchedMember;
+        activePlan.value = fetchedMember.planId;
+      } else if (member.value.fullName != 'Guest' && member.value.fullName.isNotEmpty) {
+        // Keep current populated member if API returned fallback
+      } else if (fetchedMember.fullName.isNotEmpty) {
         member.value = fetchedMember;
         activePlan.value = fetchedMember.planId;
       }

@@ -196,9 +196,16 @@ public class MemberProfile {
     public String getIsMarried() { return isMarried; }
     public void setIsMarried(String isMarried) { this.isMarried = isMarried; }
 
+    @Lob
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
     public String getReferredByStaffId() { return referredByStaffId; }
     public void setReferredByStaffId(String referredByStaffId) { this.referredByStaffId = referredByStaffId; }
 
     public Long getCorporateId() { return corporateId; }
     public void setCorporateId(Long corporateId) { this.corporateId = corporateId; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 }

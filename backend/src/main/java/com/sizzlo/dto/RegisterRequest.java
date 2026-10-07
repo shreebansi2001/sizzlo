@@ -18,6 +18,7 @@ public class RegisterRequest {
     private String spouseBirthday;
     private String anniversaryDate;
     private String isMarried;
+    private String profilePictureUrl;
 
     public RegisterRequest() {}
 
@@ -50,4 +51,7 @@ public class RegisterRequest {
 
     public String getIsMarried() { return isMarried; }
     public void setIsMarried(String isMarried) { this.isMarried = isMarried; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 }

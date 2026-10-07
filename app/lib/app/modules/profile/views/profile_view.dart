@@ -7,6 +7,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../controllers/navigation_controller.dart';
 import '../../../data/models/member_model.dart';
+import '../../../core/values/app_constants.dart';
+import '../../../widgets/profile_avatar_widget.dart';
 
 class ProfileView extends GetView<ProfileController> {
   final bool isTab;
@@ -141,12 +143,9 @@ class ProfileView extends GetView<ProfileController> {
   }
 
   Widget _buildUserHeader(MemberModel m, bool isSub) {
-    final avatarLetter = (m.fullName.trim().isNotEmpty)
-        ? m.fullName.trim()[0].toUpperCase()
-        : 'V';
-    final displayName = (m.fullName.trim().isNotEmpty)
-        ? m.fullName
-        : 'VIP Guest';
+    final displayName = (m.fullName.trim().isNotEmpty && m.fullName.trim() != 'Guest')
+        ? m.fullName.trim()
+        : (AppConstants.currentUserName != 'Guest' ? AppConstants.currentUserName : 'Member');
     final displayContact = (m.email.isNotEmpty)
         ? '${m.mobile} · ${m.email}'
         : m.mobile;
@@ -163,28 +162,12 @@ class ProfileView extends GetView<ProfileController> {
         ),
         child: Row(
           children: [
-            // Circular Avatar with initial
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4A301D),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF8F582E),
-                  width: 1.5,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  avatarLetter,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFDF9E5B),
-                  ),
-                ),
-              ),
+            // Circular Luxury Avatar with photo / initials
+            ProfileAvatarWidget(
+              radius: 26,
+              imageUrl: m.profilePictureUrl,
+              name: displayName,
+              showEditBadge: true,
             ),
             const SizedBox(width: 14),
             Expanded(

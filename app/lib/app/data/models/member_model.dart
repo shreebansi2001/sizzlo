@@ -26,6 +26,7 @@ class MemberModel {
   final String spouseBirthday;
   final String anniversaryDate;
   final String isMarried;
+  final String profilePictureUrl;
 
   MemberModel({
     required this.id,
@@ -52,6 +53,7 @@ class MemberModel {
     this.spouseBirthday = '',
     this.anniversaryDate = '',
     this.isMarried = 'No',
+    this.profilePictureUrl = '',
   });
 
   bool get isSubscriber => planId.isNotEmpty && planId != 'none';
@@ -197,6 +199,7 @@ class MemberModel {
       spouseBirthday: json['spouseBirthday']?.toString() ?? '',
       anniversaryDate: json['anniversaryDate']?.toString() ?? '',
       isMarried: json['isMarried']?.toString() ?? 'No',
+      profilePictureUrl: (json['profilePictureUrl'] ?? json['profilePicture'] ?? json['avatarUrl'] ?? '').toString(),
     );
   }
 
@@ -225,6 +228,7 @@ class MemberModel {
       'spouseBirthday': spouseBirthday,
       'anniversaryDate': anniversaryDate,
       'isMarried': isMarried,
+      'profilePictureUrl': profilePictureUrl,
     };
   }
 
@@ -253,6 +257,7 @@ class MemberModel {
     String? spouseBirthday,
     String? anniversaryDate,
     String? isMarried,
+    String? profilePictureUrl,
   }) {
     return MemberModel(
       id: id ?? this.id,
@@ -279,6 +284,7 @@ class MemberModel {
       spouseBirthday: spouseBirthday ?? this.spouseBirthday,
       anniversaryDate: anniversaryDate ?? this.anniversaryDate,
       isMarried: isMarried ?? this.isMarried,
+      profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
     );
   }
 
@@ -301,6 +307,7 @@ class MemberModel {
       daysRemaining: 0,
       status: 'Active',
       planId: 'none',
+      profilePictureUrl: '',
     );
   }
 }

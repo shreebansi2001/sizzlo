@@ -7,6 +7,7 @@ class LocalStorageService {
   static const String keyMembershipId = 'membership_id';
   static const String keyUserName = 'user_name';
   static const String keyUserTier = 'user_tier';
+  static const String keyUserProfilePic = 'user_profile_pic';
 
   static Future<bool> hasSeenOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
@@ -28,6 +29,7 @@ class LocalStorageService {
     required String membershipId,
     required String name,
     String? tier,
+    String? profilePic,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(keyHasSeenOnboarding, true);
@@ -38,6 +40,14 @@ class LocalStorageService {
     if (tier != null) {
       await prefs.setString(keyUserTier, tier);
     }
+    if (profilePic != null && profilePic.isNotEmpty) {
+      await prefs.setString(keyUserProfilePic, profilePic);
+    }
+  }
+
+  static Future<void> saveProfilePic(String profilePic) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(keyUserProfilePic, profilePic);
   }
 
   static Future<Map<String, String?>> getUserSession() async {
@@ -47,6 +57,7 @@ class LocalStorageService {
       'membershipId': prefs.getString(keyMembershipId),
       'name': prefs.getString(keyUserName),
       'tier': prefs.getString(keyUserTier),
+      'profilePic': prefs.getString(keyUserProfilePic),
     };
   }
 
@@ -57,6 +68,7 @@ class LocalStorageService {
     await prefs.remove(keyMembershipId);
     await prefs.remove(keyUserName);
     await prefs.remove(keyUserTier);
+    await prefs.remove(keyUserProfilePic);
     // Note: Do NOT clear has_seen_onboarding so logged out users don't see onboarding again!
   }
 }
