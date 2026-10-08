@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../controllers/billing_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/sizzlo_button.dart';
+import '../../../routes/app_routes.dart';
 
 class BillingView extends GetView<BillingController> {
   const BillingView({Key? key}) : super(key: key);
@@ -109,7 +110,76 @@ class BillingView extends GetView<BillingController> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+
+          // VIP Lock Banner if user is not subscribed
+          Obx(() {
+            if (!controller.isSubscriber.value) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2C1910), Color(0xFF190F09)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.goldAccent),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.workspace_premium_rounded, color: AppColors.goldAccent, size: 28),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'VIP Subscription Required',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Only active subscribers can apply discount coupons and earn settlement rewards.',
+                                style: GoogleFonts.inter(color: Colors.grey[300], fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.goldAccent,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onPressed: () => Get.toNamed(AppRoutes.PLANS),
+                        child: Text(
+                          'Subscribe to Unlock Dining Discounts',
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+
+          const SizedBox(height: 4),
 
           // 1. Select Outlet
           Text(
@@ -553,10 +623,14 @@ class BillingView extends GetView<BillingController> {
 
           // Submit Button
           Obx(() {
+            final isOnline = controller.selectedPaymentMode.value == 'ONLINE';
+            final payableText = controller.netPayable.value > 0
+                ? 'Pay ₹${controller.netPayable.value.toStringAsFixed(0)} via Razorpay'
+                : 'Settle Bill (₹0 Balance)';
             return SizzloButton(
               text: controller.isSubmitting.value
-                  ? 'Initiating Settlement...'
-                  : 'Submit for Counter Settlement',
+                  ? (isOnline ? 'Launching Razorpay...' : 'Initiating Settlement...')
+                  : (isOnline ? payableText : 'Submit for Counter Settlement'),
               isLoading: controller.isSubmitting.value,
               onPressed: controller.submitSettlement,
             );
