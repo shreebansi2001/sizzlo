@@ -345,7 +345,9 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            m.isSubscriber && m.membershipId.isNotEmpty ? m.membershipId : 'Free Account · Standard Guest',
+                            m.isSubscriber && m.membershipId.isNotEmpty
+                                ? m.membershipId
+                                : 'Free Account',
                             style: TextStyle(
                               fontSize: 11.5,
                               color: Colors.white.withOpacity(0.45),
@@ -414,11 +416,11 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                     _divider(),
                     _isEditing
                         ? _editField('Email Address', _emailController, Icons.mail_outline, hint: 'Enter email address (Optional)')
-                        : _viewField('Email Address', (m.email.isNotEmpty && !m.email.endsWith('@sizzlo.in')) ? m.email : 'Not provided', Icons.mail_outline),
+                        : _viewField('Email Address', (m.email.isNotEmpty && !m.email.endsWith('@sizzlo.in')) ? m.email : '-', Icons.mail_outline),
                     _divider(),
                     _isEditing
                         ? _editField('Delivery Address', _addressController, Icons.location_on_outlined)
-                        : _viewField('Delivery Address', m.address.isNotEmpty ? m.address : 'Not provided', Icons.location_on_outlined),
+                        : _viewField('Delivery Address', m.address.isNotEmpty ? m.address : '-', Icons.location_on_outlined),
                   ],
                 ),
               ),
@@ -438,11 +440,11 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                   children: [
                     _isEditing
                         ? _genderPicker()
-                        : _viewField('Gender', m.gender.isNotEmpty ? m.gender : 'Not specified', Icons.wc_outlined),
+                        : _viewField('Gender', m.gender.isNotEmpty ? m.gender : '-', Icons.wc_outlined),
                     _divider(),
                     _isEditing
                         ? _editDateField('Birthday', _birthdayController, Icons.cake_outlined)
-                        : _viewField('Birthday', m.birthday.isNotEmpty ? m.birthday : 'Not specified', Icons.cake_outlined),
+                        : _viewField('Birthday', m.birthday.isNotEmpty ? m.birthday : '-', Icons.cake_outlined),
                     _divider(),
                     _isEditing
                         ? _maritalStatusPicker()
@@ -451,11 +453,11 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                       _divider(),
                       _isEditing
                           ? _editField('Spouse Name', _spouseNameController, Icons.person_add_alt)
-                          : _viewField('Spouse Name', m.spouseName.isNotEmpty ? m.spouseName : 'Not specified', Icons.person_add_alt),
+                          : _viewField('Spouse Name', m.spouseName.isNotEmpty ? m.spouseName : '-', Icons.person_add_alt),
                       _divider(),
                       _isEditing
                           ? _editDateField('Anniversary Date', _anniversaryController, Icons.celebration_outlined)
-                          : _viewField('Anniversary Date', m.anniversaryDate.isNotEmpty ? m.anniversaryDate : 'Not specified', Icons.celebration_outlined),
+                          : _viewField('Anniversary Date', m.anniversaryDate.isNotEmpty ? m.anniversaryDate : '-', Icons.celebration_outlined),
                     ],
                   ],
                 ),
@@ -476,7 +478,9 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                   children: [
                     _viewField(
                       'Membership Status',
-                      m.isSubscriber ? 'Active VIP Subscriber' : 'Free Account (No Active Plan)',
+                      m.status.isNotEmpty
+                          ? m.status
+                          : (m.isSubscriber ? 'Active VIP Subscriber' : 'Standard Account'),
                       m.isSubscriber ? Icons.verified_outlined : Icons.info_outline,
                       isReadOnly: true,
                       valueColor: m.isSubscriber ? const Color(0xFF4EE3B8) : Colors.white70,
@@ -491,7 +495,9 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                     _divider(),
                     _viewField(
                       'Membership Tier',
-                      m.isSubscriber ? m.membershipType : 'Standard Guest (Tap to Explore Plans)',
+                      m.membershipType.isNotEmpty
+                          ? m.membershipType
+                          : (m.isSubscriber ? 'VIP Subscriber' : 'Standard Guest'),
                       Icons.workspace_premium_outlined,
                       isReadOnly: true,
                       valueColor: const Color(0xFFDF9E5B),

@@ -358,18 +358,6 @@ class ProfileAvatarWidget extends StatelessWidget {
                   _showPresetAvatarsDialog(context, onDone);
                 },
               ),
-              const SizedBox(height: 8),
-
-              // Option 4: Enter Direct URL
-              _buildPickerOption(
-                icon: Icons.link_rounded,
-                title: 'Enter Image URL',
-                subtitle: 'Paste web image address',
-                onTap: () {
-                  Get.back();
-                  _showUrlInputDialog(context, onDone);
-                },
-              ),
               const SizedBox(height: 12),
             ],
           ),

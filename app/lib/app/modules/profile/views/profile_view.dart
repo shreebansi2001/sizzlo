@@ -209,7 +209,7 @@ class ProfileView extends GetView<ProfileController> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          isSub ? (m.membershipType.isNotEmpty ? m.membershipType : 'VIP SUBSCRIBER') : 'STANDARD GUEST',
+                          isSub ? (m.membershipType.isNotEmpty ? m.membershipType : 'VIP SUBSCRIBER') : 'FREE ACCOUNT',
                           style: TextStyle(
                             fontSize: 9,
                             letterSpacing: 1.0,
