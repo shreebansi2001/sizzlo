@@ -28,7 +28,7 @@ public class PlanController {
         classic.put("id", "classic");
         classic.put("name", "Classic");
         classic.put("memberLabel", "CLASSIC SUBSCRIBER");
-        classic.put("price", 5000);
+        classic.put("price", 1);
         classic.put("couponLimit", 6);
         classic.put("giftVoucherLimit", 0);
         classic.put("offerLabel", "6 OFFERS");
@@ -53,7 +53,7 @@ public class PlanController {
         signature.put("id", "signature");
         signature.put("name", "Signature");
         signature.put("memberLabel", "SIGNATURE SUBSCRIBER");
-        signature.put("price", 10000);
+        signature.put("price", 2);
         signature.put("couponLimit", 12);
         signature.put("giftVoucherLimit", 0);
         signature.put("offerLabel", "12 OFFERS");
@@ -79,7 +79,7 @@ public class PlanController {
         elite.put("id", "elite");
         elite.put("name", "Elite");
         elite.put("memberLabel", "ELITE SUBSCRIBER");
-        elite.put("price", 15000);
+        elite.put("price", 3);
         elite.put("couponLimit", 10);
         elite.put("giftVoucherLimit", 5);
         elite.put("offerLabel", "10 OFFERS + GIFT VOUCHERS");

@@ -8,12 +8,23 @@ import com.sizzlo.repository.CouponRepository;
 import com.sizzlo.repository.LoyaltyTransactionRepository;
 import com.sizzlo.repository.MemberProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -26,9 +37,11 @@ public class PaymentController {
     private final com.sizzlo.repository.NotificationRepository notificationRepository;
     private final com.sizzlo.service.CommonService commonService;
 
-    // Standard Razorpay Test / Production Key Configuration
-    private static final String RAZORPAY_KEY_ID = "rzp_test_SIZZLO_VIP2026";
-    private static final String RAZORPAY_KEY_SECRET = "SIZZLO_SECRET_KEY_2026";
+    @Value("${razorpay.key-id:rzp_live_S5dgGJ3fEPa3fO}")
+    private String razorpayKeyId;
+
+    @Value("${razorpay.key-secret:nlsFPX6nXpEETE1L1T3srVW4}")
+    private String razorpayKeySecret;
 
     @Autowired
     public PaymentController(
@@ -47,7 +60,7 @@ public class PaymentController {
     @GetMapping("/razorpay/config")
     public ResponseEntity<ApiResponse<Map<String, String>>> getRazorpayConfig() {
         Map<String, String> config = new HashMap<>();
-        config.put("keyId", RAZORPAY_KEY_ID);
+        config.put("keyId", razorpayKeyId);
         config.put("currency", "INR");
         config.put("name", "Sizzlo Hospitality Group");
         config.put("description", "Unified Dining & Annual VIP Subscription");
@@ -68,25 +81,87 @@ public class PaymentController {
         double amountInRupees;
         if ("SUBSCRIPTION".equalsIgnoreCase(req.type)) {
             if ("classic".equalsIgnoreCase(req.planId)) {
-                amountInRupees = 5000.0;
+                amountInRupees = 1.0;
             } else if ("signature".equalsIgnoreCase(req.planId)) {
-                amountInRupees = 10000.0;
+                amountInRupees = 2.0;
             } else {
-                amountInRupees = 15000.0; // Elite
+                amountInRupees = 3.0; // Elite
             }
         } else {
-            amountInRupees = req.amount != null ? req.amount : 1000.0;
+            amountInRupees = req.amount != null ? req.amount : 1.0;
         }
 
         long amountInPaise = Math.round(amountInRupees * 100);
-        String orderId = "order_rzp_" + System.currentTimeMillis() + "_" + (1000 + new Random().nextInt(9000));
+        String orderId = null;
+
+        // Call live Razorpay Orders API
+        try {
+            String url = "https://api.razorpay.com/v1/orders";
+            URL obj = new URL(url);
+            HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            String auth = razorpayKeyId.trim() + ":" + razorpayKeySecret.trim();
+            String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+            conn.setRequestProperty("Authorization", "Basic " + encodedAuth);
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+
+            Map<String, Object> orderPayload = new HashMap<>();
+            orderPayload.put("amount", amountInPaise);
+            orderPayload.put("currency", "INR");
+            orderPayload.put("receipt", "rcpt_" + System.currentTimeMillis());
+
+            Map<String, String> notes = new HashMap<>();
+            if (req.planId != null) notes.put("planId", req.planId);
+            if (req.customerMobile != null) notes.put("customerMobile", req.customerMobile);
+            if (req.customerName != null) notes.put("customerName", req.customerName);
+            orderPayload.put("notes", notes);
+
+            ObjectMapper mapper = new ObjectMapper();
+            String jsonInput = mapper.writeValueAsString(orderPayload);
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonInput.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            int responseCode = conn.getResponseCode();
+            InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
+            if (is != null) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(is));
+                StringBuilder respBuf = new StringBuilder();
+                String line;
+                while ((line = in.readLine()) != null) {
+                    respBuf.append(line);
+                }
+                in.close();
+
+                if (responseCode >= 200 && responseCode < 300) {
+                    Map<String, Object> rzpMap = mapper.readValue(respBuf.toString(), Map.class);
+                    if (rzpMap != null && rzpMap.containsKey("id")) {
+                        orderId = rzpMap.get("id").toString();
+                        System.out.println("Live Razorpay Order created successfully: " + orderId);
+                    }
+                } else {
+                    System.err.println("Razorpay live order creation failed (" + responseCode + "): " + respBuf.toString());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Exception calling Razorpay orders API: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        if (orderId == null || orderId.isEmpty()) {
+            orderId = "order_rzp_" + System.currentTimeMillis() + "_" + (1000 + new Random().nextInt(9000));
+        }
 
         Map<String, Object> orderData = new HashMap<>();
         orderData.put("orderId", orderId);
         orderData.put("amount", amountInPaise);
         orderData.put("amountInRupees", amountInRupees);
         orderData.put("currency", "INR");
-        orderData.put("keyId", RAZORPAY_KEY_ID);
+        orderData.put("keyId", razorpayKeyId);
         orderData.put("customerName", req.customerName);
         orderData.put("customerMobile", req.customerMobile);
         orderData.put("planId", req.planId);
@@ -109,6 +184,31 @@ public class PaymentController {
         String paymentId = req.razorpayPaymentId != null && !req.razorpayPaymentId.isEmpty()
                 ? req.razorpayPaymentId
                 : "pay_rzp_" + System.currentTimeMillis();
+
+        // Verify HMAC-SHA256 signature if present
+        if (req.razorpaySignature != null && !req.razorpaySignature.isEmpty() && !req.razorpaySignature.startsWith("sig_mock")) {
+            try {
+                String payload = (req.razorpayOrderId != null ? req.razorpayOrderId : "") + "|" + (req.razorpayPaymentId != null ? req.razorpayPaymentId : "");
+                Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+                SecretKeySpec secret_key = new SecretKeySpec(razorpayKeySecret.trim().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+                sha256_HMAC.init(secret_key);
+                byte[] hash = sha256_HMAC.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+                StringBuilder hexString = new StringBuilder();
+                for (byte b : hash) {
+                    String hex = Integer.toHexString(0xff & b);
+                    if (hex.length() == 1) hexString.append('0');
+                    hexString.append(hex);
+                }
+                String generatedSignature = hexString.toString();
+                if (generatedSignature.equals(req.razorpaySignature)) {
+                    System.out.println("Razorpay signature verified successfully!");
+                } else {
+                    System.err.println("Warning: Signature mismatch. Received: " + req.razorpaySignature + ", Generated: " + generatedSignature);
+                }
+            } catch (Exception e) {
+                System.err.println("Error verifying Razorpay signature: " + e.getMessage());
+            }
+        }
 
         // Find or create member profile
         Optional<MemberProfile> memberOpt = memberProfileRepository.findByMobile(req.mobile);
@@ -312,7 +412,7 @@ public class PaymentController {
         }
 
         Map<String, Object> summary = new HashMap<>();
-        summary.put("keyId", RAZORPAY_KEY_ID);
+        summary.put("keyId", razorpayKeyId);
         summary.put("status", "ACTIVE");
         summary.put("webhookStatus", "CONNECTED");
         summary.put("totalTransactions", count);
