@@ -13,12 +13,14 @@ import {
   CheckCircle2, 
   Zap,
   ArrowRight,
-  Gift
+  Gift,
+  Edit3,
+  X
 } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import axios from 'axios';
 import { Member, SubscriptionPlan } from '../types';
-import { fetchPlans, addOfferToPlan, removeOfferFromPlan, resetPlans } from '../api/client';
+import { fetchPlans, addOfferToPlan, removeOfferFromPlan, resetPlans, updatePlanDetails } from '../api/client';
 import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
 
 export const MembershipsPage: React.FC = () => {
@@ -31,6 +33,65 @@ export const MembershipsPage: React.FC = () => {
   const [newOfferText, setNewOfferText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [syncToast, setSyncToast] = useState<string | null>(null);
+
+  // Edit Plan & Pricing Modal State
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    memberLabel: string;
+    price: number;
+    offerLabel: string;
+    description: string;
+    highlights: string[];
+    newHighlightInput: string;
+  }>({
+    name: '',
+    memberLabel: '',
+    price: 0,
+    offerLabel: '',
+    description: '',
+    highlights: [],
+    newHighlightInput: '',
+  });
+
+  const handleOpenEditPlan = (plan: SubscriptionPlan) => {
+    setEditingPlan(plan);
+    setEditForm({
+      name: plan.name,
+      memberLabel: plan.memberLabel,
+      price: plan.price,
+      offerLabel: plan.offerLabel,
+      description: plan.description,
+      highlights: [...(plan.highlights || [])],
+      newHighlightInput: '',
+    });
+  };
+
+  const handleSavePlanEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPlan) return;
+    setIsSubmitting(true);
+    try {
+      const updated = await updatePlanDetails(editingPlan.id, {
+        name: editForm.name,
+        memberLabel: editForm.memberLabel,
+        price: Number(editForm.price),
+        offerLabel: editForm.offerLabel,
+        description: editForm.description,
+        highlights: editForm.highlights,
+      });
+      if (updated) {
+        setPlans(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
+        setSyncToast(`Plan "${updated.name}" pricing & offers saved and synced to Mobile App!`);
+        setEditingPlan(null);
+        setTimeout(() => setSyncToast(null), 4000);
+      }
+    } catch (err: any) {
+      setSyncToast(`Failed to update plan: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const loadPlans = async () => {
     setIsLoadingPlans(true);
@@ -321,12 +382,34 @@ export const MembershipsPage: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Price & Venue */}
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
-                  <span style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 700, color: 'var(--gold)' }}>
-                    ₹{p.price.toLocaleString('en-IN')}
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>annually</span>
+                {/* Price & Edit Button Row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <span style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 700, color: 'var(--gold)' }}>
+                      {p.price === 0 ? 'FREE' : `₹${p.price.toLocaleString('en-IN')}`}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.price === 0 ? 'forever' : 'annually'}</span>
+                  </div>
+                  <button
+                    onClick={() => handleOpenEditPlan(p)}
+                    style={{
+                      background: 'rgba(232, 184, 74, 0.12)',
+                      border: '1px solid rgba(232, 184, 74, 0.4)',
+                      color: 'var(--gold)',
+                      borderRadius: 8,
+                      padding: '5px 11px',
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <Edit3 size={12} />
+                    <span>Edit Plan &amp; Price</span>
+                  </button>
                 </div>
 
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}>
@@ -694,6 +777,332 @@ export const MembershipsPage: React.FC = () => {
                   style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   <span>{isSubmitting ? 'Syncing...' : 'Add & Sync to App'}</span>
+                  {!isSubmitting && <ArrowRight size={14} />}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: EDIT PLAN & PRICING */}
+      {editingPlan && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: 20,
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 24,
+            padding: '28px',
+            maxWidth: 620,
+            width: '100%',
+            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.6)',
+            position: 'relative',
+            maxHeight: '92vh',
+            overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Crown size={22} color="var(--gold)" />
+                <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 700, color: 'var(--text-main)' }}>
+                  Edit Plan &amp; Pricing: {editingPlan.name}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingPlan(null)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
+              Update the annual membership fee, display labels, outlet scope, and all active offer bullet points. Changes will sync immediately to the VIP mobile app.
+            </p>
+
+            <form onSubmit={handleSavePlanEdit}>
+              {/* Row 1: Plan Name & Member Tier Badge */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                    Plan Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      background: 'var(--surface-alt)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-main)',
+                      fontSize: 13,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                    Member Badge / Tag
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.memberLabel}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, memberLabel: e.target.value }))}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      background: 'var(--surface-alt)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-main)',
+                      fontSize: 13,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Price & Offer Tagline */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                    Annual Price (₹)
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)', fontWeight: 700 }}>₹</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editForm.price}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, price: Number(e.target.value) }))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px 10px 30px',
+                        borderRadius: 12,
+                        background: 'var(--surface-alt)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-main)',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <span style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4, display: 'block' }}>
+                    Set to 0 for Free / Non-Subscribed users
+                  </span>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                    Offer Badge / Tagline
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.offerLabel}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, offerLabel: e.target.value }))}
+                    placeholder="e.g. 6 OFFERS or FREE TIER PERKS"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      background: 'var(--surface-alt)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-main)',
+                      fontSize: 13,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Description */}
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  Plan Scope / Outlets Valid
+                </label>
+                <input
+                  type="text"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    background: 'var(--surface-alt)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-main)',
+                    fontSize: 13,
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              {/* Row 4: Editable Perks & Offers List */}
+              <div style={{
+                marginBottom: 22,
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--border)',
+                borderRadius: 16,
+                padding: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)' }}>
+                    Active Offers &amp; Highlights ({editForm.highlights.length})
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Edit or delete bullet points</span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 180, overflowY: 'auto', marginBottom: 14 }}>
+                  {editForm.highlights.map((h, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="text"
+                        value={h}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditForm(prev => {
+                            const updated = [...prev.highlights];
+                            updated[idx] = val;
+                            return { ...prev, highlights: updated };
+                          });
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          background: 'var(--surface-alt)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text-main)',
+                          fontSize: 12,
+                          outline: 'none',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditForm(prev => ({
+                            ...prev,
+                            highlights: prev.highlights.filter((_, i) => i !== idx)
+                          }));
+                        }}
+                        title="Remove perk"
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          color: '#EF4444',
+                          borderRadius: 8,
+                          padding: '8px',
+                          cursor: 'pointer',
+                          display: 'grid',
+                          placeItems: 'center'
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                  {editForm.highlights.length === 0 && (
+                    <div style={{ fontSize: 12, color: 'var(--text-dim)', textAlign: 'center', padding: 12 }}>
+                      No offers configured for this plan. Add one below!
+                    </div>
+                  )}
+                </div>
+
+                {/* Add new perk row inside modal */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="text"
+                    placeholder="Type new offer/perk to add..."
+                    value={editForm.newHighlightInput}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, newHighlightInput: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (editForm.newHighlightInput.trim()) {
+                          setEditForm(prev => ({
+                            ...prev,
+                            highlights: [...prev.highlights, prev.newHighlightInput.trim()],
+                            newHighlightInput: '',
+                          }));
+                        }
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      background: 'var(--surface-alt)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-main)',
+                      fontSize: 12,
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editForm.newHighlightInput.trim()) {
+                        setEditForm(prev => ({
+                          ...prev,
+                          highlights: [...prev.highlights, prev.newHighlightInput.trim()],
+                          newHighlightInput: '',
+                        }));
+                      }
+                    }}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: 8,
+                      background: 'rgba(255, 138, 0, 0.15)',
+                      border: '1px solid var(--primary)',
+                      color: 'var(--primary)',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    + Add Perk
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setEditingPlan(null)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={isSubmitting}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span>{isSubmitting ? 'Saving Changes...' : 'Save Plan & Sync to App'}</span>
                   {!isSubmitting && <ArrowRight size={14} />}
                 </button>
               </div>

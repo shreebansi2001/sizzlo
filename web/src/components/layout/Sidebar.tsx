@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLog
         { id: 'activity', label: 'Live Activity', icon: Activity },
         { id: 'redemption', label: 'Redemption Desk', icon: ScanLine },
         { id: 'outlets', label: 'Venues & Outlets', icon: Store },
-        { id: 'events', label: 'Banquet & ODC', icon: PartyPopper },
+        { id: 'events', label: 'Events & Brunches', icon: PartyPopper },
       ],
     },
     {

@@ -130,7 +130,7 @@ export function App() {
       case 'outlets':
         return { title: 'Venues & Dining Concepts', subtitle: 'Compare venue revenues, ABV, and ratings' };
       case 'events':
-        return { title: 'Banquet & ODC Management', subtitle: 'Pipeline, event calendar and lead conversion for celebrations' };
+        return { title: 'Exclusive Events & Sunday Brunches', subtitle: 'Manage Sunday Brunches, Chef Table passes, guest capacities, attendee lists and banquet desk' };
       case 'marketing':
         return { title: 'Marketing & Campaigns', subtitle: 'Audience reach, automated journeys and broadcast messaging' };
       case 'staff':

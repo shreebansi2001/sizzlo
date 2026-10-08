@@ -179,6 +179,25 @@ export async function removeOfferFromPlan(planId: string, offer: string): Promis
   return target || null;
 }
 
+export async function updatePlanDetails(planId: string, updates: Partial<SubscriptionPlan>): Promise<SubscriptionPlan | null> {
+  const current = getStoredPlans();
+  const target = current.find(p => p.id === planId);
+  if (target) {
+    Object.assign(target, updates);
+    localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(current));
+  }
+  try {
+    const res = await apiClient.put(`/plans/${planId}`, updates, { timeout: 2500 });
+    if (res.data?.success && res.data.data) {
+      // Re-sync with returned object
+      const updatedList = current.map(p => p.id === planId ? { ...p, ...res.data.data } : p);
+      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(updatedList));
+      return res.data.data;
+    }
+  } catch (_) {}
+  return target || null;
+}
+
 export async function resetPlans(): Promise<SubscriptionPlan[]> {
   localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
   try {
