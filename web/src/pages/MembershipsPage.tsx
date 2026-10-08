@@ -134,6 +134,14 @@ export const MembershipsPage: React.FC = () => {
   // Helper colors for plan cards
   const getPlanStyling = (planId: string) => {
     switch (planId) {
+      case 'free':
+        return {
+          badgeClass: 'badge-silver',
+          accentColor: '#94A3B8',
+          border: '1px solid rgba(148, 163, 184, 0.4)',
+          background: 'linear-gradient(145deg, #1E293B 0%, #0F172A 100%)',
+          glow: 'rgba(148, 163, 184, 0.15)',
+        };
       case 'classic':
         return {
           badgeClass: 'badge-gold',
@@ -525,9 +533,10 @@ export const MembershipsPage: React.FC = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[
-                { name: 'Elite VIP Connoisseur', price: '₹15,000/yr', count: `${plans.find(p=>p.id==='elite')?.highlights.length || 3} Offers`, pct: 38, color: 'var(--gold)' },
-                { name: 'Signature Gourmet', price: '₹10,000/yr', count: `${plans.find(p=>p.id==='signature')?.highlights.length || 3} Offers`, pct: 45, color: 'var(--primary)' },
-                { name: 'Classic Privileges', price: '₹5,000/yr', count: `${plans.find(p=>p.id==='classic')?.highlights.length || 3} Offers`, pct: 17, color: '#64748B' },
+                { name: 'Elite VIP Connoisseur', price: '₹15,000/yr', count: `${plans.find(p=>p.id==='elite')?.highlights.length || 3} Offers`, pct: 35, color: 'var(--gold)' },
+                { name: 'Signature Gourmet', price: '₹10,000/yr', count: `${plans.find(p=>p.id==='signature')?.highlights.length || 3} Offers`, pct: 40, color: 'var(--primary)' },
+                { name: 'Classic Privileges', price: '₹5,000/yr', count: `${plans.find(p=>p.id==='classic')?.highlights.length || 3} Offers`, pct: 15, color: '#60A5FA' },
+                { name: 'Non-Subscribed (Free)', price: '₹0 / Free', count: `${plans.find(p=>p.id==='free')?.highlights.length || 3} Perks`, pct: 10, color: '#94A3B8' },
               ].map((tier) => (
                 <div key={tier.name} style={{ padding: '12px 14px', borderRadius: 14, background: 'var(--surface-alt)', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -609,6 +618,7 @@ export const MembershipsPage: React.FC = () => {
                     outline: 'none',
                   }}
                 >
+                  <option value="free">Non-Subscribed (Free Registered Users)</option>
                   <option value="classic">Classic Subscription (₹5,000 / yr)</option>
                   <option value="signature">Signature Subscription (₹10,000 / yr)</option>
                   <option value="elite">Elite Subscription (₹15,000 / yr)</option>

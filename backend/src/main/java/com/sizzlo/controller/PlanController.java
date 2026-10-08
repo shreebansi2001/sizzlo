@@ -23,6 +23,30 @@ public class PlanController {
     private synchronized void resetDefaults() {
         plans.clear();
 
+        // Non-Subscribed Free Tier
+        Map<String, Object> free = new LinkedHashMap<>();
+        free.put("id", "free");
+        free.put("name", "Non-Subscribed Users");
+        free.put("memberLabel", "FREE REGISTERED USER");
+        free.put("price", 0);
+        free.put("couponLimit", 0);
+        free.put("giftVoucherLimit", 0);
+        free.put("offerLabel", "FREE TIER PERKS");
+        free.put("description", "Standard registered accounts & app perks");
+        free.put("personality", "Welcoming & Accessible");
+        free.put("highlights", new ArrayList<>(Arrays.asList(
+                "Welcome digital dining pass",
+                "Instant table booking at all outlets",
+                "1 Loyalty Point per Rs. 1 net spend"
+        )));
+        free.put("benefits", new ArrayList<>(Arrays.asList(
+                "Table reservations across all House of Yanki outlets",
+                "1 Loyalty Point earned for every Rs. 1 net dining spend",
+                "Exclusive access to special festival event tickets",
+                "Upgrade to VIP at any time for unlimited dining vouchers"
+        )));
+        plans.add(free);
+
         // Classic Plan
         Map<String, Object> classic = new LinkedHashMap<>();
         classic.put("id", "classic");

@@ -131,72 +131,56 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedMembers() {
-        MemberProfile rahul = new MemberProfile();
-        rahul.setFullName("Rahul Mehta");
-        rahul.setFirstName("Rahul");
-        rahul.setMembershipId("YSM-2024-04821");
-        rahul.setMembershipType("SIGNATURE SUBSCRIBER");
-        rahul.setSubscriptionTier("SIGNATURE");
-        rahul.setMobile("+91 98250 12345");
-        rahul.setEmail("rahul.mehta@yanki.in");
-        rahul.setStatus("Active");
-        rahul.setIssuedDate(LocalDate.now().minusMonths(3));
-        rahul.setExpiryDate(LocalDate.now().plusMonths(9));
-        rahul.setTotalSavings(24500);
-        rahul.setCouponsUsed(5);
-        rahul.setCouponsTotal(12);
-        rahul.setLoyaltyPoints(125000);
-        rahul.setLoyaltyGoal(250000);
-        rahul.setPendingDues(0);
-        rahul.setTotalSpend(68500);
-        rahul.setLastVisit("Today");
-        rahul.setBirthday("1992-06-15");
-        rahul.setDobLocked(true);
-        rahul.setAnniversaryDate("2018-12-08");
-        rahul.setIsMarried("Yes");
-        rahul.setSpouseName("Ananya Mehta");
-        memberProfileRepository.save(rahul);
+        createMember("YSM-1001", "Rahul Mehta", "+91 98250 12345", "rahul.mehta@gujaratmerchants.com", "ELITE VIP CONNOISSEUR", "Active", 42500, 6, 18, 18240, 184500, "Yesterday at Bodakdev Signature");
+        createMember("YSM-1002", "Priya Sharma", "+91 98980 23456", "priya.sharma@aerovista.in", "SIGNATURE GOURMET", "Active", 28400, 4, 12, 12450, 112000, "3 days ago at Shilaj");
+        createMember("YSM-1003", "Siddharth Patel", "+91 98790 34567", "siddharth@patelinfra.com", "ELITE VIP CONNOISSEUR", "Active", 56800, 8, 18, 24100, 245000, "2 days ago at Navrangpura");
+        createMember("YSM-1004", "Ananya Iyer", "+91 98240 45678", "ananya.iyer@zencos.io", "CLASSIC PRIVILEGES", "Active", 14200, 3, 8, 6850, 62400, "1 week ago at Gandhinagar");
+        createMember("YSM-1005", "Vikramaditya Singhania", "+91 97270 56789", "vikram@singhaniaholdings.com", "ELITE VIP CONNOISSEUR", "Renewal Due", 68900, 14, 18, 31200, 315000, "5 days ago at Bodakdev Signature");
+        createMember("YSM-1006", "Meera Nair", "+91 99090 67890", "meera.nair@designstudio.in", "SIGNATURE GOURMET", "Active", 21500, 3, 12, 9400, 88500, "Yesterday at Shilaj");
+        createMember("YSM-1007", "Arjun Kapoor", "+91 98251 78901", "arjun.kapoor@fintechadvisors.com", "CLASSIC PRIVILEGES", "Renewal Due", 16800, 5, 8, 7200, 74200, "2 weeks ago at Navrangpura");
+        createMember("YSM-1008", "Divya Desai", "+91 98791 89012", "divya.desai@architects.in", "SIGNATURE GOURMET", "Active", 26500, 5, 12, 11800, 104500, "3 days ago at Bodakdev Signature");
+        createMember("YSM-1009", "Kabir Joshi", "+91 99240 90123", "kabir.joshi@joshilaw.com", "ELITE VIP CONNOISSEUR", "Active", 38900, 4, 18, 16500, 162000, "Yesterday at Navrangpura");
+        createMember("YSM-1010", "Tanvi Kulkarni", "+91 98981 01234", "tanvi.k@medresearch.org", "CLASSIC PRIVILEGES", "Expired", 18200, 7, 8, 8100, 78000, "1 month ago at Shilaj");
+        createMember("YSM-1011", "Aditya Rao", "+91 98252 11223", "aditya.rao@cloudscale.io", "SIGNATURE GOURMET", "Active", 29800, 5, 12, 13200, 119500, "4 days ago at Gandhinagar");
+        createMember("YSM-1012", "Pooja Bansal", "+91 98792 22334", "pooja.bansal@bansalexports.com", "ELITE VIP CONNOISSEUR", "Active", 49200, 7, 18, 21900, 208000, "Yesterday at Bodakdev Signature");
 
-        LoyaltyTransaction t1 = new LoyaltyTransaction();
-        t1.setMembershipId(rahul.getMembershipId());
-        t1.setTitle("Dine-in at Yanki Sizzlerr Bodakdev");
-        t1.setDescription("POS Bill #POS-88210 (Rs. 1 Net Spend = 1 Point)");
-        t1.setPoints(2850);
-        t1.setType("EARN");
-        t1.setOutletName("Yanki Sizzlerr Bodakdev");
-        t1.setTransactionTime(LocalDateTime.now().minusDays(2));
-        loyaltyTransactionRepository.save(t1);
+        // Non-Subscribed Free Accounts
+        createMember("REG-2041", "Chirag Patel", "+91 98253 33445", "chirag.patel@gmail.com", "NON-SUBSCRIBED", "Active", 0, 0, 0, 450, 4200, "Last week at Navrangpura");
+        createMember("REG-2042", "Hardik Dave", "+91 98982 44556", "hardik.dave@outlook.com", "NON-SUBSCRIBED", "Active", 0, 0, 0, 620, 6800, "3 days ago at Shilaj");
+        createMember("REG-2043", "Bhavin Shah", "+91 98793 55667", "bhavin.shah@yahoo.com", "NON-SUBSCRIBED", "Active", 0, 0, 0, 310, 3500, "5 days ago at Bodakdev Signature");
+        createMember("REG-2044", "Nilam Vora", "+91 98241 66778", "nilam.vora@gmail.com", "NON-SUBSCRIBED", "Active", 0, 0, 0, 890, 9400, "Yesterday at Gandhinagar");
+        createMember("REG-2045", "Rajesh Bhatt", "+91 97271 77889", "rajesh.bhatt@bhattassociates.in", "NON-SUBSCRIBED", "Active", 0, 0, 0, 1200, 13500, "4 days ago at Navrangpura");
+        createMember("REG-2046", "Alok Parikh", "+91 99091 88990", "alok.parikh@technocraft.com", "NON-SUBSCRIBED", "Active", 0, 0, 0, 540, 5200, "2 weeks ago at Shilaj");
+        createMember("REG-2047", "Manisha Soni", "+91 98254 99001", "manisha.soni@gmail.com", "NON-SUBSCRIBED", "Active", 0, 0, 0, 780, 8100, "6 days ago at Bodakdev Signature");
+        createMember("REG-2048", "Deep Contractor", "+91 98794 00112", "deep.c@contractorinfra.in", "NON-SUBSCRIBED", "Active", 0, 0, 0, 950, 10200, "3 days ago at Navrangpura");
+        createMember("REG-2049", "Jignesh Panchal", "+91 99241 11223", "jignesh.panchal@panchalsteel.com", "NON-SUBSCRIBED", "Active", 0, 0, 0, 410, 4600, "Yesterday at Shilaj");
+        createMember("REG-2050", "Hetal Vyas", "+91 98983 22334", "hetal.vyas@eduworld.org", "NON-SUBSCRIBED", "Active", 0, 0, 0, 360, 3900, "1 week ago at Gandhinagar");
+        createMember("REG-2051", "Keyur Barot", "+91 98255 33445", "keyur.barot@barotmedia.in", "NON-SUBSCRIBED", "Active", 0, 0, 0, 210, 2400, "Just joined via Mobile App");
+        createMember("REG-2052", "Ritu Agrawal", "+91 98795 44556", "ritu.agrawal@gmail.com", "NON-SUBSCRIBED", "Active", 0, 0, 0, 150, 1800, "Just joined via Mobile App");
+    }
 
-        LoyaltyTransaction t2 = new LoyaltyTransaction();
-        t2.setMembershipId(rahul.getMembershipId());
-        t2.setTitle("Annual Signature Subscription Perk");
-        t2.setDescription("Welcome VIP tier points bonus");
-        t2.setPoints(5000);
-        t2.setType("BONUS");
-        t2.setOutletName("All Yanki Outlets");
-        t2.setTransactionTime(LocalDateTime.now().minusMonths(3));
-        MemberProfile guest = new MemberProfile();
-        guest.setFullName("Guest 1122");
-        guest.setFirstName("Guest");
-        guest.setMembershipId("YSM-2024-7416");
-        guest.setMembershipType("SIGNATURE SUBSCRIBER");
-        guest.setSubscriptionTier("SIGNATURE");
-        guest.setMobile("+91 9822001122");
-        guest.setEmail("guest.1122@sizzlo.in");
-        guest.setStatus("Active");
-        guest.setIssuedDate(LocalDate.now().minusMonths(1));
-        guest.setExpiryDate(LocalDate.now().plusMonths(11));
-        guest.setTotalSavings(14500);
-        guest.setCouponsUsed(6);
-        guest.setCouponsTotal(12);
-        guest.setLoyaltyPoints(65000);
-        guest.setLoyaltyGoal(250000);
-        guest.setPendingDues(0);
-        guest.setTotalSpend(34200);
-        guest.setLastVisit("Today");
-        guest.setBirthday("1995-10-12");
-        guest.setDobLocked(true);
-        memberProfileRepository.save(guest);
+    private void createMember(String id, String fullName, String mobile, String email, String tier, String status, int savings, int used, int total, int points, int spend, String lastVisit) {
+        MemberProfile m = new MemberProfile();
+        m.setMembershipId(id);
+        m.setFullName(fullName);
+        m.setFirstName(fullName.split(" ")[0]);
+        m.setMobile(mobile);
+        m.setEmail(email);
+        m.setMembershipType(tier);
+        m.setSubscriptionTier(tier.contains("ELITE") ? "ELITE" : tier.contains("SIGNATURE") ? "SIGNATURE" : tier.contains("CLASSIC") ? "CLASSIC" : "FREE");
+        m.setStatus(status);
+        m.setIssuedDate(LocalDate.now().minusMonths(6));
+        m.setExpiryDate("Active".equalsIgnoreCase(status) ? LocalDate.now().plusMonths(6) : LocalDate.now().minusDays(10));
+        m.setTotalSavings(savings);
+        m.setCouponsUsed(used);
+        m.setCouponsTotal(total);
+        m.setLoyaltyPoints(points);
+        m.setLoyaltyGoal(25000);
+        m.setPendingDues("Renewal Due".equalsIgnoreCase(status) ? 10000 : 0);
+        m.setTotalSpend(spend);
+        m.setLastVisit(lastVisit);
+        m.setDobLocked(true);
+        memberProfileRepository.save(m);
     }
 
     private void seedCoupons() {
