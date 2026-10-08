@@ -4,7 +4,10 @@ import '../../../data/models/reservation_model.dart';
 import '../../../data/models/banquet_inquiry_model.dart';
 import '../../../data/services/api_service.dart';
 import '../../../core/values/app_constants.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../widgets/sizzlo_dialogs.dart';
+import '../../../routes/app_routes.dart';
+import 'package:intl/intl.dart';
 
 class ReservationsController extends GetxController {
   final ApiService _apiService = ApiService();
@@ -43,8 +46,19 @@ class ReservationsController extends GetxController {
     '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM', '9:00 PM', '9:30 PM', '10:00 PM'
   ].obs;
 
+  final RxString selectedSeatingArea = 'Indoor AC Lounge'.obs;
+  final List<String> seatingAreas = [
+    'Indoor AC Lounge',
+    'Romantic Corner',
+    'Window View',
+    'Family Booth',
+    'Terrace Lounge',
+  ];
+
+  final Rx<DateTime?> customBookingDate = Rx<DateTime?>(null);
+
   final List<String> occasionTags = [
-    'Regular', 'Birthday', 'Anniversary', 'Business'
+    'Regular', 'Birthday', 'Anniversary', 'Business', 'Date Night'
   ];
 
   final List<String> banquetCategories = [
@@ -181,17 +195,46 @@ class ReservationsController extends GetxController {
 
   void setGuestCount(int count) {
     if (count >= 20) {
-      bookingMode.value = 1; // Auto-redirect to Banquet & ODC (Chapter 06.1 SRS)
-      banquetPax.value = count;
       Get.snackbar(
         'Group Size 20+ Covers',
-        'Parties of 20 or more are routed to House of Yanki Banquets & ODC Event Desk.',
+        'Parties of 20 or more are handled by House of Yanki Banquets & ODC Event Desk.',
         backgroundColor: const Color(0xFF2C241B),
         colorText: const Color(0xFFD4AF37),
         duration: const Duration(seconds: 4),
+        mainButton: TextButton(
+          onPressed: () => Get.toNamed(AppRoutes.BANQUET_ODC),
+          child: const Text('Go to Banquet', style: TextStyle(color: Color(0xFF4EE3B8), fontWeight: FontWeight.bold)),
+        ),
       );
     } else {
       guestCount.value = count;
+    }
+  }
+
+  Future<void> pickCustomDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: customBookingDate.value ?? DateTime.now().add(const Duration(days: 2)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.goldAccent,
+              onPrimary: Colors.black,
+              surface: Color(0xFF1E1A16),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF141210),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      customBookingDate.value = picked;
+      selectedBookingDay.value = DateFormat('EEE, dd MMM').format(picked);
     }
   }
 
