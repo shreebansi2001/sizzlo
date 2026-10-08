@@ -41,7 +41,7 @@ class BanquetController extends GetxController {
 
   final Rx<DateTime> banquetDate = DateTime.now().add(const Duration(days: 14)).obs;
   final RxString banquetShift = 'Dinner'.obs;
-  final List<String> shiftOptions = ['Lunch (11:30 AM - 3:30 PM)', 'Dinner (7:00 PM - 11:30 PM)', 'Full Day Session'];
+  final List<String> shiftOptions = ['Dinner', 'Lunch', 'Full Day'];
 
   final RxInt banquetPax = 75.obs;
   final List<int> banquetPaxPresets = [25, 50, 75, 100, 150, 200, 300, 500];

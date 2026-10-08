@@ -260,7 +260,9 @@ class BanquetView extends GetView<BanquetController> {
                 decoration: _fieldBoxDecoration(),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    value: controller.selectedBanquetVenue.value,
+                    value: controller.banquetVenues.contains(controller.selectedBanquetVenue.value)
+                        ? controller.selectedBanquetVenue.value
+                        : controller.banquetVenues.first,
                     dropdownColor: const Color(0xFF1E1A16),
                     isExpanded: true,
                     icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.goldAccent),
@@ -357,13 +359,15 @@ class BanquetView extends GetView<BanquetController> {
                           decoration: _fieldBoxDecoration(),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
-                              value: controller.banquetShift.value,
+                              value: controller.shiftOptions.contains(controller.banquetShift.value)
+                                  ? controller.banquetShift.value
+                                  : controller.shiftOptions.first,
                               dropdownColor: const Color(0xFF1E1A16),
                               isExpanded: true,
                               icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.goldAccent, size: 18),
                               items: controller.shiftOptions.map((s) => DropdownMenuItem(
                                 value: s,
-                                child: Text(s.split(' ').first, style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
+                                child: Text(s, style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
                               )).toList(),
                               onChanged: (val) {
                                 if (val != null) controller.banquetShift.value = val;
@@ -442,7 +446,9 @@ class BanquetView extends GetView<BanquetController> {
                 decoration: _fieldBoxDecoration(),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    value: controller.banquetPackage.value,
+                    value: controller.packageOptions.contains(controller.banquetPackage.value)
+                        ? controller.banquetPackage.value
+                        : controller.packageOptions.first,
                     dropdownColor: const Color(0xFF1E1A16),
                     isExpanded: true,
                     icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.goldAccent),
@@ -592,7 +598,9 @@ class BanquetView extends GetView<BanquetController> {
                           decoration: _fieldBoxDecoration(),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
-                              value: controller.odcCity.value,
+                              value: controller.cityOptions.contains(controller.odcCity.value)
+                                  ? controller.odcCity.value
+                                  : controller.cityOptions.first,
                               dropdownColor: const Color(0xFF1E1A16),
                               isExpanded: true,
                               icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.goldAccent, size: 18),
@@ -678,7 +686,9 @@ class BanquetView extends GetView<BanquetController> {
                           decoration: _fieldBoxDecoration(),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
-                              value: controller.odcShift.value,
+                              value: controller.odcShiftOptions.contains(controller.odcShift.value)
+                                  ? controller.odcShift.value
+                                  : controller.odcShiftOptions.first,
                               dropdownColor: const Color(0xFF1E1A16),
                               isExpanded: true,
                               icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF4EE3B8), size: 18),
