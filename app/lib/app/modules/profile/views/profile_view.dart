@@ -9,6 +9,7 @@ import '../../../controllers/navigation_controller.dart';
 import '../../../data/models/member_model.dart';
 import '../../../core/values/app_constants.dart';
 import '../../../widgets/profile_avatar_widget.dart';
+import '../../../widgets/active_chip_sprinkles_widget.dart';
 
 class ProfileView extends GetView<ProfileController> {
   final bool isTab;
@@ -161,69 +162,85 @@ class ProfileView extends GetView<ProfileController> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.06)),
         ),
-        child: Row(
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            // Circular Luxury Avatar with photo / initials
-            ProfileAvatarWidget(
-              radius: 26,
-              imageUrl: m.profilePictureUrl,
-              name: displayName,
-              showEditBadge: true,
+            Row(
+              children: [
+                // Circular Luxury Avatar with photo / initials
+                ProfileAvatarWidget(
+                  radius: 26,
+                  imageUrl: m.profilePictureUrl,
+                  name: displayName,
+                  showEditBadge: true,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        displayContact,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: Colors.white.withOpacity(0.45),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                        decoration: BoxDecoration(
+                          color: isSub ? const Color(0xFF281C10) : Colors.white.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: isSub ? const Color(0xFF6B4520) : Colors.white.withOpacity(0.12)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isSub ? Icons.star : Icons.person_outline,
+                              size: 10,
+                              color: isSub ? const Color(0xFFDF9E5B) : Colors.white.withOpacity(0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isSub ? (m.membershipType.isNotEmpty ? m.membershipType : 'VIP SUBSCRIBER') : 'FREE ACCOUNT',
+                              style: TextStyle(
+                                fontSize: 9,
+                                letterSpacing: 1.0,
+                                fontWeight: FontWeight.w800,
+                                color: isSub ? const Color(0xFFDF9E5B) : Colors.white.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(top: isSub ? 14 : 0),
+                  child: Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.3), size: 20),
+                ),
+              ],
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    displayName,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    displayContact,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: Colors.white.withOpacity(0.45),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                    decoration: BoxDecoration(
-                      color: isSub ? const Color(0xFF281C10) : Colors.white.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: isSub ? const Color(0xFF6B4520) : Colors.white.withOpacity(0.12)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isSub ? Icons.star : Icons.person_outline,
-                          size: 10,
-                          color: isSub ? const Color(0xFFDF9E5B) : Colors.white.withOpacity(0.6),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isSub ? (m.membershipType.isNotEmpty ? m.membershipType : 'VIP SUBSCRIBER') : 'FREE ACCOUNT',
-                          style: TextStyle(
-                            fontSize: 9,
-                            letterSpacing: 1.0,
-                            fontWeight: FontWeight.w800,
-                            color: isSub ? const Color(0xFFDF9E5B) : Colors.white.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            if (isSub)
+              const Positioned(
+                top: -2,
+                right: 0,
+                child: ActiveChipWithSprinklesWidget(
+                  label: 'ACTIVE',
+                ),
               ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.3), size: 20),
           ],
         ),
       ),
