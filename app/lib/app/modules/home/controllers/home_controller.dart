@@ -3,6 +3,9 @@ import '../../../data/models/member_model.dart';
 import '../../../data/models/coupon_model.dart';
 import '../../../data/services/api_service.dart';
 
+import '../../../data/models/dining_event_model.dart';
+import '../../../core/values/app_constants.dart';
+
 class HomeController extends GetxController {
   final ApiService _apiService = ApiService();
 
@@ -11,7 +14,10 @@ class HomeController extends GetxController {
   final RxList<CouponModel> featuredCoupons = <CouponModel>[].obs;
   final RxInt outletsCount = 0.obs;
   final RxList<Map<String, dynamic>> customerReviews = <Map<String, dynamic>>[].obs;
+  final RxList<DiningEventModel> diningEvents = <DiningEventModel>[].obs;
+  final RxList<DiningEventBookingModel> myEventBookings = <DiningEventBookingModel>[].obs;
   final RxBool isLoading = true.obs;
+  final RxBool isBookingEvent = false.obs;
 
   @override
   void onInit() {
@@ -64,10 +70,81 @@ class HomeController extends GetxController {
         outletsCount.value = outlets.length;
       }
 
+      // Fetch active dining events and user's event bookings
+      diningEvents.value = await _apiService.getDiningEvents();
+      final userMobile = member.value.mobile.isNotEmpty
+          ? member.value.mobile
+          : AppConstants.currentUserMobile;
+      if (userMobile.isNotEmpty) {
+        myEventBookings.value = await _apiService.getMyEventBookings(userMobile);
+      }
+
       // Clear any static reviews - only show when live reviews exist
       customerReviews.clear();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  DiningEventBookingModel? getBookingForEvent(int eventId) {
+    try {
+      return myEventBookings.firstWhere((b) => b.eventId == eventId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<DiningEventBookingModel?> bookEvent({
+    required DiningEventModel event,
+    required int guestCount,
+    String? paymentId,
+  }) async {
+    isBookingEvent.value = true;
+    try {
+      final userMobile = member.value.mobile.isNotEmpty
+          ? member.value.mobile
+          : AppConstants.currentUserMobile;
+      final userName = member.value.fullName.isNotEmpty && member.value.fullName != 'Guest'
+          ? member.value.fullName
+          : AppConstants.currentUserName;
+
+      final booking = await _apiService.bookDiningEvent(
+        eventId: event.id,
+        customerName: userName,
+        customerMobile: userMobile,
+        customerEmail: member.value.email,
+        guestCount: guestCount,
+        paymentId: paymentId,
+      );
+
+      if (booking != null) {
+        // Add to user's bookings
+        myEventBookings.insert(0, booking);
+
+        // Update local event booked count
+        final index = diningEvents.indexWhere((e) => e.id == event.id);
+        if (index != -1) {
+          final cur = diningEvents[index];
+          diningEvents[index] = DiningEventModel(
+            id: cur.id,
+            title: cur.title,
+            description: cur.description,
+            bannerUrl: cur.bannerUrl,
+            outletName: cur.outletName,
+            eventDay: cur.eventDay,
+            eventDate: cur.eventDate,
+            timings: cur.timings,
+            totalSeats: cur.totalSeats,
+            bookedSeats: cur.bookedSeats + guestCount,
+            pricePerGuest: cur.pricePerGuest,
+            inclusions: cur.inclusions,
+            status: (cur.bookedSeats + guestCount >= cur.totalSeats) ? 'HOUSEFULL' : cur.status,
+          );
+        }
+      }
+      return booking;
+    } finally {
+      isBookingEvent.value = false;
     }
   }
 

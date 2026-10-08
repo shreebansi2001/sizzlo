@@ -19,6 +19,9 @@ import '../../notifications/views/notifications_view.dart';
 import '../../profile/views/profile_view.dart';
 import '../../../core/values/app_constants.dart';
 import '../../../widgets/profile_avatar_widget.dart';
+import '../../../widgets/event_booking_sheet.dart';
+import '../../../widgets/event_pass_dialog.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({Key? key}) : super(key: key);
@@ -318,9 +321,16 @@ class HomeView extends GetView<HomeController> {
 
           const SizedBox(height: 24),
 
-          // Latest Privileges / Brunch Promo matching demo_code
-          SectionHeader(title: 'Latest Offers'),
-          _buildPromoBanner(),
+          // Dining Events & Experiences (Club Events & Brunches)
+          Obx(() {
+            final hasPasses = controller.myEventBookings.isNotEmpty;
+            return SectionHeader(
+              title: 'Dining Events & Experiences',
+              actionLabel: hasPasses ? 'My Passes (${controller.myEventBookings.length})' : null,
+              onAction: hasPasses ? () => _showMyPassesModal(context) : null,
+            );
+          }),
+          _buildEventsSection(context),
 
           if (controller.customerReviews.isNotEmpty) ...[
             const SizedBox(height: 24),
@@ -811,181 +821,400 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildPromoBanner() {
-    return GestureDetector(
-      onTap: () {
-        Get.dialog(
-          Dialog(
-            backgroundColor: AppColors.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.flame.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.celebration_rounded, color: AppColors.flame, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Yanki Sunday Brunch',
-                            style: TextStyle(fontFamily: 'Playfair Display', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                        ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: const Icon(Icons.close_rounded, color: AppColors.textMuted, size: 20),
-                          onPressed: () => Get.back(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Indulge in our signature Sunday Brunch buffet featuring live sizzler grill stations, chef-crafted desserts, artisanal mocktails, and live jazz music.',
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceVariant,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.gold.withOpacity(0.12)),
-                      ),
-                      child: Column(
+  Widget _buildEventsSection(BuildContext context) {
+    return Obx(() {
+      final events = controller.diningEvents;
+      if (events.isEmpty) {
+        return const SizedBox();
+      }
+
+      return Column(
+        children: events.map((event) {
+          final booking = controller.getBookingForEvent(event.id);
+          final isRegistered = booking != null;
+          final remaining = event.remainingSeats;
+          final isSoldOut = event.isHousefull;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E2420), Color(0xFF141816)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: isRegistered
+                    ? const Color(0xFF249673).withOpacity(0.6)
+                    : AppColors.gold.withOpacity(0.25),
+                width: isRegistered ? 1.5 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(22),
+                onTap: () {
+                  if (isRegistered) {
+                    EventPassDialog.show(context, booking: booking, event: event);
+                  } else {
+                    EventBookingSheet.show(context, event);
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Top Badges Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text('Timings:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '12:00 PM – 4:00 PM (Sundays)',
-                                  textAlign: TextAlign.end,
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                            decoration: BoxDecoration(
+                              color: AppColors.gold.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.celebration_rounded, color: AppColors.gold, size: 12),
+                                const SizedBox(width: 5),
+                                Text(
+                                  event.eventDay.toUpperCase(),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.gold,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isRegistered)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0F2E25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF249673)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.check_circle_rounded, color: Color(0xFF4EE3B8), size: 12),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'REGISTERED (${booking.guestCount} GUESTS)',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF4EE3B8),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else if (isSoldOut)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                              ),
+                              child: Text(
+                                'HOUSEFULL',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.redAccent,
                                 ),
                               ),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Divider(color: Colors.white10, height: 1),
-                          ),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text('Subscriber Benefit:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Flat 20% Off + Welcome Sizzler',
-                                  textAlign: TextAlign.end,
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.gold),
-                                ),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2E1C12),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.flame.withOpacity(0.4)),
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.local_fire_department_rounded, color: AppColors.flame, size: 12),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$remaining / ${event.totalSeats} SPOTS LEFT',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.flame,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Event Title
+                      Text(
+                        event.title,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      // Outlet & Timings
+                      Row(
+                        children: [
+                          Icon(Icons.storefront_rounded, size: 13, color: Colors.white.withOpacity(0.4)),
+                          const SizedBox(width: 5),
+                          Text(
+                            event.outletName,
+                            style: GoogleFonts.inter(fontSize: 11, color: Colors.white70),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('•', style: TextStyle(color: Colors.white30, fontSize: 11)),
+                          const SizedBox(width: 8),
+                          Icon(Icons.access_time_rounded, size: 13, color: Colors.white.withOpacity(0.4)),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              event.timings,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(fontSize: 11, color: Colors.white70),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.flame,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+
+                      const SizedBox(height: 12),
+
+                      // Live Capacity Progress Bar (if not registered)
+                      if (!isRegistered) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: event.occupancyRate,
+                            backgroundColor: Colors.white.withOpacity(0.08),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              remaining < 10 ? AppColors.flame : AppColors.gold,
+                            ),
+                            minHeight: 4,
+                          ),
                         ),
-                        onPressed: () {
-                          Get.back();
-                          Get.find<NavigationController>().changeTab(3);
-                        },
-                        child: const Text('Reserve Table for Brunch', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // Bottom Action Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Nominal Booking Fee',
+                                style: GoogleFonts.inter(fontSize: 10, color: Colors.white38),
+                              ),
+                              Text(
+                                '₹${event.pricePerGuest.toInt()} / Guest',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.gold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isRegistered
+                                  ? const Color(0xFF0F2E25)
+                                  : (isSoldOut ? Colors.grey.shade800 : AppColors.flame),
+                              foregroundColor: isRegistered ? const Color(0xFF4EE3B8) : Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: isRegistered
+                                    ? const BorderSide(color: Color(0xFF249673))
+                                    : BorderSide.none,
+                              ),
+                              elevation: isRegistered ? 0 : 2,
+                            ),
+                            onPressed: () {
+                              if (isRegistered) {
+                                EventPassDialog.show(context, booking: booking, event: event);
+                              } else if (!isSoldOut) {
+                                EventBookingSheet.show(context, event);
+                              }
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isRegistered ? Icons.qr_code_rounded : Icons.confirmation_num_rounded,
+                                  size: 15,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  isRegistered ? 'View Pass' : (isSoldOut ? 'Sold Out' : 'Reserve Spot'),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
+          );
+        }).toList(),
+      );
+    });
+  }
+
+  void _showMyPassesModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) {
+        return Container(
+          padding: const EdgeInsets.all(22),
+          decoration: const BoxDecoration(
+            color: Color(0xFF131715),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(top: BorderSide(color: Color(0xFF2E3832), width: 1.5)),
           ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: AppColors.goldGradient,
-                borderRadius: BorderRadius.circular(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                ),
               ),
-              child: const Icon(Icons.celebration_rounded, color: AppColors.primaryDark, size: 28),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '1. YANKI BRUNCH OFFER',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                      color: AppColors.gold,
-                    ),
+                    'My Event Passes',
+                    style: GoogleFonts.playfairDisplay(fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Sunday Sparkling Brunch',
-                    style: TextStyle(
-                      fontFamily: 'Playfair Display',
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Live grill stations & 20% off for verified subscribers',
-                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                    onPressed: () => Get.back(),
                   ),
                 ],
               ),
-            ),
-            const Icon(Icons.chevron_right, size: 20, color: AppColors.gold),
-          ],
-        ),
-      ),
+              const SizedBox(height: 12),
+              Obx(() {
+                final passes = controller.myEventBookings;
+                if (passes.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 30),
+                    child: Center(
+                      child: Text(
+                        'No event passes booked yet.',
+                        style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+                      ),
+                    ),
+                  );
+                }
+                return Column(
+                  children: passes.map((pass) {
+                    final ev = controller.diningEvents.firstWhereOrNull((e) => e.id == pass.eventId);
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C221F),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.gold.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.confirmation_num_rounded, color: AppColors.gold, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  pass.eventTitle,
+                                  style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Pass #${pass.bookingReference} • ${pass.guestCount} Guests',
+                                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.gold,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: () {
+                              Get.back();
+                              EventPassDialog.show(context, booking: pass, event: ev);
+                            },
+                            child: const Text('Pass QR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 

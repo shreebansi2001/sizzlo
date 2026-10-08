@@ -547,4 +547,73 @@ export async function fetchTodayTraffic() {
   return null;
 }
 
+// Dining Events & Masterclasses API
+export interface DiningEventAdminDTO {
+  id?: number;
+  title: string;
+  description: string;
+  bannerUrl?: string;
+  outletName: string;
+  eventDay: string;
+  eventDate?: string;
+  timings: string;
+  totalSeats: number;
+  bookedSeats?: number;
+  remainingSeats?: number;
+  pricePerGuest: number;
+  inclusions?: string;
+  status: string;
+}
+
+export interface DiningAttendeeDTO {
+  id: number;
+  bookingReference: string;
+  eventId: number;
+  eventTitle: string;
+  customerName: string;
+  customerMobile: string;
+  guestCount: number;
+  totalAmount: number;
+  paymentStatus: string;
+  status: string;
+  whatsappSent: boolean;
+  createdAt: string;
+}
+
+export async function fetchDiningEvents(): Promise<DiningEventAdminDTO[]> {
+  try {
+    const res = await apiClient.get('/dining-events');
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return [];
+}
+
+export async function createDiningEvent(event: Partial<DiningEventAdminDTO>) {
+  const res = await apiClient.post('/dining-events', event);
+  return res.data;
+}
+
+export async function updateDiningEvent(id: number, event: Partial<DiningEventAdminDTO>) {
+  const res = await apiClient.put(`/dining-events/${id}`, event);
+  return res.data;
+}
+
+export async function deleteDiningEvent(id: number) {
+  const res = await apiClient.delete(`/dining-events/${id}`);
+  return res.data;
+}
+
+export async function fetchDiningEventAttendees(id: number): Promise<DiningAttendeeDTO[]> {
+  try {
+    const res = await apiClient.get(`/dining-events/${id}/attendees`);
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return [];
+}
+
+
 
