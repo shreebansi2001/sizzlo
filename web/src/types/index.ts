@@ -18,6 +18,13 @@ export interface Member {
   pendingDues: number;
   totalSpend: number;
   lastVisit: string;
+  address?: string;
+  gender?: string;
+  birthday?: string;
+  spouseName?: string;
+  anniversaryDate?: string;
+  isMarried?: string;
+  avatarUrl?: string;
 }
 
 export interface Coupon {

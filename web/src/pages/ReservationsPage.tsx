@@ -208,12 +208,31 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     .filter(u => !u.vip && u.advancePaid)
     .reduce((sum, r) => sum + (r.bookingAdvance || 100), 0);
 
+  const hourCounts: Record<string, number> = {};
+  upcomingList.forEach(r => {
+    if (r.date) {
+      const match = r.date.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (match) {
+        const h = `${match[1]} ${match[3].toUpperCase()}`;
+        hourCounts[h] = (hourCounts[h] || 0) + (r.guests || 2);
+      }
+    }
+  });
+  let calculatedPeakHour = 'None';
+  let maxGuests = 0;
+  Object.entries(hourCounts).forEach(([h, g]) => {
+    if (g > maxGuests) {
+      maxGuests = g;
+      calculatedPeakHour = h;
+    }
+  });
+
   const dynamicKpiStats = [
     { k: 'Total Guests Today', v: `${totalGuests}`, icon: Users, delta: `${upcomingList.length} total party bookings` },
     { k: '👑 Subscribed VIPs', v: `${vipCount}`, icon: Crown, delta: 'High Priority Desk Seating' },
     { k: '🎯 Non-Subscribers', v: `${nonVipCount}`, icon: Calendar, delta: `Holding deposit ₹100 collected` },
     { k: 'Advance Held at Desk', v: `₹${totalAdvance}`, icon: TrendingUp, delta: 'Deductible at POS billing' },
-    { k: 'Peak Hour', v: '8 PM', icon: Clock, delta: 'Dinner peak rush' },
+    { k: 'Peak Hour', v: calculatedPeakHour, icon: Clock, delta: maxGuests > 0 ? `${maxGuests} guests at peak` : 'No bookings today' },
     { k: 'Dynamic Slots Active', v: `${slotsList.filter(s => s.active).length} / ${slotsList.length}`, icon: MapPin, delta: 'Synced with mobile app' }
   ];
 
@@ -222,7 +241,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
       {/* 6 Top Metric Cards */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
         gap: 16 
       }}>
         {dynamicKpiStats.map((item) => {
@@ -248,10 +267,10 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
         })}
       </div>
 
-      {/* Main Grid: Peak Hours Chart (2 cols) & Upcoming Bookings (1 col) */}
+      {/* Main Grid: Peak Hours Chart & Upcoming Bookings */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: '2fr 1fr', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', 
         gap: 24,
         alignItems: 'stretch'
       }}>
@@ -330,15 +349,17 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             background: 'var(--surface-alt)', 
             border: '1px solid var(--border-subtle)',
             marginTop: 16,
-            fontSize: 12 
+            fontSize: 12,
+            flexWrap: 'wrap',
+            gap: 10
           }}>
             <div>
-              <span style={{ color: 'var(--text-muted)' }}>Dinner Rush Window: </span>
-              <strong style={{ color: 'var(--primary)' }}>7:30 PM – 9:30 PM (160+ Guests)</strong>
+              <span style={{ color: 'var(--text-muted)' }}>Confirmed Covers Today: </span>
+              <strong style={{ color: 'var(--primary)' }}>{totalGuests} Total Guests</strong>
             </div>
             <div>
-              <span style={{ color: 'var(--text-muted)' }}>Recommended Staffing: </span>
-              <strong style={{ color: 'var(--gold)' }}>Peak Capacity (Full Brigade)</strong>
+              <span style={{ color: 'var(--text-muted)' }}>Floor Status: </span>
+              <strong style={{ color: 'var(--gold)' }}>{upcomingList.length > 0 ? `${upcomingList.length} Active Table Bookings` : 'All Tables Available'}</strong>
             </div>
           </div>
         </div>

@@ -20,7 +20,13 @@ export const DEFAULT_USERS_DATASET: Member[] = [
     loyaltyGoal: 25000,
     pendingDues: 0,
     totalSpend: 184500,
-    lastVisit: 'Yesterday at Bodakdev Signature'
+    lastVisit: 'Yesterday at Bodakdev Signature',
+    birthday: '1988-10-18',
+    anniversaryDate: '2016-11-24',
+    spouseName: 'Pooja Mehta',
+    gender: 'Male',
+    isMarried: 'Yes',
+    address: '402, Shaligram Plus, Bodakdev, Ahmedabad'
   },
   {
     id: 'usr_102',
@@ -41,7 +47,13 @@ export const DEFAULT_USERS_DATASET: Member[] = [
     loyaltyGoal: 20000,
     pendingDues: 0,
     totalSpend: 112000,
-    lastVisit: '3 days ago at Shilaj'
+    lastVisit: '3 days ago at Shilaj',
+    birthday: '1992-10-25',
+    anniversaryDate: '2021-12-08',
+    spouseName: 'Amit Sharma',
+    gender: 'Female',
+    isMarried: 'Yes',
+    address: 'B-14, Pride Icon, Ambli Road, Ahmedabad'
   },
   {
     id: 'usr_103',

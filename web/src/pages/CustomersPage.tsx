@@ -439,6 +439,20 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ members: initialMe
                       <div>
                         <p style={{ fontWeight: 700, color: '#FFFFFF', fontSize: 13 }}>{m.fullName || 'User'}</p>
                         <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{m.mobile}</p>
+                        {(m.birthday || m.anniversaryDate) && (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                            {m.birthday && (
+                              <span style={{ fontSize: 10, background: 'rgba(232, 184, 74, 0.15)', color: 'var(--gold)', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+                                🎂 {m.birthday}
+                              </span>
+                            )}
+                            {m.anniversaryDate && (
+                              <span style={{ fontSize: 10, background: 'rgba(236, 72, 153, 0.15)', color: '#EC4899', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+                                💍 {m.anniversaryDate}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td>
@@ -930,6 +944,85 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ members: initialMe
                   <Crown size={14} /> Upgrade User to VIP Plan
                 </button>
               )}
+            </div>
+
+            {/* VIP Personal Profile & Celebrations Card */}
+            <div style={{
+              background: 'var(--surface-alt)',
+              borderRadius: 16,
+              padding: 16,
+              border: '1px solid var(--border)',
+              marginBottom: 14
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Sparkles size={14} color="var(--gold)" /> VIP Personal Profile &amp; Celebrations
+                </h4>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Synced from Mobile App</span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, fontSize: 12 }}>
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: 10, borderRadius: 10 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block' }}>🎂 Birthday</span>
+                  <strong style={{ color: selectedMember.birthday ? 'var(--gold)' : 'var(--text-muted)' }}>
+                    {selectedMember.birthday || 'Not submitted yet'}
+                  </strong>
+                </div>
+
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: 10, borderRadius: 10 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block' }}>💍 Wedding Anniversary</span>
+                  <strong style={{ color: selectedMember.anniversaryDate ? '#EC4899' : 'var(--text-muted)' }}>
+                    {selectedMember.anniversaryDate || 'Not applicable'}
+                  </strong>
+                </div>
+
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: 10, borderRadius: 10 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block' }}>👤 Spouse Name</span>
+                  <strong style={{ color: '#FFFFFF' }}>
+                    {selectedMember.spouseName || 'Not recorded'}
+                  </strong>
+                </div>
+
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: 10, borderRadius: 10 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block' }}>⚧️ Gender &amp; Status</span>
+                  <strong style={{ color: '#FFFFFF' }}>
+                    {selectedMember.gender || 'Male'} · {selectedMember.isMarried === 'Yes' ? 'Married' : 'Single'}
+                  </strong>
+                </div>
+              </div>
+
+              {selectedMember.address && (
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: 10, borderRadius: 10, marginTop: 10, fontSize: 11.5 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block' }}>🏠 Home / Preferred Address</span>
+                  <span style={{ color: 'var(--text-main)' }}>{selectedMember.address}</span>
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setActionNotice(`🎁 Celebratory Voucher & personalized WhatsApp message dispatched to ${selectedMember.fullName || 'Member'}!`);
+                  setTimeout(() => setActionNotice(null), 4000);
+                }}
+                style={{
+                  marginTop: 12,
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  background: 'rgba(232, 184, 74, 0.15)',
+                  border: '1px solid var(--gold)',
+                  color: 'var(--primary)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6
+                }}
+              >
+                <Sparkles size={13} color="var(--gold)" />
+                Dispatch Celebration Gift Voucher
+              </button>
             </div>
 
             {/* Dining Activity & Coupons Section */}

@@ -214,7 +214,7 @@ export function App() {
           <StaffPage roles={[]} />
         )}
         {currentTab === 'feedback' && (
-          <FeedbackPage feedbacks={[]} />
+          <FeedbackPage key={`feedback-${refreshKey}`} />
         )}
       </ErrorBoundary>
     </AdminLayout>

@@ -78,7 +78,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         if (res.data?.success && res.data.data?.length) {
           const mapped = res.data.data.map((c: any) => ({
             name: c.name,
-            value: ((c.totalCount || 3) - (c.leftCount || 0)) * 420 + (c.leftCount || 1) * 180,
+            value: Math.max(1, (c.totalCount || 0) - (c.leftCount || 0)),
           }));
           setCouponMix(mapped);
         }
@@ -126,7 +126,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <div className="kpi-value">{k.value}</div>
               <div className={`kpi-trend ${isUp ? 'up' : 'down'}`}>
                 {isUp ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                <span>{k.delta} vs last month</span>
+                <span>{k.delta}</span>
               </div>
             </div>
           );

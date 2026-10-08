@@ -17,53 +17,81 @@ public class AdminServiceImpl implements AdminService {
     private final com.sizzlo.repository.MemberProfileRepository memberProfileRepository;
     private final com.sizzlo.repository.ReservationRepository reservationRepository;
     private final com.sizzlo.repository.CouponRepository couponRepository;
+    private final com.sizzlo.repository.BillSettlementRepository billSettlementRepository;
 
     @Autowired
     public AdminServiceImpl(OutletRepository outletRepository,
                             com.sizzlo.repository.MemberProfileRepository memberProfileRepository,
                             com.sizzlo.repository.ReservationRepository reservationRepository,
-                            com.sizzlo.repository.CouponRepository couponRepository) {
+                            com.sizzlo.repository.CouponRepository couponRepository,
+                            com.sizzlo.repository.BillSettlementRepository billSettlementRepository) {
         this.outletRepository = outletRepository;
         this.memberProfileRepository = memberProfileRepository;
         this.reservationRepository = reservationRepository;
         this.couponRepository = couponRepository;
+        this.billSettlementRepository = billSettlementRepository;
     }
 
     @Override
     public AdminDashboardDto getDashboardOverview() {
-        long memberCount = memberProfileRepository.count();
+        List<com.sizzlo.entity.MemberProfile> allMembers = memberProfileRepository.findAll();
+        List<com.sizzlo.entity.BillSettlement> allBills = billSettlementRepository.findAll();
         long reservationCount = reservationRepository.count();
-        long totalCouponsUsed = memberProfileRepository.findAll().stream()
+
+        // 1. Total POS Settled Revenue (Net payable from actual non-rejected settlements)
+        double totalSettledRev = allBills.stream()
+                .filter(b -> !"REJECTED".equalsIgnoreCase(b.getStatus()))
+                .mapToDouble(b -> b.getNetPayable() != null ? b.getNetPayable() : 0.0)
+                .sum();
+
+        // 2. Real Membership Revenue based on subscribed tier price (Classic 5999, Signature 9999, Elite 14999)
+        long classicCount = allMembers.stream().filter(m -> "CLASSIC".equalsIgnoreCase(m.getSubscriptionTier()) || (m.getMembershipType() != null && m.getMembershipType().toUpperCase().contains("CLASSIC"))).count();
+        long signatureCount = allMembers.stream().filter(m -> "SIGNATURE".equalsIgnoreCase(m.getSubscriptionTier()) || (m.getMembershipType() != null && m.getMembershipType().toUpperCase().contains("SIGNATURE"))).count();
+        long eliteCount = allMembers.stream().filter(m -> "ELITE".equalsIgnoreCase(m.getSubscriptionTier()) || (m.getMembershipType() != null && m.getMembershipType().toUpperCase().contains("ELITE"))).count();
+        long paidSubscribers = classicCount + signatureCount + eliteCount;
+        double memRev = (classicCount * 5999.0) + (signatureCount * 9999.0) + (eliteCount * 14999.0);
+
+        // 3. Active Members
+        long activeMembersCount = allMembers.stream().filter(m -> "Active".equalsIgnoreCase(m.getStatus())).count();
+
+        // 4. Pending Payments (Bills waiting for POS/Cashier verification)
+        List<com.sizzlo.entity.BillSettlement> pendingBills = allBills.stream()
+                .filter(b -> "PENDING_VERIFICATION".equalsIgnoreCase(b.getStatus()))
+                .collect(java.util.stream.Collectors.toList());
+        double pendingSum = pendingBills.stream()
+                .mapToDouble(b -> b.getNetPayable() != null ? b.getNetPayable() : 0.0)
+                .sum();
+
+        // 5. Coupons Redeemed
+        long totalCouponsUsed = allMembers.stream()
                 .mapToLong(m -> m.getCouponsUsed() != null ? m.getCouponsUsed() : 0)
                 .sum();
 
-        long pendingDuesSum = memberProfileRepository.findAll().stream()
-                .mapToLong(m -> m.getPendingDues() != null ? m.getPendingDues() : 0)
-                .sum();
-        double totalOutletRev = outletRepository.findAll().stream()
-                .mapToDouble(o -> o.getRevenueLakhs() != null ? o.getRevenueLakhs() : 0)
-                .sum();
-
-        // Dynamic KPIs — zeros when empty
+        // Honest Live KPIs without fake deltas or dummy percentages
         List<Map<String, Object>> kpis = new ArrayList<>();
-        String totalRevStr = totalOutletRev > 0 ? String.format(Locale.US, "%.2f", totalOutletRev / 100.0) : "0";
-        kpis.add(createKpi("Total Revenue", "Rs. " + totalRevStr + " Cr", totalOutletRev > 0 ? "+12.4%" : "0%", "up"));
-        kpis.add(createKpi("Membership Revenue", "Rs. " + (memberCount > 0 ? (memberCount * 10000 / 100000) : 0) + " Lakh", memberCount > 0 ? "+8.2%" : "0%", "up"));
-        kpis.add(createKpi("Active Members", String.valueOf(memberCount), memberCount > 0 ? "+" + memberCount : "0", "up"));
-        kpis.add(createKpi("Pending Payments", "Rs. " + (pendingDuesSum > 0 ? String.format(Locale.US, "%.2f L", pendingDuesSum / 100000.0) : "0"), pendingDuesSum > 0 ? "-4.1%" : "0%", "down"));
-        kpis.add(createKpi("Coupons Redeemed", String.valueOf(totalCouponsUsed), totalCouponsUsed > 0 ? "+" + totalCouponsUsed : "0", "up"));
-        kpis.add(createKpi("Reservations", String.valueOf(reservationCount), reservationCount > 0 ? "+" + reservationCount : "0", "up"));
+        kpis.add(createKpi("Total Revenue", String.format(Locale.US, "₹ %,.0f", totalSettledRev), "Live POS Settlements", "up"));
+        kpis.add(createKpi("Membership Revenue", String.format(Locale.US, "₹ %,.0f", memRev), paidSubscribers + " Paid Subscriptions", "up"));
+        kpis.add(createKpi("Active Members", String.valueOf(activeMembersCount), allMembers.size() + " Total Registered", "up"));
+        kpis.add(createKpi("Pending Payments", String.format(Locale.US, "₹ %,.0f", pendingSum), pendingBills.size() + " Awaiting Verification", pendingBills.isEmpty() ? "up" : "down"));
+        kpis.add(createKpi("Coupons Redeemed", String.valueOf(totalCouponsUsed), "Used Across Outlets", "up"));
+        kpis.add(createKpi("Reservations", String.valueOf(reservationCount), "Confirmed Bookings", "up"));
 
-        // Revenue series — realistic progression when demo data loaded
+        // Revenue series — computed from actual bill timestamps
         List<Map<String, Object>> series = new ArrayList<>();
         String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-        int[] revLakhs = {14, 18, 22, 26, 31, 38, 42, 49, 56, 68, 79, 86};
-        int[] memLakhs = {6, 8, 11, 14, 16, 21, 24, 28, 32, 41, 48, 52};
+        Map<Integer, Double> monthRevMap = new HashMap<>();
+        for (com.sizzlo.entity.BillSettlement b : allBills) {
+            if (b.getCreatedAt() != null && b.getNetPayable() != null) {
+                int mIdx = b.getCreatedAt().getMonthValue() - 1;
+                monthRevMap.put(mIdx, monthRevMap.getOrDefault(mIdx, 0.0) + b.getNetPayable());
+            }
+        }
         for (int i = 0; i < months.length; i++) {
             Map<String, Object> point = new HashMap<>();
             point.put("m", months[i]);
-            point.put("revenue", memberCount > 0 ? revLakhs[i] : 0);
-            point.put("membership", memberCount > 0 ? memLakhs[i] : 0);
+            double monthRev = monthRevMap.getOrDefault(i, 0.0);
+            point.put("revenue", Math.round(monthRev));
+            point.put("membership", i == 9 ? Math.round(memRev) : 0);
             series.add(point);
         }
 
@@ -72,7 +100,7 @@ public class AdminServiceImpl implements AdminService {
 
         // AI Insights — loaded for client demonstration
         List<Map<String, Object>> insights = new ArrayList<>();
-        if (memberCount > 0) {
+        if (!allMembers.isEmpty()) {
             Map<String, Object> ins1 = new HashMap<>();
             ins1.put("title", "High Sunday VIP Dinner Surge");
             ins1.put("body", "Yanki Signature Bodakdev is operating at 92% capacity on weekends. Recommending dynamic table slot reservation buffers.");

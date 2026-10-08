@@ -55,6 +55,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
   const [loading, setLoading] = useState(false);
   const [modeFilter, setModeFilter] = useState<string>('ALL');
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [inspectingBill, setInspectingBill] = useState<BillSettlementDTO | null>(null);
 
   // Dues state
   const [paymentList, setPaymentList] = useState<PendingPayment[]>(initialPayments || []);
@@ -472,10 +473,22 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
 
                     {b.receiptImageUrl && (
                       <div style={{ marginTop: 6, marginBottom: 6, padding: '6px 10px', borderRadius: 8, background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 11, color: '#3B82F6', fontWeight: 600 }}>📸 Customer Receipt Photo</span>
-                        <a href={b.receiptImageUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#3B82F6', fontWeight: 700, textDecoration: 'underline' }}>
-                          View Image
-                        </a>
+                        <span style={{ fontSize: 11, color: '#3B82F6', fontWeight: 600 }}>📸 POS Receipt Attached</span>
+                        <button
+                          type="button"
+                          onClick={() => setInspectingBill(b)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            fontSize: 11,
+                            color: '#3B82F6',
+                            fontWeight: 800,
+                            textDecoration: 'underline',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Inspect Receipt
+                        </button>
                       </div>
                     )}
 
@@ -937,7 +950,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                 TOTAL RAZORPAY VOLUME
               </span>
               <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--primary)', marginTop: 8 }}>
-                {safeCurrency(razorpaySummary?.totalVolumeInRupees ?? 27450)}
+                {safeCurrency(razorpaySummary?.totalVolumeInRupees ?? 0)}
               </div>
               <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>
                 ● 100% Verified in Escrow
@@ -954,7 +967,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                 ONLINE TRANSACTIONS
               </span>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#FFFFFF', marginTop: 8 }}>
-                {razorpayTransactions.length || 3}
+                {razorpayTransactions.length}
               </div>
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                 Subscriptions &amp; Dine-in Bills
@@ -1108,6 +1121,121 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* POS Receipt Image Inspection Modal */}
+      {inspectingBill && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(6px)',
+          display: 'grid',
+          placeItems: 'center',
+          zIndex: 1000,
+          padding: 20
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 24,
+            maxWidth: 600,
+            width: '100%',
+            padding: 24,
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--primary)', margin: 0 }}>
+                  POS Physical Receipt Inspection
+                </h3>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Invoice #{inspectingBill.posInvoiceNumber} · {inspectingBill.customerName} ({inspectingBill.outletName})
+                </span>
+              </div>
+              <button 
+                onClick={() => setInspectingBill(null)} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{
+              background: '#0a0a0a',
+              borderRadius: 16,
+              overflow: 'hidden',
+              textAlign: 'center',
+              marginBottom: 16,
+              border: '1px solid var(--border)',
+              padding: 10
+            }}>
+              <img
+                src={inspectingBill.receiptImageUrl}
+                alt="POS Receipt"
+                style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain', borderRadius: 8 }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18, background: 'var(--surface-alt)', padding: 12, borderRadius: 12 }}>
+              <div>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Gross Bill</span>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>₹{inspectingBill.grossAmount.toLocaleString('en-IN')}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Coupon Discount</span>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>-₹{inspectingBill.discountAmount.toLocaleString('en-IN')}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Net Claimed</span>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#10B981' }}>₹{inspectingBill.netPayable.toLocaleString('en-IN')}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  handleReject(inspectingBill.id, inspectingBill.posInvoiceNumber);
+                  setInspectingBill(null);
+                }}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 10,
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  color: '#EF4444',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Reject Receipt
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleApprove(inspectingBill.id, inspectingBill.posInvoiceNumber);
+                  setInspectingBill(null);
+                }}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 10,
+                  background: 'var(--primary)',
+                  border: 'none',
+                  color: '#070A09',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                Approve &amp; Burn Coupon
+              </button>
+            </div>
           </div>
         </div>
       )}

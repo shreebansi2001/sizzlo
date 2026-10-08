@@ -344,55 +344,6 @@ public class PaymentController {
 
     private static final List<Map<String, Object>> razorpayTransactions = Collections.synchronizedList(new ArrayList<>());
 
-    static {
-        // Seed initial transactions for audit & dashboard
-        seedInitialTransactions();
-    }
-
-    private static void seedInitialTransactions() {
-        Map<String, Object> t1 = new HashMap<>();
-        t1.put("orderId", "order_rzp_1728198421001");
-        t1.put("paymentId", "pay_rzp_99482103");
-        t1.put("customerName", "Rahul Mehta");
-        t1.put("customerMobile", "+91 98250 12345");
-        t1.put("type", "SUBSCRIPTION");
-        t1.put("planId", "SIGNATURE");
-        t1.put("amount", 10000.0);
-        t1.put("status", "CAPTURED");
-        t1.put("gatewayStatus", "SUCCESS");
-        t1.put("channel", "UPI_INTENT");
-        t1.put("timestamp", LocalDateTime.now().minusHours(2).toString());
-        razorpayTransactions.add(t1);
-
-        Map<String, Object> t2 = new HashMap<>();
-        t2.put("orderId", "order_rzp_1728197124002");
-        t2.put("paymentId", "pay_rzp_88319204");
-        t2.put("customerName", "Ananya Sharma");
-        t2.put("customerMobile", "+91 98980 67890");
-        t2.put("type", "BILL_SETTLEMENT");
-        t2.put("posInvoiceNumber", "POS-BDK-9402");
-        t2.put("amount", 2450.0);
-        t2.put("status", "CAPTURED");
-        t2.put("gatewayStatus", "SUCCESS");
-        t2.put("channel", "CREDIT_CARD");
-        t2.put("timestamp", LocalDateTime.now().minusHours(4).toString());
-        razorpayTransactions.add(t2);
-
-        Map<String, Object> t3 = new HashMap<>();
-        t3.put("orderId", "order_rzp_1728195821003");
-        t3.put("paymentId", "pay_rzp_77209144");
-        t3.put("customerName", "Vikram Patel");
-        t3.put("customerMobile", "+91 98240 55432");
-        t3.put("type", "SUBSCRIPTION");
-        t3.put("planId", "ELITE");
-        t3.put("amount", 15000.0);
-        t3.put("status", "CAPTURED");
-        t3.put("gatewayStatus", "SUCCESS");
-        t3.put("channel", "NET_BANKING");
-        t3.put("timestamp", LocalDateTime.now().minusHours(7).toString());
-        razorpayTransactions.add(t3);
-    }
-
     @GetMapping("/razorpay/transactions")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getRazorpayTransactions() {
         List<Map<String, Object>> copy = new ArrayList<>(razorpayTransactions);

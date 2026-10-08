@@ -179,9 +179,9 @@ export const StaffPage: React.FC<StaffPageProps> = () => {
     masterRevenueTarget: 2000000,
     floorSalesQuota: 1000000,
     corporateSalesQuota: 1000000,
-    achievedFloorRevenue: 750000,
-    achievedCorporateRevenue: 900000,
-    totalAchievedRevenue: 1650000,
+    achievedFloorRevenue: 0,
+    achievedCorporateRevenue: 0,
+    totalAchievedRevenue: 0,
     payrollApproved: false
   };
 
@@ -318,7 +318,7 @@ export const StaffPage: React.FC<StaffPageProps> = () => {
       {activeTab === 'targets' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Target Progress Tiles */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             <div className="kpi-card">
               <span className="kpi-label">MASTER MONTHLY TARGET</span>
               <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: 'var(--primary)' }}>
@@ -330,30 +330,30 @@ export const StaffPage: React.FC<StaffPageProps> = () => {
             <div className="kpi-card">
               <span className="kpi-label">FLOOR SALES ACHIEVED</span>
               <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#10B981' }}>
-                ₹{(currentTarget.achievedFloorRevenue / 100000).toFixed(1)}L / ₹{(currentTarget.floorSalesQuota / 100000).toFixed(1)}L
+                ₹{((currentTarget.achievedFloorRevenue || 0) / 100000).toFixed(1)}L / ₹{(currentTarget.floorSalesQuota / 100000).toFixed(1)}L
               </div>
               <span style={{ fontSize: 11, color: '#10B981', marginTop: 4 }}>
-                {Math.round((currentTarget.achievedFloorRevenue / (currentTarget.floorSalesQuota || 1)) * 100)}% Floor Quota hit
+                {Math.round(((currentTarget.achievedFloorRevenue || 0) / (currentTarget.floorSalesQuota || 1)) * 100)}% Floor Quota hit
               </span>
             </div>
 
             <div className="kpi-card">
               <span className="kpi-label">CORPORATE B2B ACHIEVED</span>
               <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#3B82F6' }}>
-                ₹{(currentTarget.achievedCorporateRevenue / 100000).toFixed(1)}L / ₹{(currentTarget.corporateSalesQuota / 100000).toFixed(1)}L
+                ₹{((currentTarget.achievedCorporateRevenue || 0) / 100000).toFixed(1)}L / ₹{(currentTarget.corporateSalesQuota / 100000).toFixed(1)}L
               </div>
               <span style={{ fontSize: 11, color: '#3B82F6', marginTop: 4 }}>
-                {Math.round((currentTarget.achievedCorporateRevenue / (currentTarget.corporateSalesQuota || 1)) * 100)}% Corporate Quota hit
+                {Math.round(((currentTarget.achievedCorporateRevenue || 0) / (currentTarget.corporateSalesQuota || 1)) * 100)}% Corporate Quota hit
               </span>
             </div>
 
             <div className="kpi-card">
               <span className="kpi-label">CUMULATIVE ACHIEVEMENT</span>
               <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: 'var(--gold-dark)' }}>
-                {Math.round((currentTarget.totalAchievedRevenue / (currentTarget.masterRevenueTarget || 1)) * 100)}%
+                {Math.round((((currentTarget.achievedFloorRevenue || 0) + (currentTarget.achievedCorporateRevenue || 0)) / (currentTarget.masterRevenueTarget || 1)) * 100)}%
               </div>
               <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                TL 1.5% Override Unlocked
+                {Math.round((((currentTarget.achievedFloorRevenue || 0) + (currentTarget.achievedCorporateRevenue || 0)) / (currentTarget.masterRevenueTarget || 1)) * 100) >= 100 ? 'TL 1.5% Override Unlocked' : 'Sales Target In Progress'}
               </span>
             </div>
           </div>

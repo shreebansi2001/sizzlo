@@ -150,6 +150,14 @@ public class DiningEventController {
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 
+    @PatchMapping("/bookings/{id}/checkin")
+    public ResponseEntity<ApiResponse<DiningEventBooking>> checkInAttendee(@PathVariable Long id) {
+        DiningEventBooking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking pass not found"));
+        booking.setStatus("CHECKED_IN");
+        return ResponseEntity.ok(ApiResponse.success("Guest checked in at door", bookingRepository.save(booking)));
+    }
+
     /**
      * Admin: Create a new event.
      */

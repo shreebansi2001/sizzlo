@@ -2,18 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Zap, Lightbulb } from 'lucide-react';
 import axios from 'axios';
 import { AIInsight } from '../types';
+import { fallbackInsights } from '../api/client';
 
 interface InsightsPageProps {
   insights?: AIInsight[];
 }
 
 export const InsightsPage: React.FC<InsightsPageProps> = ({ insights: initialInsights }) => {
-  const [insights, setInsights] = useState<AIInsight[]>(initialInsights || []);
+  const [insights, setInsights] = useState<AIInsight[]>(() => {
+    if (initialInsights && initialInsights.length > 0) return initialInsights;
+    return fallbackInsights;
+  });
 
   useEffect(() => {
     axios.get('/api/admin/dashboard')
       .then(res => {
-        if (res.data?.success && res.data.data?.aiInsights) {
+        if (res.data?.success && res.data.data?.aiInsights && res.data.data.aiInsights.length > 0) {
           setInsights(res.data.data.aiInsights);
         }
       })

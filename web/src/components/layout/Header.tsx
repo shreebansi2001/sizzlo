@@ -55,27 +55,28 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLo
         </div>
       </div>
 
-      <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <div className="header-actions">
         {/* Reset Feedback Notification */}
         {resetStatus && (
           <div style={{
             background: 'rgba(16, 185, 129, 0.15)',
             border: '1px solid #10B981',
-            color: '#065F46',
-            padding: '6px 12px',
+            color: '#10B981',
+            padding: '5px 10px',
             borderRadius: 8,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
-            gap: 6
+            gap: 5,
+            whiteSpace: 'nowrap'
           }}>
-            <Check size={14} color="#10B981" />
+            <Check size={13} color="#10B981" />
             <span>{resetStatus}</span>
           </div>
         )}
 
-        {/* Credentials Pill / Popover */}
+        {/* Admin Tools Popover */}
         <div style={{ position: 'relative' }}>
           <button 
             className="btn btn-outline btn-sm"
@@ -88,12 +89,13 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLo
               fontSize: 11,
               display: 'flex',
               alignItems: 'center',
-              gap: 6
+              gap: 5,
+              whiteSpace: 'nowrap'
             }}
-            title="Click to view Admin Credentials"
+            title="Admin Login & Database Utilities"
           >
-            <Key size={13} color="var(--gold-dark)" />
-            <span>Admin Credentials</span>
+            <Key size={13} color="var(--gold)" />
+            <span>Admin Access</span>
           </button>
 
           {showCreds && (
@@ -101,74 +103,78 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLo
               position: 'absolute',
               top: '115%',
               right: 0,
-              background: '#070A09',
+              background: '#0B0F0E',
               border: '1px solid var(--gold)',
-              borderRadius: 12,
-              padding: '12px 16px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              borderRadius: 14,
+              padding: '16px',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
               zIndex: 100,
-              minWidth: 260,
+              minWidth: 280,
               color: '#F8F9FA'
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', letterSpacing: 0.8, marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', letterSpacing: 0.8, marginBottom: 8 }}>
                 ADMIN LOGIN ACCESS
               </div>
               <div style={{ fontSize: 12, marginBottom: 4 }}>
-                <span style={{ color: '#8BA19A' }}>Link: </span>
+                <span style={{ color: '#8BA19A' }}>URL: </span>
                 <span style={{ color: '#FFFFFF', fontWeight: 600 }}>http://localhost:5180</span>
               </div>
               <div style={{ fontSize: 12, marginBottom: 4 }}>
                 <span style={{ color: '#8BA19A' }}>Email: </span>
                 <span style={{ color: '#E8B84A', fontWeight: 600 }}>admin@sizzlo.com</span>
               </div>
-              <div style={{ fontSize: 12 }}>
+              <div style={{ fontSize: 12, marginBottom: 12 }}>
                 <span style={{ color: '#8BA19A' }}>Password: </span>
                 <span style={{ color: '#E8B84A', fontWeight: 600 }}>admin123</span>
+              </div>
+
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 10 }}>
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={handleResetData}
+                  disabled={isResetting}
+                  style={{
+                    width: '100%',
+                    borderColor: '#EF4444',
+                    color: '#EF4444',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6
+                  }}
+                  title="Clear & reset all test reservations, activity logs, and floor tables"
+                >
+                  <RotateCcw size={12} className={isResetting ? 'spin' : ''} />
+                  <span>{isResetting ? 'Resetting...' : 'Clear Test Data'}</span>
+                </button>
               </div>
             </div>
           )}
         </div>
-
-        {/* Reset Data Button */}
-        <button
-          className="btn btn-outline btn-sm"
-          onClick={handleResetData}
-          disabled={isResetting}
-          style={{
-            borderColor: '#EF4444',
-            color: '#EF4444',
-            background: 'rgba(239, 68, 68, 0.05)',
-            fontSize: 11,
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5
-          }}
-          title="Clear & reset all test reservations, activity logs, and floor tables"
-        >
-          <RotateCcw size={12} className={isResetting ? 'spin' : ''} />
-          <span>{isResetting ? 'Resetting...' : 'Clear Test Data'}</span>
-        </button>
 
         {/* Outlet Switcher */}
         <select 
           className="outlet-select"
           value={selectedOutlet}
           onChange={(e) => setSelectedOutlet(e.target.value)}
+          style={{ whiteSpace: 'nowrap' }}
         >
-          <option value="all">🏢 All Outlets (Consolidated)</option>
-          <option value="navrangpura">Navrangpura (Flagship)</option>
+          <option value="all">🏢 All Outlets</option>
+          <option value="navrangpura">Navrangpura</option>
           <option value="shilaj">Shilaj</option>
           <option value="gandhinagar">Gandhinagar</option>
-          <option value="bodakdev">Bodakdev Signature</option>
+          <option value="bodakdev">Bodakdev</option>
         </select>
 
         {/* Global Search */}
         <div className="header-search">
-          <Search size={15} />
+          <Search size={14} />
           <input 
             type="text" 
-            placeholder="Search user, phone, or voucher..." 
+            placeholder="Search patron, phone..." 
             value={searchVal}
             onChange={(e) => setSearchVal(e.target.value)}
           />
@@ -179,7 +185,8 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLo
           <button 
             className="btn btn-outline btn-sm" 
             onClick={onRefresh}
-            title="Sync current feature data with Java 8 Spring Boot API"
+            title="Sync with Live Spring Boot API"
+            style={{ whiteSpace: 'nowrap' }}
           >
             <RefreshCw size={13} className={isLoading ? 'spin' : ''} />
             <span>Sync</span>
@@ -188,21 +195,22 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLo
 
         {/* Notification Bell */}
         <div style={{
-          width: 38,
-          height: 38,
-          borderRadius: 12,
+          width: 36,
+          height: 36,
+          borderRadius: 10,
           background: 'var(--surface)',
           border: '1px solid var(--border)',
           display: 'grid',
           placeItems: 'center',
           position: 'relative',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          flexShrink: 0
         }}>
-          <Bell size={16} color="var(--text-main)" />
+          <Bell size={15} color="var(--text-main)" />
           <span style={{
             position: 'absolute',
-            top: 8,
-            right: 8,
+            top: 7,
+            right: 7,
             width: 7,
             height: 7,
             borderRadius: '50%',
@@ -216,23 +224,9 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLo
           <button
             onClick={onLogout}
             title="Sign out of Admin Console"
-            style={{
-              height: 38,
-              padding: '0 12px',
-              borderRadius: 12,
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.25)',
-              color: '#EF4444',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
+            className="btn-header-logout"
           >
-            <LogOut size={14} />
+            <LogOut size={13} />
             <span>Logout</span>
           </button>
         )}

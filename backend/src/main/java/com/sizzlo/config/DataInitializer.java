@@ -80,6 +80,9 @@ public class DataInitializer implements CommandLineRunner {
         if (outletTimeSlotRepository.count() == 0) {
             seedTimeSlots();
         }
+        if (feedbackTicketRepository.count() == 0) {
+            seedFeedback();
+        }
     }
 
     private void seedTimeSlots() {
@@ -268,10 +271,10 @@ public class DataInitializer implements CommandLineRunner {
         st.setMasterTargetRevenue(2000000.0);
         st.setFloorTargetRevenue(1000000.0);
         st.setCorporateTargetRevenue(1000000.0);
-        st.setFloorAchievedRevenue(720000.0);
-        st.setCorporateAchievedRevenue(680000.0);
-        st.setFloorPlansSold(68);
-        st.setCorporatePlansSold(55);
+        st.setFloorAchievedRevenue(0.0);
+        st.setCorporateAchievedRevenue(0.0);
+        st.setFloorPlansSold(0);
+        st.setCorporatePlansSold(0);
         st.setPayrollApproved(false);
         salesTargetRepository.save(st);
     }
@@ -362,5 +365,68 @@ public class DataInitializer implements CommandLineRunner {
 
         waitlistEntryRepository.save(new WaitlistEntry("Mehta family", 4, 12));
         waitlistEntryRepository.save(new WaitlistEntry("Aarav Shah", 2, 7));
+    }
+
+    private void seedFeedback() {
+        // Positive Review (5 stars)
+        FeedbackTicket f1 = new FeedbackTicket();
+        f1.setCustomerName("Vikram Singhania");
+        f1.setCustomerMobile("+91 98250 11223");
+        f1.setOutletName("Yanki Sizzlerr Bodakdev");
+        f1.setRating(5);
+        f1.setFoodRating(5);
+        f1.setServiceRating(5);
+        f1.setCleanlinessRating(5);
+        f1.setComments("Exceptional sizzler experience and VIP table booking was seamless. The peri-peri sauce was perfection!");
+        f1.setIsGoogleRedirected(true);
+        f1.setIsUrgentRecovery(false);
+        f1.setStatus("RESOLVED");
+        f1.setResolutionNotes("Guest redirected to Google 5-star review page.");
+        feedbackTicketRepository.save(f1);
+
+        // Positive Review (4 stars)
+        FeedbackTicket f2 = new FeedbackTicket();
+        f2.setCustomerName("Pooja Shah");
+        f2.setCustomerMobile("+91 97129 44556");
+        f2.setOutletName("House of Yanki CG Road");
+        f2.setRating(4);
+        f2.setFoodRating(5);
+        f2.setServiceRating(4);
+        f2.setCleanlinessRating(4);
+        f2.setComments("Loved the sizzler combos and complimentary garlic bread. Wait time was a little longer than usual on Saturday.");
+        f2.setIsGoogleRedirected(true);
+        f2.setIsUrgentRecovery(false);
+        f2.setStatus("RESOLVED");
+        feedbackTicketRepository.save(f2);
+
+        // Urgent Recovery Ticket (2 stars) - Requires Manager Intervention
+        FeedbackTicket f3 = new FeedbackTicket();
+        f3.setCustomerName("Rohan Verma");
+        f3.setCustomerMobile("+91 99090 77889");
+        f3.setOutletName("Yanki Sizzlerr Bodakdev");
+        f3.setRating(2);
+        f3.setFoodRating(2);
+        f3.setServiceRating(2);
+        f3.setCleanlinessRating(4);
+        f3.setComments("The sizzler plate was barely warm upon arrival and coupon redemption took over 15 minutes at the cash counter.");
+        f3.setIsGoogleRedirected(false);
+        f3.setIsUrgentRecovery(true);
+        f3.setStatus("OPEN");
+        feedbackTicketRepository.save(f3);
+
+        // Urgent Recovery Ticket (1 star) - Another Manager Escalation
+        FeedbackTicket f4 = new FeedbackTicket();
+        f4.setCustomerName("Ananya Desai");
+        f4.setCustomerMobile("+91 98980 33445");
+        f4.setOutletName("Dough by Yanki Sindhu Bhavan");
+        f4.setRating(1);
+        f4.setFoodRating(1);
+        f4.setServiceRating(2);
+        f4.setCleanlinessRating(3);
+        f4.setComments("Reserved table was not ready even after 25 minutes of waiting. Very disappointed with host station.");
+        f4.setIsGoogleRedirected(false);
+        f4.setIsUrgentRecovery(true);
+        f4.setStatus("OPEN");
+        feedbackTicketRepository.save(f4);
     }
 }

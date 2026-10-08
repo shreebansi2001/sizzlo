@@ -7,7 +7,7 @@ import {
 import { 
   fetchBanquetLeads, assignBanquetLead, BanquetLeadDTO,
   fetchDiningEvents, createDiningEvent, updateDiningEvent, deleteDiningEvent,
-  fetchDiningEventAttendees, DiningEventAdminDTO, DiningAttendeeDTO
+  fetchDiningEventAttendees, checkInAttendee, DiningEventAdminDTO, DiningAttendeeDTO
 } from '../api/client';
 import { EventItem } from '../types';
 
@@ -157,6 +157,15 @@ export const EventsPage: React.FC<EventsPageProps> = () => {
     finally {
       setIsLoadingAttendees(false);
     }
+  };
+
+  const handleCheckIn = async (attendeeId: number) => {
+    try {
+      await checkInAttendee(attendeeId);
+      setAttendees(prev => prev.map(a => a.id === attendeeId ? { ...a, status: 'CHECKED_IN' } : a));
+      setNotice(`✅ Attendee #${attendeeId} successfully checked in at door!`);
+      setTimeout(() => setNotice(null), 3000);
+    } catch (_) {}
   };
 
   const totalGuests = leads.reduce((acc, l) => acc + (l.paxCount || 0), 0);
@@ -954,6 +963,7 @@ export const EventsPage: React.FC<EventsPageProps> = () => {
                       <th>DEPOSIT PAID</th>
                       <th>WHATSAPP PASS</th>
                       <th>STATUS</th>
+                      <th style={{ textAlign: 'right' }}>DOOR ADMISSION</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -993,11 +1003,35 @@ export const EventsPage: React.FC<EventsPageProps> = () => {
                             borderRadius: 6,
                             fontSize: 10,
                             fontWeight: 700,
-                            background: 'rgba(78, 227, 184, 0.15)',
-                            color: '#4EE3B8'
+                            background: a.status === 'CHECKED_IN' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(78, 227, 184, 0.15)',
+                            color: a.status === 'CHECKED_IN' ? '#10B981' : '#4EE3B8'
                           }}>
                             {a.status}
                           </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {a.status === 'CHECKED_IN' ? (
+                            <span style={{ fontSize: 11, color: '#10B981', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                              <CheckCircle size={13} /> Admitted
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleCheckIn(a.id)}
+                              style={{
+                                padding: '5px 12px',
+                                borderRadius: 8,
+                                background: 'var(--primary)',
+                                border: 'none',
+                                color: '#070A09',
+                                fontSize: 11,
+                                fontWeight: 800,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Check-In
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
