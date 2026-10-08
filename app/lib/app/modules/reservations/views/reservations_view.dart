@@ -102,15 +102,18 @@ class ReservationsView extends GetView<ReservationsController> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        isSub ? 'VIP Priority Table' : 'Table Reservation (Preview)',
-                        style: GoogleFonts.outfit(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: isSub ? AppColors.goldAccent : Colors.white,
+                      Expanded(
+                        child: Text(
+                          isSub ? 'VIP Priority Table' : 'Table Reservation',
+                          style: GoogleFonts.outfit(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: isSub ? AppColors.goldAccent : Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
@@ -119,7 +122,7 @@ class ReservationsView extends GetView<ReservationsController> {
                           border: isSub ? null : Border.all(color: AppColors.goldAccent.withOpacity(0.5)),
                         ),
                         child: Text(
-                          isSub ? 'VIP PRIORITY' : 'SUBSCRIBER ONLY',
+                          isSub ? 'VIP PRIORITY' : 'VIP ONLY',
                           style: GoogleFonts.outfit(
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
