@@ -103,7 +103,7 @@ class ReservationsView extends GetView<ReservationsController> {
                   Row(
                     children: [
                       Text(
-                        isSub ? 'VIP Priority Table' : 'Instant Table Booking',
+                        isSub ? 'VIP Priority Table' : 'Table Reservation (Preview)',
                         style: GoogleFonts.outfit(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -114,15 +114,16 @@ class ReservationsView extends GetView<ReservationsController> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: isSub ? const Color(0xFF0F2E25) : const Color(0xFF26201A),
+                          color: isSub ? const Color(0xFF0F2E25) : const Color(0xFF2E2214),
                           borderRadius: BorderRadius.circular(6),
+                          border: isSub ? null : Border.all(color: AppColors.goldAccent.withOpacity(0.5)),
                         ),
                         child: Text(
-                          isSub ? '₹0 PERK' : 'DINE-IN',
+                          isSub ? 'VIP PRIORITY' : 'SUBSCRIBER ONLY',
                           style: GoogleFonts.outfit(
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
-                            color: isSub ? const Color(0xFF4EE3B8) : Colors.grey[400],
+                            color: isSub ? const Color(0xFF4EE3B8) : AppColors.goldAccent,
                           ),
                         ),
                       ),
@@ -132,7 +133,7 @@ class ReservationsView extends GetView<ReservationsController> {
                   Text(
                     isSub
                         ? 'Active subscriber perk: Complimentary priority seating & VIP booth greeting.'
-                        : 'Book your table instantly. ₹100 deposit is 100% deductible from your final bill.',
+                        : 'Non-subscribed members can browse venues and slots. Subscribe to unlock instant table reservations.',
                     style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400], height: 1.3),
                   ),
                 ],
@@ -443,18 +444,18 @@ class ReservationsView extends GetView<ReservationsController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isSub ? 'VIP Priority Table · ₹0 Deposit' : '₹100 Holding Deposit (100% POS Deductible)',
+                          isSub ? 'VIP Priority Table · Included in Plan' : 'VIP Member Privilege · Table Reservation',
                           style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: isSub ? AppColors.goldAccent : Colors.white,
+                            color: AppColors.goldAccent,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           isSub
                               ? 'Your table is guaranteed with priority host seating. Tables held for 15 mins.'
-                              : 'Deposit holds your table and will be subtracted from your final meal POS bill.',
+                              : 'Instant table reservations are reserved for Yanki VIP subscribers. Subscribe to reserve tables instantly.',
                           style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[400]),
                         ),
                       ],
@@ -472,7 +473,7 @@ class ReservationsView extends GetView<ReservationsController> {
                 ? 'Reserving Table...'
                 : controller.isSubscribedMember.value
                     ? 'Confirm VIP Priority Table (₹0)'
-                    : 'Pay ₹100 Deposit & Reserve Table',
+                    : 'Subscribe to Reserve Table 🔒',
             isLoading: controller.isSubmitting.value,
             onPressed: controller.confirmAndBookTable,
           )),

@@ -201,7 +201,7 @@ class BanquetController extends GetxController {
         _showSuccessDialog(
           title: 'Banquet Inquiry Received!',
           message:
-              'Your inquiry for ${banquetPax.value} guests at ${selectedBanquetVenue.value} on ${DateFormat('dd MMM yyyy').format(banquetDate.value)} has been dispatched directly to the House of Yanki Event Desk.\n\nOur banquet manager will review available hall slots and contact you at $phone within 2 hours.',
+              'Your inquiry for ${banquetPax.value} guests at ${selectedBanquetVenue.value} on ${DateFormat('dd MMM yyyy').format(banquetDate.value)} has been recorded.\n\nOur House of Yanki Event Desk team will reach out to you within 24 hours at $phone to confirm hall availability and discuss custom menu options.',
         );
       } else {
         _showError('Failed to dispatch inquiry. Please check your network and try again.');
@@ -259,9 +259,9 @@ class BanquetController extends GetxController {
         odcNotesController.clear();
         await loadMyInquiries();
         _showSuccessDialog(
-          title: 'ODC Outdoor Catering Inquiry Sent!',
+          title: 'ODC Catering Inquiry Received!',
           message:
-              'Your outdoor catering request for ${odcPax.value} guests in ${odcCity.value} on ${DateFormat('dd MMM yyyy').format(odcDate.value)} has been recorded.\n\nOur Executive Chef & ODC event planner will contact you at $phone with live counter menu setups and tasting details.',
+              'Your outdoor catering inquiry for ${odcPax.value} guests in ${odcCity.value} on ${DateFormat('dd MMM yyyy').format(odcDate.value)} has been recorded.\n\nOur Executive Chef & ODC event planner will reach out to you within 24 hours at $phone with live counter setups, menu packages, and tasting details.',
         );
       } else {
         _showError('Failed to dispatch inquiry. Please check your network and try again.');

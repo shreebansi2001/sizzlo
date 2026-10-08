@@ -214,6 +214,27 @@ class BanquetView extends GetView<BanquetController> {
             ],
           ),
         ),
+        // Guaranteed 24-Hour Callback Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF13221C),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF1E4D3C)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.schedule_rounded, color: Color(0xFF4EE3B8), size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Guaranteed Callback: Our Banquet & Event team will reach out to you within 24 hours of inquiry submission.',
+                  style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFFB4E7D6), height: 1.3),
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 18),
 
         // Main Banquet Form Container
@@ -539,6 +560,29 @@ class BanquetView extends GetView<BanquetController> {
                       style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400], height: 1.3),
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Guaranteed 24-Hour Callback Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF13221C),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF1E4D3C)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.schedule_rounded, color: Color(0xFF4EE3B8), size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Guaranteed Callback: Our Outdoor Catering (ODC) team will reach out to you within 24 hours of inquiry submission.',
+                  style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFFB4E7D6), height: 1.3),
                 ),
               ),
             ],
