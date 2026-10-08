@@ -19,9 +19,10 @@ import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianG
 import axios from 'axios';
 import { Member, SubscriptionPlan } from '../types';
 import { fetchPlans, addOfferToPlan, removeOfferFromPlan, resetPlans } from '../api/client';
+import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
 
 export const MembershipsPage: React.FC = () => {
-  const [memberList, setMemberList] = useState<Member[]>([]);
+  const [memberList, setMemberList] = useState<Member[]>(DEFAULT_USERS_DATASET);
   const [membershipRev, setMembershipRev] = useState('₹1.10 Lakh');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);

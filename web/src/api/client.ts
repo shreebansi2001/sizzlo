@@ -98,7 +98,9 @@ export const fallbackOutlets: Outlet[] = [];
 
 export const fallbackInsights: AIInsight[] = [];
 
-export const fallbackCustomers: Member[] = [];
+import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
+
+export const fallbackCustomers: Member[] = DEFAULT_USERS_DATASET;
 
 export const fallbackReservations: Reservation[] = [];
 

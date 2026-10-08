@@ -3,9 +3,10 @@ import { Sparkles, Gift, RefreshCw, Award, ArrowUpRight } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import axios from 'axios';
 import { Member } from '../types';
+import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
 
 export const LoyaltyPage: React.FC = () => {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<Member[]>(DEFAULT_USERS_DATASET);
 
   useEffect(() => {
     axios.get('/api/members')
