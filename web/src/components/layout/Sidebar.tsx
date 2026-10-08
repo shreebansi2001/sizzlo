@@ -19,6 +19,7 @@ import {
   ScanLine,
   LogOut,
   UserCheck,
+  Bell,
   X
 } from 'lucide-react';
 
@@ -63,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLog
     {
       group: 'Growth & Governance',
       items: [
-        { id: 'marketing', label: 'Marketing Campaigns', icon: Megaphone },
+        { id: 'marketing', label: 'Broadcast & Notifications', icon: Bell },
         { id: 'staff', label: 'Staff & Roles', icon: ShieldCheck },
         { id: 'feedback', label: 'User Feedback', icon: MessageSquareText },
       ],

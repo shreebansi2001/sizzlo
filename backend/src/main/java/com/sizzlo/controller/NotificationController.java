@@ -81,11 +81,16 @@ public class NotificationController {
                     commonService.sendNotificationWhatsApp(targetPhone, req.title, req.message);
                 }
             } else {
-                // For broadcast, send to first 10 active members with valid phones to avoid flooding gateway
                 List<MemberProfile> members = memberProfileRepository.findAll();
                 int sentCount = 0;
                 for (MemberProfile m : members) {
-                    if (m.getMobile() != null && !m.getMobile().trim().isEmpty()) {
+                    boolean eligible = true;
+                    String tier = m.getSubscriptionTier();
+                    boolean isSub = tier != null && !"REGISTERED".equalsIgnoreCase(tier) && !"NONE".equalsIgnoreCase(tier);
+                    if ("VIP".equalsIgnoreCase(req.targetType) && !isSub) eligible = false;
+                    if ("FREE".equalsIgnoreCase(req.targetType) && isSub) eligible = false;
+
+                    if (eligible && m.getMobile() != null && !m.getMobile().trim().isEmpty()) {
                         commonService.sendNotificationWhatsApp(m.getMobile(), req.title, req.message);
                         sentCount++;
                         if (sentCount >= 10) break;
@@ -95,6 +100,11 @@ public class NotificationController {
         }
 
         return ResponseEntity.ok(ApiResponse.success("Notification dispatched successfully", saved));
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<List<NotificationEntity>>> getNotificationHistory() {
+        return ResponseEntity.ok(ApiResponse.success(notificationRepository.findAllByOrderByCreatedAtDesc()));
     }
 
     @GetMapping
@@ -125,25 +135,46 @@ public class NotificationController {
         String searchMobile = profile != null ? profile.getMobile() : (mobile != null ? mobile.trim() : null);
         String cleanPhone = searchMobile != null ? searchMobile.replaceAll("\\D", "") : null;
 
-        // 2. Fetch persistent database notifications (Broadcast + User specific)
-        List<NotificationEntity> dbNotifs = notificationRepository.findUserNotifications(searchMemId, cleanPhone);
+        boolean isSubscriber = false;
+        if (profile != null) {
+            String tier = profile.getSubscriptionTier();
+            isSubscriber = tier != null && !"REGISTERED".equalsIgnoreCase(tier) && !"NONE".equalsIgnoreCase(tier);
+        }
+
+        // 2. Fetch persistent database notifications (Broadcast + VIP + Free + User specific)
+        List<NotificationEntity> dbNotifs = notificationRepository.findAllByOrderByCreatedAtDesc();
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("dd MMM, hh:mm a");
         for (NotificationEntity n : dbNotifs) {
-            String timeStr = n.getCreatedAt() != null ? n.getCreatedAt().format(timeFmt) : "Recent";
-            list.add(new NotificationDto(
-                    n.getId() != null ? n.getId() : idCounter++,
-                    n.getType() != null ? n.getType() : "tag",
-                    n.getTitle(),
-                    n.getDescription(),
-                    timeStr
-            ));
+            boolean matches = false;
+            String tType = n.getTargetType() != null ? n.getTargetType().toUpperCase() : "ALL";
+            if ("ALL".equals(tType)) {
+                matches = true;
+            } else if ("VIP".equals(tType) && isSubscriber) {
+                matches = true;
+            } else if ("FREE".equals(tType) && !isSubscriber) {
+                matches = true;
+            } else if ("SPECIFIC".equals(tType)) {
+                if (searchMemId != null && searchMemId.equalsIgnoreCase(n.getTargetMembershipId())) {
+                    matches = true;
+                } else if (cleanPhone != null && n.getTargetMobile() != null && n.getTargetMobile().replaceAll("\\D", "").contains(cleanPhone)) {
+                    matches = true;
+                }
+            }
+            if (matches) {
+                String timeStr = n.getCreatedAt() != null ? n.getCreatedAt().format(timeFmt) : "Recent";
+                list.add(new NotificationDto(
+                        n.getId() != null ? n.getId() : idCounter++,
+                        n.getType() != null ? n.getType() : "tag",
+                        n.getTitle(),
+                        n.getDescription(),
+                        timeStr
+                ));
+            }
         }
 
         // 3. User account dynamic alerts (if profile exists and is subscriber)
         if (profile != null) {
             String tier = profile.getSubscriptionTier();
-            boolean isSubscriber = tier != null && !"REGISTERED".equalsIgnoreCase(tier) && !"NONE".equalsIgnoreCase(tier);
-
             if (isSubscriber) {
                 list.add(new NotificationDto(
                         idCounter++,

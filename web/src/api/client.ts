@@ -313,12 +313,53 @@ export async function fetchReservations(): Promise<Reservation[]> {
 
 export async function fetchOutlets(): Promise<Outlet[]> {
   try {
-    const res = await apiClient.get('/admin/outlets');
-    if (res.data?.success && res.data.data?.length) {
+    const res = await apiClient.get('/outlets/all');
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length) {
       return res.data.data;
+    }
+    const adminRes = await apiClient.get('/admin/outlets');
+    if (adminRes.data?.success && adminRes.data.data?.length) {
+      return adminRes.data.data;
     }
   } catch (_) {}
   return fallbackOutlets;
+}
+
+export async function fetchUpcomingOutlets(): Promise<Outlet[]> {
+  try {
+    const res = await apiClient.get('/outlets/upcoming');
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return [];
+}
+
+export async function createOutlet(outlet: Partial<Outlet>): Promise<{ success: boolean; data?: Outlet; message?: string }> {
+  try {
+    const res = await apiClient.post('/outlets', outlet);
+    return { success: true, data: res.data?.data, message: res.data?.message };
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message };
+  }
+}
+
+export async function updateOutlet(id: number | string, outlet: Partial<Outlet>): Promise<{ success: boolean; data?: Outlet; message?: string }> {
+  try {
+    const res = await apiClient.put(`/outlets/${id}`, outlet);
+    return { success: true, data: res.data?.data, message: res.data?.message };
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message };
+  }
+}
+
+export async function deleteOutlet(id: number | string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await apiClient.delete(`/outlets/${id}`);
+    return { success: true, message: res.data?.message };
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message };
+  }
 }
 
 export async function resetAllData(): Promise<{ success: boolean; message: string }> {
@@ -613,7 +654,7 @@ export async function fetchRazorpaySummary(): Promise<RazorpaySummaryDTO | null>
 }
 
 export interface SendNotificationPayload {
-  targetType: 'ALL' | 'SPECIFIC';
+  targetType: 'ALL' | 'SPECIFIC' | 'VIP' | 'FREE';
   targetMembershipId?: string;
   targetMobile?: string;
   title: string;
@@ -632,6 +673,16 @@ export async function sendNotification(payload: SendNotificationPayload) {
       message: err.response?.data?.message || err.message || 'Failed to dispatch notification',
     };
   }
+}
+
+export async function fetchNotificationHistory(): Promise<any[]> {
+  try {
+    const res = await apiClient.get('/notifications/history');
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return [];
 }
 
 // Dynamic Outlet Time Slots API

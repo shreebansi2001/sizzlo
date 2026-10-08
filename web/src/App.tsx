@@ -131,8 +131,9 @@ export function App() {
         return { title: 'Venues & Dining Concepts', subtitle: 'Compare venue revenues, ABV, and ratings' };
       case 'events':
         return { title: 'Exclusive Events & Sunday Brunches', subtitle: 'Manage Sunday Brunches, Chef Table passes, guest capacities, attendee lists and banquet desk' };
+      case 'notifications':
       case 'marketing':
-        return { title: 'Marketing & Campaigns', subtitle: 'Audience reach, automated journeys and broadcast messaging' };
+        return { title: 'Broadcast & Push Notifications', subtitle: 'Compose and dispatch instant push notifications, WhatsApp alerts, and subscriber broadcasts' };
       case 'staff':
         return { title: 'Staff & Role Management', subtitle: 'Roles, RBAC permissions and security governance' };
       case 'feedback':
@@ -206,7 +207,7 @@ export function App() {
         {currentTab === 'events' && (
           <EventsPage events={[]} />
         )}
-        {currentTab === 'marketing' && (
+        {(currentTab === 'marketing' || currentTab === 'notifications') && (
           <MarketingPage channels={[]} presets={[]} />
         )}
         {currentTab === 'staff' && (
