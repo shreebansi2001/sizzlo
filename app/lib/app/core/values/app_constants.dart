@@ -18,10 +18,10 @@ class AppConstants {
     if (kDebugMode) {
       try {
         if (Platform.isAndroid) {
-          return 'http://10.0.2.2:8080/api';
+          return 'http://127.0.0.1:8085/api';
         }
       } catch (_) {}
-      return 'http://127.0.0.1:8080/api';
+      return 'http://127.0.0.1:8085/api';
     }
     return 'https://cheeragskitchen.in/Sizzlo/api';
   }
