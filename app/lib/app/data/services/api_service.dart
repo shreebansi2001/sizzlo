@@ -532,6 +532,24 @@ class ApiService {
     }
   }
 
+  Future<List<BanquetInquiryModel>> getMyBanquetInquiries(String mobile) async {
+    try {
+      final res = await _client.get(
+        Uri.parse('${AppConstants.baseUrl}/banquets/my?mobile=${Uri.encodeComponent(mobile)}'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        if (data['success'] == true && data['data'] is List) {
+          return (data['data'] as List)
+              .map((e) => BanquetInquiryModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
   // --- POST-DINING REVIEWS (Chapter 11) ---
 
   Future<Map<String, dynamic>?> submitFeedback({

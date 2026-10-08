@@ -15,12 +15,7 @@ class AppConstants {
     if (kIsWeb) {
       return '/api';
     }
-    try {
-      if (Platform.isAndroid) {
-        return 'http://10.0.2.2:8080/api';
-      }
-    } catch (_) {}
-    return 'http://127.0.0.1:8080/api';
+    return 'https://cheeragskitchen.in/Sizzlo/api';
   }
 
   static const String defaultMembershipId = '';

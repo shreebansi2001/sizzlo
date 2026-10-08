@@ -4,7 +4,11 @@ import '../../../data/models/reservation_model.dart';
 import '../../../data/models/banquet_inquiry_model.dart';
 import '../../../data/services/api_service.dart';
 import '../../../core/values/app_constants.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../widgets/sizzlo_dialogs.dart';
+import '../../../routes/app_routes.dart';
+import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ReservationsController extends GetxController {
   final ApiService _apiService = ApiService();
@@ -43,8 +47,19 @@ class ReservationsController extends GetxController {
     '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM', '9:00 PM', '9:30 PM', '10:00 PM'
   ].obs;
 
+  final RxString selectedSeatingArea = 'Indoor AC Lounge'.obs;
+  final List<String> seatingAreas = [
+    'Indoor AC Lounge',
+    'Romantic Corner',
+    'Window View',
+    'Family Booth',
+    'Terrace Lounge',
+  ];
+
+  final Rx<DateTime?> customBookingDate = Rx<DateTime?>(null);
+
   final List<String> occasionTags = [
-    'Regular', 'Birthday', 'Anniversary', 'Business'
+    'Regular', 'Birthday', 'Anniversary', 'Business', 'Date Night'
   ];
 
   final List<String> banquetCategories = [
@@ -181,24 +196,59 @@ class ReservationsController extends GetxController {
 
   void setGuestCount(int count) {
     if (count >= 20) {
-      bookingMode.value = 1; // Auto-redirect to Banquet & ODC (Chapter 06.1 SRS)
-      banquetPax.value = count;
       Get.snackbar(
         'Group Size 20+ Covers',
-        'Parties of 20 or more are routed to House of Yanki Banquets & ODC Event Desk.',
+        'Parties of 20 or more are handled by House of Yanki Banquets & ODC Event Desk.',
         backgroundColor: const Color(0xFF2C241B),
         colorText: const Color(0xFFD4AF37),
         duration: const Duration(seconds: 4),
+        mainButton: TextButton(
+          onPressed: () => Get.toNamed(AppRoutes.BANQUET_ODC),
+          child: const Text('Go to Banquet', style: TextStyle(color: Color(0xFF4EE3B8), fontWeight: FontWeight.bold)),
+        ),
       );
     } else {
       guestCount.value = count;
     }
   }
 
-  /// Triggers booking dialog for Regular Dine-in
+  Future<void> pickCustomDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: customBookingDate.value ?? DateTime.now().add(const Duration(days: 2)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.goldAccent,
+              onPrimary: Colors.black,
+              surface: Color(0xFF1E1A16),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF141210),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      customBookingDate.value = picked;
+      selectedBookingDay.value = DateFormat('EEE, dd MMM').format(picked);
+    }
+  }
+
+  /// Triggers booking dialog for Regular Dine-in (VIP Members only)
   void confirmAndBookTable() {
+    // Non-subscribed users can only view; booking requires active subscription
+    if (!isSubscribedMember.value) {
+      _showSubscriptionRequiredDialog();
+      return;
+    }
+
     if (guestCount.value >= 20) {
-      bookingMode.value = 1;
+      Get.toNamed(AppRoutes.BANQUET_ODC);
       return;
     }
 
@@ -224,6 +274,77 @@ class ReservationsController extends GetxController {
       isVip: isVipTable.value,
       specialRequests: '${selectedOccasion.value} occasion. ${specialNotesController.text}',
       onConfirm: _executeBooking,
+    );
+  }
+
+  void _showSubscriptionRequiredDialog() {
+    Get.dialog(
+      Dialog(
+        backgroundColor: const Color(0xFF141312),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.goldAccent, width: 1.2),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.goldAccent.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.goldAccent),
+                ),
+                child: const Icon(Icons.workspace_premium_rounded, color: AppColors.goldAccent, size: 34),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'VIP Subscription Required',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Instant table reservations & priority seating are exclusive privileges for Yanki VIP Subscribers.\n\nSubscribe now to unlock table bookings across all outlets, 12 welcome vouchers, and free birthday rewards!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[300], height: 1.4),
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.goldAccent,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () {
+                    Get.back();
+                    Get.toNamed(AppRoutes.PLANS);
+                  },
+                  child: Text(
+                    'Explore VIP Subscription Plans',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Get.back(),
+                child: Text('Maybe Later', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

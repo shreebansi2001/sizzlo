@@ -17,7 +17,6 @@ import '../../coupons/views/coupons_view.dart';
 import '../../loyalty/views/loyalty_view.dart';
 import '../../notifications/views/notifications_view.dart';
 import '../../profile/views/profile_view.dart';
-import '../../reservations/controllers/reservations_controller.dart';
 import '../../../core/values/app_constants.dart';
 import '../../../widgets/profile_avatar_widget.dart';
 
@@ -163,9 +162,9 @@ class HomeView extends GetView<HomeController> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Avatar Button navigating to Profile
+                    // Avatar Button navigating to Personal Information screen
                     GestureDetector(
-                      onTap: () => Get.find<NavigationController>().changeTab(3),
+                      onTap: () => Get.toNamed(AppRoutes.PERSONAL_INFO),
                       child: ProfileAvatarWidget(
                         radius: 20,
                         imageUrl: m.profilePictureUrl,
@@ -443,12 +442,7 @@ class HomeView extends GetView<HomeController> {
               icon: Icons.celebration_rounded,
               label: 'Banquet & ODC',
               badge: '20+',
-              onTap: () {
-                if (Get.isRegistered<ReservationsController>()) {
-                  Get.find<ReservationsController>().bookingMode.value = 1;
-                }
-                Get.toNamed(AppRoutes.RESERVATIONS);
-              },
+              onTap: () => Get.toNamed(AppRoutes.BANQUET_ODC),
             ),
             _buildOpButton(
               icon: Icons.storefront_rounded,
