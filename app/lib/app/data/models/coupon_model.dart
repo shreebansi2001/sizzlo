@@ -13,6 +13,10 @@ class CouponModel {
   final String? burnedInvoiceNumber;
   final String? burnedCashierId;
   final String? burnedAt;
+  final String? targetAudience;
+  final bool vipOnly;
+  final String? discountType;
+  final double? discountValue;
 
   CouponModel({
     required this.id,
@@ -29,9 +33,14 @@ class CouponModel {
     this.burnedInvoiceNumber,
     this.burnedCashierId,
     this.burnedAt,
+    this.targetAudience,
+    this.vipOnly = false,
+    this.discountType,
+    this.discountValue,
   });
 
   bool get isAvailable => status.toLowerCase() == 'available' && leftCount > 0;
+  bool get isVipExclusive => vipOnly || (targetAudience != null && targetAudience != 'ALL' && targetAudience != 'NON_SUBSCRIBED');
 
   factory CouponModel.fromJson(Map<String, dynamic> json) {
     return CouponModel(
@@ -49,6 +58,10 @@ class CouponModel {
       burnedInvoiceNumber: json['burnedInvoiceNumber']?.toString(),
       burnedCashierId: json['burnedCashierId']?.toString(),
       burnedAt: json['burnedAt']?.toString(),
+      targetAudience: json['targetAudience']?.toString(),
+      vipOnly: json['vipOnly'] ?? false,
+      discountType: json['discountType']?.toString(),
+      discountValue: (json['discountValue'] as num?)?.toDouble(),
     );
   }
 

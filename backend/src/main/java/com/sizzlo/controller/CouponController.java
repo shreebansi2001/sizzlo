@@ -37,8 +37,8 @@ public class CouponController {
     }
 
     /**
-     * Strict requirement: Coupons ONLY show after a plan has been purchased.
-     * If user is unregistered, or on the free "REGISTERED" tier, return an empty list.
+     * If membershipId/mobile is passed: returns user's assigned coupons (only for active subscribed tiers).
+     * If neither is passed (e.g. Web Admin portal): returns all coupons in database.
      */
     @GetMapping
     public ResponseEntity<ApiResponse<List<Coupon>>> getAllCoupons(
@@ -66,11 +66,29 @@ public class CouponController {
         return ResponseEntity.ok(ApiResponse.success(userCoupons));
     }
 
+    /**
+     * Catalog of all active vouchers for exploration / preview.
+     * Both VIP members and non-subscribed guests can view the catalog.
+     * Non-subscribed guests see VIP-exclusive vouchers with lock state.
+     */
+    @GetMapping("/catalog")
+    public ResponseEntity<ApiResponse<List<Coupon>>> getCatalog(
+            @RequestParam(required = false) String membershipId,
+            @RequestParam(required = false) String mobile) {
+        List<Coupon> allAvailable = couponRepository.findByStatus("available");
+        return ResponseEntity.ok(ApiResponse.success(allAvailable));
+    }
+
     @GetMapping("/available")
     public ResponseEntity<ApiResponse<List<Coupon>>> getAvailableCoupons(
             @RequestParam(required = false) String membershipId,
             @RequestParam(required = false) String mobile) {
         
+        if ((membershipId == null || membershipId.trim().isEmpty()) && 
+            (mobile == null || mobile.trim().isEmpty())) {
+            return ResponseEntity.ok(ApiResponse.success(couponRepository.findByStatus("available")));
+        }
+
         MemberProfile profile = resolveProfile(membershipId, mobile);
         if (profile == null) {
             return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));

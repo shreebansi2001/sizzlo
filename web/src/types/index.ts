@@ -30,7 +30,12 @@ export interface Coupon {
   expiryDate: string;
   status: 'available' | 'used' | 'expired';
   outlet: string;
-  color: 'royal' | 'gold';
+  color: 'royal' | 'gold' | string;
+  targetAudience?: string;
+  vipOnly?: boolean;
+  imageUrl?: string;
+  discountType?: string;
+  discountValue?: number;
 }
 
 export interface Reservation {
@@ -44,6 +49,21 @@ export interface Reservation {
   status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Completed';
   vip: boolean;
   specialRequests?: string;
+  tierPriorityTag?: string;
+  bookingAdvance?: number;
+  advancePaid?: boolean;
+  advanceDeducted?: boolean;
+  posSettlementId?: number;
+}
+
+export interface OutletTimeSlot {
+  id: number;
+  outlet: string;
+  slotTime: string;
+  session: 'LUNCH' | 'DINNER';
+  active: boolean;
+  maxCovers: number;
+  displayOrder: number;
 }
 
 export interface Outlet {

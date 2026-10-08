@@ -51,7 +51,7 @@ class CouponsView extends GetView<CouponsController> {
   Widget _buildNonSubscribedView() {
     return Column(
       children: [
-        // Active Subscription Banner matching Image 3
+        // Active Subscription Banner
         GestureDetector(
           onTap: () => Get.toNamed(AppRoutes.PLANS),
           child: Container(
@@ -103,70 +103,122 @@ class CouponsView extends GetView<CouponsController> {
           ),
         ),
 
-        // Empty state matching Image 3
+        // Voucher Catalog List or Empty Fallback
         Expanded(
-          child: Center(
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 24),
-              decoration: BoxDecoration(
-                color: const Color(0xFF131715),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.06)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+          child: Obx(() {
+            if (controller.isLoading.value) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.flame),
+              );
+            }
+
+            final list = controller.coupons;
+            if (list.isEmpty) {
+              return Center(
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF131715),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withOpacity(0.06)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.confirmation_number_outlined,
+                        size: 54,
+                        color: Colors.white.withOpacity(0.25),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Nothing here yet',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withOpacity(0.65),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Subscribe to Yanki to unlock dining discounts, birthday benefits, and complimentary meals.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.4),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => Get.toNamed(AppRoutes.PLANS),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gold,
+                          foregroundColor: const Color(0xFF070A09),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                        ),
+                        child: const Text(
+                          'Explore Subscription Plans',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return RefreshIndicator(
+              color: AppColors.flame,
+              backgroundColor: AppColors.surface,
+              onRefresh: () async => controller.loadCoupons(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(20, 4, 20, isTab ? 135 : 30),
                 children: [
-                  Icon(
-                    Icons.confirmation_number_outlined,
-                    size: 54,
-                    color: Colors.white.withOpacity(0.25),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Nothing here yet',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withOpacity(0.65),
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF191D1A),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.remove_red_eye_outlined, size: 16, color: Color(0xFFDF9E5B)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Catalog Preview: Tap VIP vouchers to see tier benefits or subscribe to unlock all 18+ vouchers.',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 11,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Subscribe to Yanki to unlock up to 18 dining discounts, birthday benefits, and complimentary meals.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withOpacity(0.4),
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => Get.toNamed(AppRoutes.PLANS),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.gold,
-                      foregroundColor: const Color(0xFF070A09),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: const Text(
-                      'Explore Subscription Plans',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                  ...list.map((coupon) => CouponTicket(
+                        coupon: coupon,
+                        onRedeem: () => controller.redeemCoupon(coupon),
+                        onTap: () => controller.redeemCoupon(coupon),
+                      )),
                 ],
               ),
-            ),
-          ),
+            );
+          }),
         ),
-        SizedBox(height: isTab ? 135 : 40),
       ],
     );
   }

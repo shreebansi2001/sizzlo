@@ -373,6 +373,9 @@ class ApiService {
     required String paymentMode,
     String? upiUtr,
     String? razorpayPaymentId,
+    double? tableAdvanceDeduction,
+    String? receiptImageUrl,
+    String? bookingReference,
   }) async {
     try {
       final res = await _client.post(
@@ -389,6 +392,9 @@ class ApiService {
           'paymentMode': paymentMode,
           'upiUtr': upiUtr,
           'razorpayPaymentId': razorpayPaymentId,
+          'tableAdvanceDeduction': tableAdvanceDeduction,
+          'receiptImageUrl': receiptImageUrl,
+          'bookingReference': bookingReference,
         }),
       ).timeout(const Duration(seconds: 6));
 
@@ -582,6 +588,23 @@ class ApiService {
     return [];
   }
 
+  Future<List<CouponModel>> getCouponsCatalog() async {
+    try {
+      final res = await _client.get(
+        Uri.parse('${AppConstants.baseUrl}/coupons/catalog'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final body = json.decode(res.body);
+        if (body['success'] == true && body['data'] != null) {
+          final List list = body['data'];
+          return list.map((e) => CouponModel.fromJson(e)).toList();
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
   Future<CouponModel?> redeemCoupon(String code, [String? memberId]) async {
     final id = memberId ?? AppConstants.currentMembershipId;
     try {
@@ -617,6 +640,33 @@ class ApiService {
     return [];
   }
 
+  Future<List<String>> getActiveTimeSlots({String? outlet}) async {
+    try {
+      final query = (outlet != null && outlet.isNotEmpty && outlet != 'All Outlets')
+          ? '?outlet=${Uri.encodeComponent(outlet)}'
+          : '';
+      final res = await _client.get(
+        Uri.parse('${AppConstants.baseUrl}/reservations/slots$query'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 4));
+
+      if (res.statusCode == 200) {
+        final body = json.decode(res.body);
+        if (body['success'] == true && body['data'] is List) {
+          final list = (body['data'] as List)
+              .map((item) => item['slotTime']?.toString() ?? '')
+              .where((s) => s.isNotEmpty)
+              .toList();
+          if (list.isNotEmpty) return list;
+        }
+      }
+    } catch (_) {}
+    return [
+      '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM', '2:00 PM',
+      '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM', '9:00 PM', '9:30 PM', '10:00 PM'
+    ];
+  }
+
   Future<bool> bookReservation({
     String? name,
     String? mobile,
@@ -627,6 +677,8 @@ class ApiService {
     String? tierPriorityTag,
     String? occasionTag,
     String? specialRequests,
+    double bookingAdvance = 0.0,
+    bool advancePaid = false,
   }) async {
     final bookingName = (name != null && name.isNotEmpty) ? name : AppConstants.currentUserName;
     final bookingMobile = (mobile != null && mobile.isNotEmpty) ? mobile : AppConstants.currentUserMobile;
@@ -645,6 +697,8 @@ class ApiService {
           'tierPriorityTag': tierPriorityTag ?? (vip ? 'Signature' : 'Non-Subscriber'),
           'occasionTag': occasionTag ?? 'Regular',
           'specialRequests': specialRequests,
+          'bookingAdvance': bookingAdvance,
+          'advancePaid': advancePaid,
         }),
       ).timeout(const Duration(seconds: 4));
       return res.statusCode == 200;

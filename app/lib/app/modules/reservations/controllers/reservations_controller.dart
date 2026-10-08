@@ -39,9 +39,9 @@ class ReservationsController extends GetxController {
     'House of Yanki Banquets Bopal',
   ].obs;
 
-  final List<String> timeSlots = [
+  final RxList<String> timeSlots = <String>[
     '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM', '9:00 PM', '9:30 PM', '10:00 PM'
-  ];
+  ].obs;
 
   final List<String> occasionTags = [
     'Regular', 'Birthday', 'Anniversary', 'Business'
@@ -51,12 +51,39 @@ class ReservationsController extends GetxController {
     'Wedding', 'Sangeet', 'Corporate Seminar', 'Anniversary', 'Birthday Party', 'Lawn Outdoor Catering'
   ];
 
+  final RxBool isSubscribedMember = false.obs;
+  final RxDouble advanceRequired = 0.0.obs;
+
   @override
   void onInit() {
     super.onInit();
-    _initDefaultSlot();
+    _checkMembership();
     loadOutlets();
+    loadTimeSlots();
     loadReservations();
+  }
+
+  void _checkMembership() async {
+    try {
+      final profile = await _apiService.getMemberProfile();
+      isSubscribedMember.value = profile.isSubscriber;
+      isVipTable.value = profile.isSubscriber;
+      advanceRequired.value = profile.isSubscriber ? 0.0 : 100.0;
+    } catch (_) {
+      isSubscribedMember.value = false;
+      isVipTable.value = false;
+      advanceRequired.value = 100.0;
+    }
+  }
+
+  void loadTimeSlots() async {
+    try {
+      final slots = await _apiService.getActiveTimeSlots(outlet: selectedOutlet.value);
+      if (slots.isNotEmpty) {
+        timeSlots.assignAll(slots);
+        _initDefaultSlot();
+      }
+    } catch (_) {}
   }
 
   /// Rule: Reservations must be made at least 1 hour in advance (not anytime)
@@ -95,7 +122,9 @@ class ReservationsController extends GetxController {
     }
     // If all today's slots are within 1 hr or past, default to Tomorrow
     selectedBookingDay.value = 'Tomorrow';
-    selectedTimeSlot.value = timeSlots.first;
+    if (timeSlots.isNotEmpty) {
+      selectedTimeSlot.value = timeSlots.first;
+    }
   }
 
   void selectSlot(String slot) {
@@ -201,17 +230,20 @@ class ReservationsController extends GetxController {
   void _executeBooking() async {
     isSubmitting.value = true;
     try {
+      final isSub = isSubscribedMember.value;
       final bookingTimeLabel = '${selectedBookingDay.value}, ${selectedTimeSlot.value}';
       final success = await _apiService.bookReservation(
-        name: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : 'VIP Guest',
+        name: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : (isSub ? 'VIP Guest' : 'Guest Diner'),
         mobile: AppConstants.currentUserMobile,
         outlet: selectedOutlet.value,
         time: bookingTimeLabel,
         guests: guestCount.value,
-        vip: isVipTable.value,
-        tierPriorityTag: 'Signature',
+        vip: isSub,
+        tierPriorityTag: isSub ? 'Signature' : 'Non-Subscriber',
         occasionTag: selectedOccasion.value,
         specialRequests: specialNotesController.text,
+        bookingAdvance: isSub ? 0.0 : 100.0,
+        advancePaid: true,
       );
 
       if (success) {
@@ -219,13 +251,16 @@ class ReservationsController extends GetxController {
         loadReservations();
 
         Get.snackbar(
-          'Reservation Confirmed!',
-          'VIP Table for ${guestCount.value} at ${selectedOutlet.value} is reserved. (15-min arrival buffer applies)',
-          backgroundColor: const Color(0xFF0E3B32),
-          colorText: const Color(0xFF4EE3B8),
+          isSub ? '👑 VIP Priority Confirmed!' : 'Table Reserved & Deposit Held',
+          isSub 
+            ? 'Complimentary priority seating reserved for ${guestCount.value} at ${selectedOutlet.value}.'
+            : 'Table reserved for ${guestCount.value} at ${selectedOutlet.value}. ₹100 deposit is recorded and will be automatically deducted from your final bill!',
+          backgroundColor: isSub ? const Color(0xFF2C241B) : const Color(0xFF0E3B32),
+          colorText: isSub ? const Color(0xFFD4AF37) : const Color(0xFF4EE3B8),
           snackPosition: SnackPosition.TOP,
           margin: const EdgeInsets.all(16),
           borderRadius: 14,
+          duration: const Duration(seconds: 5),
         );
       }
     } finally {

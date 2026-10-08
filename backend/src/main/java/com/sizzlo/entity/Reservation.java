@@ -47,6 +47,18 @@ public class Reservation {
     @Column(name = "table_assigned")
     private String tableAssigned;
 
+    @Column(name = "booking_advance")
+    private Double bookingAdvance; // e.g. 100.0 or 200.0 for non-subscribed, 0.0 for VIP
+
+    @Column(name = "advance_paid")
+    private Boolean advancePaid;
+
+    @Column(name = "advance_deducted")
+    private Boolean advanceDeducted; // Flagged true when deducted on POS bill settlement
+
+    @Column(name = "pos_settlement_id")
+    private Long posSettlementId;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -59,6 +71,9 @@ public class Reservation {
         if (status == null) status = "Booked";
         if (tierPriorityTag == null) tierPriorityTag = vip ? "Signature" : "Non-Subscriber";
         if (occasionTag == null) occasionTag = "Regular";
+        if (bookingAdvance == null) bookingAdvance = vip ? 0.0 : 100.0;
+        if (advancePaid == null) advancePaid = !vip; // VIP is complimentary, non-subscribed marks paid when reserved
+        if (advanceDeducted == null) advanceDeducted = false;
     }
 
     public Reservation() {}
@@ -101,6 +116,18 @@ public class Reservation {
 
     public String getTableAssigned() { return tableAssigned; }
     public void setTableAssigned(String tableAssigned) { this.tableAssigned = tableAssigned; }
+
+    public Double getBookingAdvance() { return bookingAdvance; }
+    public void setBookingAdvance(Double bookingAdvance) { this.bookingAdvance = bookingAdvance; }
+
+    public Boolean getAdvancePaid() { return advancePaid; }
+    public void setAdvancePaid(Boolean advancePaid) { this.advancePaid = advancePaid; }
+
+    public Boolean getAdvanceDeducted() { return advanceDeducted; }
+    public void setAdvanceDeducted(Boolean advanceDeducted) { this.advanceDeducted = advanceDeducted; }
+
+    public Long getPosSettlementId() { return posSettlementId; }
+    public void setPosSettlementId(Long posSettlementId) { this.posSettlementId = posSettlementId; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

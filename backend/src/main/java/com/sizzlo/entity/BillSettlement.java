@@ -50,6 +50,15 @@ public class BillSettlement {
     @Column(name = "status", nullable = false)
     private String status; // PENDING_VERIFICATION, APPROVED, REJECTED
 
+    @Column(name = "table_advance_deduction")
+    private Double tableAdvanceDeduction; // Advance holding fee deducted (e.g. 100.0)
+
+    @Column(name = "receipt_image_url")
+    private String receiptImageUrl; // Uploaded physical POS receipt photo
+
+    @Column(name = "booking_reference")
+    private String bookingReference; // Linked reservation reference (if any)
+
     @Column(name = "cashier_id")
     private String cashierId;
 
@@ -68,6 +77,7 @@ public class BillSettlement {
         if (status == null) status = "PENDING_VERIFICATION";
         if (discountAmount == null) discountAmount = 0.0;
         if (pointsCredited == null) pointsCredited = 0;
+        if (tableAdvanceDeduction == null) tableAdvanceDeduction = 0.0;
     }
 
     public BillSettlement() {}
@@ -122,6 +132,15 @@ public class BillSettlement {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Double getTableAdvanceDeduction() { return tableAdvanceDeduction; }
+    public void setTableAdvanceDeduction(Double tableAdvanceDeduction) { this.tableAdvanceDeduction = tableAdvanceDeduction; }
+
+    public String getReceiptImageUrl() { return receiptImageUrl; }
+    public void setReceiptImageUrl(String receiptImageUrl) { this.receiptImageUrl = receiptImageUrl; }
+
+    public String getBookingReference() { return bookingReference; }
+    public void setBookingReference(String bookingReference) { this.bookingReference = bookingReference; }
 
     public LocalDateTime getApprovedAt() { return approvedAt; }
     public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }

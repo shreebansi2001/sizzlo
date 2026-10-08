@@ -91,6 +91,9 @@ public class MemberProfile {
     @Column(name = "corporate_id")
     private Long corporateId;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -206,6 +209,9 @@ public class MemberProfile {
     public Long getCorporateId() { return corporateId; }
     public void setCorporateId(Long corporateId) { this.corporateId = corporateId; }
 
-    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public String getAvatarUrl() { return avatarUrl != null ? avatarUrl : profilePictureUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl != null ? profilePictureUrl : avatarUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 }

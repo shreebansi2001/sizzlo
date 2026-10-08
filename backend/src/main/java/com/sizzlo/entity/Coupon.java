@@ -55,6 +55,15 @@ public class Coupon {
     @Column(name = "burned_at")
     private LocalDateTime burnedAt;
 
+    @Column(name = "target_audience")
+    private String targetAudience; // "ALL", "NON_SUBSCRIBED", "CLASSIC", "SIGNATURE", "ELITE"
+
+    @Column(name = "is_vip_only")
+    private Boolean vipOnly;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Column(name = "terms_and_conditions", length = 1000)
     private String termsAndConditions;
 
@@ -65,6 +74,8 @@ public class Coupon {
         if (discountValue == null) discountValue = 10.0;
         if (leftCount == null) leftCount = 1;
         if (totalCount == null) totalCount = 1;
+        if (targetAudience == null) targetAudience = "ALL";
+        if (vipOnly == null) vipOnly = !"NON_SUBSCRIBED".equalsIgnoreCase(targetAudience) && !"ALL".equalsIgnoreCase(targetAudience);
     }
 
     public Coupon() {}
@@ -122,4 +133,13 @@ public class Coupon {
 
     public String getTermsAndConditions() { return termsAndConditions; }
     public void setTermsAndConditions(String termsAndConditions) { this.termsAndConditions = termsAndConditions; }
+
+    public String getTargetAudience() { return targetAudience; }
+    public void setTargetAudience(String targetAudience) { this.targetAudience = targetAudience; }
+
+    public Boolean getVipOnly() { return vipOnly; }
+    public void setVipOnly(Boolean vipOnly) { this.vipOnly = vipOnly; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }

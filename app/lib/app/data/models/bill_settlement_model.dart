@@ -15,6 +15,9 @@ class BillSettlementModel {
   final int pointsCredited;
   final String createdAt;
   final String? approvedAt;
+  final double tableAdvanceDeduction;
+  final String? receiptImageUrl;
+  final String? bookingReference;
 
   BillSettlementModel({
     required this.id,
@@ -33,6 +36,9 @@ class BillSettlementModel {
     required this.pointsCredited,
     required this.createdAt,
     this.approvedAt,
+    this.tableAdvanceDeduction = 0.0,
+    this.receiptImageUrl,
+    this.bookingReference,
   });
 
   bool get isApproved => status == 'APPROVED';
@@ -56,6 +62,9 @@ class BillSettlementModel {
       pointsCredited: (json['pointsCredited'] as num?)?.toInt() ?? 0,
       createdAt: json['createdAt']?.toString() ?? '',
       approvedAt: json['approvedAt']?.toString(),
+      tableAdvanceDeduction: (json['tableAdvanceDeduction'] as num?)?.toDouble() ?? 0.0,
+      receiptImageUrl: json['receiptImageUrl']?.toString(),
+      bookingReference: json['bookingReference']?.toString(),
     );
   }
 

@@ -226,6 +226,9 @@ export interface BillSettlementDTO {
   cashierId?: string;
   createdAt: string;
   approvedAt?: string;
+  tableAdvanceDeduction?: number;
+  receiptImageUrl?: string;
+  bookingReference?: string;
 }
 
 export interface ShiftSummaryDTO {
@@ -490,6 +493,58 @@ export async function sendNotification(payload: SendNotificationPayload) {
       message: err.response?.data?.message || err.message || 'Failed to dispatch notification',
     };
   }
+}
+
+// Dynamic Outlet Time Slots API
+export async function fetchTimeSlots(outlet?: string) {
+  try {
+    const res = await apiClient.get('/reservations/slots', { params: { outlet } });
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return [];
+}
+
+export async function fetchAllTimeSlots() {
+  try {
+    const res = await apiClient.get('/reservations/slots/all');
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return [];
+}
+
+export async function createTimeSlot(slot: {
+  outlet: string;
+  slotTime: string;
+  session: 'LUNCH' | 'DINNER';
+  active?: boolean;
+}) {
+  const res = await apiClient.post('/reservations/slots', slot);
+  return res.data;
+}
+
+export async function toggleTimeSlot(id: number) {
+  const res = await apiClient.put(`/reservations/slots/${id}/toggle`);
+  return res.data;
+}
+
+export async function deleteTimeSlot(id: number) {
+  const res = await apiClient.delete(`/reservations/slots/${id}`);
+  return res.data;
+}
+
+// Live Daily Traffic & VIP Priority Queue API
+export async function fetchTodayTraffic() {
+  try {
+    const res = await apiClient.get('/reservations/traffic/today');
+    if (res.data?.success && res.data.data) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return null;
 }
 
 
