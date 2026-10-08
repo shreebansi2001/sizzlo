@@ -94,7 +94,7 @@ class _EventBookingSheetState extends State<EventBookingSheet> {
         : '9825012345';
     final userName = AppConstants.currentUserName.isNotEmpty && AppConstants.currentUserName != 'Guest'
         ? AppConstants.currentUserName
-        : 'Patron';
+        : 'Guest';
 
     var options = {
       'key': 'rzp_live_S5dgGJ3fEPa3fO',
@@ -104,7 +104,7 @@ class _EventBookingSheetState extends State<EventBookingSheet> {
       'prefill': {
         'name': userName,
         'contact': userContact,
-        'email': 'patron@sizzlo.com',
+        'email': 'user@sizzlo.com',
       },
       'theme': {
         'color': '#DF9E5B',

@@ -21,7 +21,7 @@ export const FeedbackPage: React.FC<FeedbackPageProps> = ({ feedbacks }) => {
               ))}
             </div>
           </div>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>Based on 1,248 verified patron reviews</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>Based on 1,248 verified user reviews</span>
         </div>
 
         <div className="kpi-card">
@@ -46,7 +46,7 @@ export const FeedbackPage: React.FC<FeedbackPageProps> = ({ feedbacks }) => {
         boxShadow: 'var(--shadow-card)'
       }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Subscriber Reviews &amp; Hospitality Feedback</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>User Reviews &amp; Hospitality Feedback</h3>
           <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Real-time sentiment monitoring across table visits and online reservations</p>
         </div>
 
@@ -54,10 +54,10 @@ export const FeedbackPage: React.FC<FeedbackPageProps> = ({ feedbacks }) => {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Subscriber</th>
+                <th>User</th>
                 <th>Star Rating</th>
                 <th>Overall Verdict</th>
-                <th style={{ width: '40%' }}>Patron Comment</th>
+                <th style={{ width: '40%' }}>User Comment</th>
                 <th>Date Submitted</th>
               </tr>
             </thead>

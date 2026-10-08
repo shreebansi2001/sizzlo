@@ -477,7 +477,7 @@ export const MembershipsPage: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Renewal Forecast (6 Months)</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Projected renewals vs dues based on patron telemetry</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Projected renewals vs dues based on user telemetry</p>
             </div>
             <div style={{ display: 'flex', gap: 16, fontSize: 12, fontWeight: 600 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -520,7 +520,7 @@ export const MembershipsPage: React.FC = () => {
         }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)', marginBottom: 4 }}>Tier Breakdown</h3>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>Patron distribution across privilege plans</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>User distribution across privilege plans</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[

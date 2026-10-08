@@ -40,9 +40,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLog
       ],
     },
     {
-      group: 'Subscribers',
+      group: 'Users & Subscriptions',
       items: [
-        { id: 'customers', label: 'Patron 360 CRM', icon: Users },
+        { id: 'customers', label: 'Users', icon: Users },
         { id: 'memberships', label: 'Subscriptions', icon: BadgeCheck },
         { id: 'loyalty', label: 'Loyalty Points', icon: Sparkles },
       ],
@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLog
       items: [
         { id: 'marketing', label: 'Marketing Campaigns', icon: Megaphone },
         { id: 'staff', label: 'Staff & Roles', icon: ShieldCheck },
-        { id: 'feedback', label: 'Patron Feedback', icon: MessageSquareText },
+        { id: 'feedback', label: 'User Feedback', icon: MessageSquareText },
       ],
     },
   ];

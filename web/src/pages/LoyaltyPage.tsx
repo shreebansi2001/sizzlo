@@ -88,7 +88,7 @@ export const LoyaltyPage: React.FC = () => {
           boxShadow: 'var(--shadow-card)'
         }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Points Balance Distribution</h3>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Categorization by patron point accumulation</p>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Categorization by user point accumulation</p>
 
           <div style={{ height: 220 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -137,7 +137,7 @@ export const LoyaltyPage: React.FC = () => {
         }}>
           <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Top Loyalty Patrons</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Top Loyalty Users</h3>
               <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Highest point holders eligible for exclusive privileges</p>
             </div>
             <span style={{

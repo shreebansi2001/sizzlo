@@ -104,13 +104,13 @@ export function App() {
   const getPageInfo = () => {
     switch (currentTab) {
       case 'dashboard':
-        return { title: 'Executive Overview', subtitle: 'Live business performance & patron telemetry' };
+        return { title: 'Executive Overview', subtitle: 'Live business performance & user telemetry' };
       case 'insights':
         return { title: 'AI Predictive Engine', subtitle: 'Automated intelligence to unlock group revenue growth' };
       case 'ceo':
         return { title: 'CEO Strategic Suite', subtitle: 'Consolidated group revenue, forecast and margins' };
       case 'customers':
-        return { title: 'Patron 360 CRM', subtitle: 'Manage VIP memberships, spending records & dues' };
+        return { title: 'Users Management', subtitle: 'View registered users, subscribed VIP members & free accounts' };
       case 'memberships':
         return { title: 'Subscription Management', subtitle: 'Track subscriptions, renewal forecast and lifetime growth' };
       case 'loyalty':
@@ -136,7 +136,7 @@ export function App() {
       case 'staff':
         return { title: 'Staff & Role Management', subtitle: 'Roles, RBAC permissions and security governance' };
       case 'feedback':
-        return { title: 'Subscriber Reviews & Feedback', subtitle: 'Direct dining ratings and comments from VIP patrons' };
+        return { title: 'Subscriber Reviews & Feedback', subtitle: 'Direct dining ratings and comments from VIP users' };
       default:
         return { title: 'Sizzlo Admin Console', subtitle: 'Operations management' };
     }

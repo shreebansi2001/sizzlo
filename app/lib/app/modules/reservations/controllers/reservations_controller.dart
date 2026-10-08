@@ -394,7 +394,7 @@ class ReservationsController extends GetxController {
     isSubmitting.value = true;
     try {
       final inquiry = BanquetInquiryModel(
-        customerName: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : 'VIP Patron',
+        customerName: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : 'VIP Member',
         customerMobile: AppConstants.currentUserMobile,
         email: AppConstants.currentUserEmail,
         eventCategory: banquetCategory.value,

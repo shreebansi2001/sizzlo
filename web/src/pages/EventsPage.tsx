@@ -294,7 +294,7 @@ export const EventsPage: React.FC<EventsPageProps> = () => {
               <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: 'var(--gold)' }}>
                 {totalBookedEventSeats}
               </div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Registered patrons</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Registered users</span>
             </div>
 
             <div className="kpi-card">
@@ -948,7 +948,7 @@ export const EventsPage: React.FC<EventsPageProps> = () => {
                   <thead>
                     <tr>
                       <th>BOOKING ID</th>
-                      <th>PATRON NAME</th>
+                      <th>USER NAME</th>
                       <th>MOBILE</th>
                       <th>PAX</th>
                       <th>DEPOSIT PAID</th>

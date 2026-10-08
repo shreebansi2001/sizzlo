@@ -6,6 +6,7 @@ export interface Member {
   mobile: string;
   email: string;
   membershipType: string;
+  planId?: string;
   status: 'Active' | 'Renewal Due' | 'Expired';
   issuedDate: string;
   expiryDate: string;

@@ -34,7 +34,7 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
     {
       id: 1,
       title: 'Weekend Sizzler Festival 20% Off',
-      target: 'All Registered Patrons (Broadcast)',
+      target: 'All Registered Users (Broadcast)',
       type: 'Offer Voucher',
       channel: 'Push Notification + WhatsApp',
       time: '10 mins ago',
@@ -87,7 +87,7 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
         {
           id: Date.now(),
           title: title.trim(),
-          target: targetType === 'ALL' ? 'All Registered Patrons (Broadcast)' : targetInput.trim(),
+          target: targetType === 'ALL' ? 'All Registered Users (Broadcast)' : targetInput.trim(),
           type: category.toUpperCase(),
           channel: sendWhatsApp ? 'Push Notification + WhatsApp' : 'In-App Push Notification',
           time: 'Just now',
@@ -145,7 +145,7 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
               </div>
               <div>
                 <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--primary)' }}>Push & WhatsApp Notification Dispatcher</h3>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Send instant mobile push alerts and WhatsApp updates to all members or a specific patron</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Send instant mobile push alerts and WhatsApp updates to all members or a specific user</p>
               </div>
             </div>
           </div>
@@ -181,7 +181,7 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets 
                 }}
               >
                 <Users size={18} />
-                <span>All Registered Patrons (Broadcast)</span>
+                <span>All Registered Users (Broadcast)</span>
               </button>
 
               <button

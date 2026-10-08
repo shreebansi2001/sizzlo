@@ -746,7 +746,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                   <tr>
                     <td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
                       <Check size={24} color="#10B981" style={{ display: 'block', margin: '0 auto 8px' }} />
-                      No subscriber dues currently pending. All patron accounts are fully settled and cleared!
+                      No subscriber dues currently pending. All user accounts are fully settled and cleared!
                     </td>
                   </tr>
                 ) : (
@@ -1053,7 +1053,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                         <div style={{ color: 'var(--primary)', fontSize: 11, fontFamily: 'monospace' }}>{tx.paymentId}</div>
                       </td>
                       <td style={{ padding: '12px 16px' }}>
-                        <div style={{ fontWeight: 600, color: '#FFFFFF' }}>{tx.customerName || 'Patron'}</div>
+                        <div style={{ fontWeight: 600, color: '#FFFFFF' }}>{tx.customerName || 'User'}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tx.customerMobile || '+91 98250 12345'}</div>
                       </td>
                       <td style={{ padding: '12px 16px' }}>
