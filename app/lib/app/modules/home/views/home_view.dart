@@ -162,9 +162,9 @@ class HomeView extends GetView<HomeController> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Avatar Button navigating to Profile
+                    // Avatar Button navigating to Personal Information screen
                     GestureDetector(
-                      onTap: () => Get.find<NavigationController>().changeTab(3),
+                      onTap: () => Get.toNamed(AppRoutes.PERSONAL_INFO),
                       child: ProfileAvatarWidget(
                         radius: 20,
                         imageUrl: m.profilePictureUrl,
