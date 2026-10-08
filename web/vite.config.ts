@@ -11,7 +11,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'https://cheeragskitchen.in/Sizzlo',
+        target: 'http://localhost:8085',
         changeOrigin: true,
         secure: false,
       },
