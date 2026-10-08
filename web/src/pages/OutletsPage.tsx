@@ -522,8 +522,27 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                 </div>
               </div>
 
-              {/* Action Buttons: Edit / Delete */}
+              {/* Action Buttons: Edit / Slot Timings / Delete */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 22px', borderTop: '1px solid rgba(255, 255, 255, 0.05)', background: 'rgba(255, 255, 255, 0.01)' }}>
+                <button
+                  onClick={() => { window.location.hash = 'reservations'; }}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    color: '#60A5FA',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                  title="Configure dynamic table booking slot timings for mobile app"
+                >
+                  <Clock size={13} /> Slot Timings
+                </button>
                 <button
                   onClick={() => handleOpenEdit(outlet)}
                   style={{
@@ -1203,9 +1222,27 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
-                    Operating Hours
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                      Operating Hours
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => { window.location.hash = 'reservations'; }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--gold)',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        padding: 0
+                      }}
+                      title="Manage individual booking slot buttons (e.g. 12:30 PM, 8:00 PM)"
+                    >
+                      Manage Booking Slots ↗
+                    </button>
+                  </div>
                   <input
                     type="text"
                     placeholder="11:30 AM - 11:00 PM"
@@ -1222,6 +1259,9 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                       outline: 'none',
                     }}
                   />
+                  <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Shown on venue card in app. For table booking time buttons (e.g. 12:30 PM), configure via Host Station Bookings &gt; Manage Time Slots.
+                  </p>
                 </div>
               </div>
 
