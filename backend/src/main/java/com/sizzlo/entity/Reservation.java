@@ -71,8 +71,8 @@ public class Reservation {
         if (status == null) status = "Booked";
         if (tierPriorityTag == null) tierPriorityTag = vip ? "Signature" : "Non-Subscriber";
         if (occasionTag == null) occasionTag = "Regular";
-        if (bookingAdvance == null) bookingAdvance = vip ? 0.0 : 100.0;
-        if (advancePaid == null) advancePaid = !vip; // VIP is complimentary, non-subscribed marks paid when reserved
+        if (bookingAdvance == null) bookingAdvance = 99.0;
+        if (advancePaid == null) advancePaid = true;
         if (advanceDeducted == null) advanceDeducted = false;
     }
 

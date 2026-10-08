@@ -267,11 +267,13 @@ class ReservationsController extends GetxController {
     }
 
     final bookingTimeLabel = '${selectedBookingDay.value}, ${selectedTimeSlot.value}';
+    final nominalCharge = isSubscribedMember.value ? 99.0 : 100.0;
     SizzloDialogs.showBookTableConfirm(
       outlet: selectedOutlet.value,
       time: bookingTimeLabel,
       guests: guestCount.value,
       isVip: isVipTable.value,
+      bookingCharge: nominalCharge,
       specialRequests: '${selectedOccasion.value} occasion. ${specialNotesController.text}',
       onConfirm: _executeBooking,
     );
@@ -363,7 +365,7 @@ class ReservationsController extends GetxController {
         tierPriorityTag: isSub ? 'Signature' : 'Non-Subscriber',
         occasionTag: selectedOccasion.value,
         specialRequests: specialNotesController.text,
-        bookingAdvance: isSub ? 0.0 : 100.0,
+        bookingAdvance: isSub ? 99.0 : 100.0,
         advancePaid: true,
       );
 
@@ -371,11 +373,10 @@ class ReservationsController extends GetxController {
         specialNotesController.clear();
         loadReservations();
 
+        final advanceVal = isSub ? 99 : 100;
         Get.snackbar(
           isSub ? '👑 VIP Priority Confirmed!' : 'Table Reserved & Deposit Held',
-          isSub 
-            ? 'Complimentary priority seating reserved for ${guestCount.value} at ${selectedOutlet.value}.'
-            : 'Table reserved for ${guestCount.value} at ${selectedOutlet.value}. ₹100 deposit is recorded and will be automatically deducted from your final bill!',
+          'Table reserved for ${guestCount.value} at ${selectedOutlet.value}. Nominal ₹$advanceVal advance cover charge recorded and will be 100% deducted from your dining bill!',
           backgroundColor: isSub ? const Color(0xFF2C241B) : const Color(0xFF0E3B32),
           colorText: isSub ? const Color(0xFFD4AF37) : const Color(0xFF4EE3B8),
           snackPosition: SnackPosition.TOP,
