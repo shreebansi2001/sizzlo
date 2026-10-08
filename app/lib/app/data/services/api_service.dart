@@ -877,7 +877,7 @@ class ApiService {
       final res = await _client.get(
         Uri.parse('${AppConstants.baseUrl}/dining-events'),
         headers: _headers,
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 3));
 
       if (res.statusCode == 200) {
         final body = json.decode(res.body);
@@ -984,7 +984,7 @@ class ApiService {
       final res = await _client.get(
         Uri.parse('${AppConstants.baseUrl}/dining-events/my-bookings?mobile=$clean'),
         headers: _headers,
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 3));
 
       if (res.statusCode == 200) {
         final body = json.decode(res.body);

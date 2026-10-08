@@ -23,6 +23,38 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     activePlan.value = member.value.planId;
+    diningEvents.value = [
+      DiningEventModel(
+        id: 1,
+        title: 'Yanki Sparkling Sunday Brunch',
+        description: 'Indulge in our signature Sunday Brunch buffet featuring live sizzler grill stations, chef-crafted desserts, artisanal mocktails, and live jazz music.',
+        bannerUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80',
+        outletName: 'Yanki Sizzlers - CG Road',
+        eventDay: 'Every Sunday',
+        eventDate: 'Upcoming Sunday',
+        timings: '12:00 PM – 04:00 PM',
+        totalSeats: 50,
+        bookedSeats: 38,
+        pricePerGuest: 99.0,
+        inclusions: 'Live grill buffet, artisanal desserts, live jazz music, welcome drink & priority table',
+        status: 'ACTIVE',
+      ),
+      DiningEventModel(
+        id: 2,
+        title: "Chef's Table: Gourmet Sizzler Masterclass",
+        description: 'An exclusive evening with our Executive Chef showcasing secret smoke-infusion techniques, pairing artisanal sizzler cuts with vintage beverages.',
+        bannerUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
+        outletName: 'Yanki Sizzlers - Bodakdev',
+        eventDay: 'Friday Special',
+        eventDate: 'This Friday',
+        timings: '07:30 PM – 10:30 PM',
+        totalSeats: 25,
+        bookedSeats: 19,
+        pricePerGuest: 149.0,
+        inclusions: '5-course curated tasting menu, sizzler demo with Executive Chef, complimentary mocktail pairing',
+        status: 'ACTIVE',
+      ),
+    ];
     loadDashboardData();
   }
 
