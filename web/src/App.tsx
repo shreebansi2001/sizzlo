@@ -19,6 +19,28 @@ import { RedemptionPage } from './pages/RedemptionPage';
 import { ActivityPage } from './pages/ActivityPage';
 import { LoginPage } from './pages/LoginPage';
 
+import { AdminAuthUser } from './types';
+
+const TAB_PERMISSIONS: Record<string, string> = {
+  dashboard: 'DASHBOARD_VIEW',
+  insights: 'INSIGHTS_VIEW',
+  ceo: 'CEO_SUITE_VIEW',
+  customers: 'CUSTOMERS_MANAGE',
+  memberships: 'MEMBERSHIPS_MANAGE',
+  loyalty: 'LOYALTY_MANAGE',
+  coupons: 'COUPONS_MANAGE',
+  payments: 'PAYMENTS_SETTLE_APPROVE',
+  reservations: 'RESERVATIONS_MANAGE',
+  floor: 'FLOOR_TABLES_MANAGE',
+  activity: 'DASHBOARD_VIEW',
+  redemption: 'REDEMPTION_VALIDATE',
+  outlets: 'OUTLETS_MANAGE',
+  events: 'EVENTS_MANAGE',
+  marketing: 'MARKETING_MANAGE',
+  staff: 'USER_MGMT',
+  feedback: 'FEEDBACK_VIEW',
+};
+
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: any }> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
@@ -34,30 +56,52 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     if (this.state.hasError) {
       return (
         <div style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 20,
-          padding: '40px 24px',
-          textAlign: 'center',
-          maxWidth: 600,
-          margin: '40px auto',
-          boxShadow: 'var(--shadow-card)'
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'radial-gradient(ellipse at top, #142821 0%, #070A09 60%, #030504 100%)',
+          padding: 24,
         }}>
-          <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)', marginBottom: 8 }}>
-            Telemetry Display Refresh Needed
-          </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-            {this.state.error?.message || 'A data synchronization discrepancy occurred while loading this view.'}
-          </p>
-          <button
-            onClick={() => {
-              this.setState({ hasError: false, error: null });
-              window.location.reload();
-            }}
-            className="primary-btn"
-          >
-            Refresh Live View
-          </button>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 20,
+            padding: '40px 28px',
+            textAlign: 'center',
+            maxWidth: 540,
+            width: '100%',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
+          }}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--gold)', marginBottom: 8 }}>
+              Display Refresh Needed
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
+              {this.state.error?.message || 'A data sync or cache mismatch occurred while loading this view.'}
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
+                className="btn btn-primary"
+                style={{ padding: '10px 20px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Refresh View
+              </button>
+              <button
+                onClick={() => {
+                  try { localStorage.clear(); } catch (_) {}
+                  window.location.href = '/';
+                }}
+                className="btn btn-outline"
+                style={{ padding: '10px 20px', borderRadius: 10, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Reset Session & Login
+              </button>
+            </div>
+          </div>
         </div>
       );
     }
@@ -66,9 +110,26 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 export function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return Boolean(localStorage.getItem('yanki_admin_auth'));
+  const [currentUser, setCurrentUser] = useState<AdminAuthUser | null>(() => {
+    try {
+      const stored = localStorage.getItem('yanki_admin_auth');
+      if (!stored) return null;
+      const parsed = JSON.parse(stored);
+      if (!parsed || typeof parsed !== 'object' || !parsed.username) {
+        localStorage.removeItem('yanki_admin_auth');
+        return null;
+      }
+      if (!Array.isArray(parsed.permissions)) {
+        parsed.permissions = [];
+      }
+      return parsed;
+    } catch {
+      localStorage.removeItem('yanki_admin_auth');
+      return null;
+    }
   });
+
+  const isAuthenticated = Boolean(currentUser);
 
   const getInitialTab = () => {
     const hash = window.location.hash.replace('#', '');
@@ -96,6 +157,19 @@ export function App() {
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
+
+  useEffect(() => {
+    if (currentUser && currentUser.roleCode !== 'SUPER_ADMIN') {
+      const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+      const requiredPerm = TAB_PERMISSIONS[currentTab];
+      if (requiredPerm && !perms.includes(requiredPerm)) {
+        const allowedTab = Object.keys(TAB_PERMISSIONS).find(t => 
+          perms.includes(TAB_PERMISSIONS[t])
+        ) || 'dashboard';
+        setCurrentTab(allowedTab);
+      }
+    }
+  }, [currentUser, currentTab]);
 
   const handleRefresh = () => {
     setRefreshKey(k => k + 1);
@@ -134,7 +208,7 @@ export function App() {
       case 'marketing':
         return { title: 'Marketing & Campaigns', subtitle: 'Audience reach, automated journeys and broadcast messaging' };
       case 'staff':
-        return { title: 'Staff & Role Management', subtitle: 'Roles, RBAC permissions and security governance' };
+        return { title: 'Staff & Roles (RBAC)', subtitle: 'Multi-tenant branch staff, roles & permission matrix' };
       case 'feedback':
         return { title: 'Subscriber Reviews & Feedback', subtitle: 'Direct dining ratings and comments from VIP patrons' };
       default:
@@ -146,77 +220,78 @@ export function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('yanki_admin_auth');
-    setIsAuthenticated(false);
+    setCurrentUser(null);
   };
 
-  if (!isAuthenticated) {
-    return <LoginPage onLoginSuccess={() => setIsAuthenticated(true)} />;
-  }
-
   return (
-    <AdminLayout
-      currentTab={currentTab}
-      onTabChange={setCurrentTab}
-      title={title}
-      subtitle={subtitle}
-      onRefresh={handleRefresh}
-      isLoading={false}
-      onLogout={handleLogout}
-    >
-      <ErrorBoundary>
-        {currentTab === 'dashboard' && (
-          <DashboardPage key={`dashboard-${refreshKey}`} />
-        )}
-        {currentTab === 'insights' && (
-          <InsightsPage insights={[]} />
-        )}
-        {currentTab === 'ceo' && (
-          <CeoPage key={`ceo-${refreshKey}`} />
-        )}
-        {currentTab === 'customers' && (
-          <CustomersPage key={`customers-${refreshKey}`} onRefresh={handleRefresh} />
-        )}
-        {currentTab === 'memberships' && (
-          <MembershipsPage />
-        )}
-        {currentTab === 'loyalty' && (
-          <LoyaltyPage />
-        )}
-        {currentTab === 'coupons' && (
-          <CouponsPage key={`coupons-${refreshKey}`} coupons={[]} onRefresh={handleRefresh} />
-        )}
-        {currentTab === 'payments' && (
-          <PaymentsPage payments={[]} />
-        )}
-        {currentTab === 'reservations' && (
-          <ReservationsPage key={`reservations-${refreshKey}`} reservations={[]} onRefresh={handleRefresh} />
-        )}
-        {currentTab === 'floor' && (
-          <FloorPage key={`floor-${refreshKey}`} />
-        )}
-        {currentTab === 'activity' && (
-          <ActivityPage key={`activity-${refreshKey}`} onNavigate={setCurrentTab} />
-        )}
-        {currentTab === 'redemption' && (
-          <RedemptionPage key={`redemption-${refreshKey}`} />
-        )}
-        {currentTab === 'outlets' && (
-          <OutletsPage key={`outlets-${refreshKey}`} />
-        )}
-        {currentTab === 'events' && (
-          <EventsPage events={[]} />
-        )}
-        {currentTab === 'marketing' && (
-          <MarketingPage channels={[]} presets={[]} />
-        )}
-        {currentTab === 'staff' && (
-          <StaffPage roles={[]} />
-        )}
-        {currentTab === 'feedback' && (
-          <FeedbackPage feedbacks={[]} />
-        )}
-      </ErrorBoundary>
-    </AdminLayout>
+    <ErrorBoundary>
+      {!isAuthenticated || !currentUser ? (
+        <LoginPage onLoginSuccess={(u) => setCurrentUser(u)} />
+      ) : (
+        <AdminLayout
+          currentTab={currentTab}
+          onTabChange={setCurrentTab}
+          currentUser={currentUser}
+          title={title}
+          subtitle={subtitle}
+          onRefresh={handleRefresh}
+          isLoading={false}
+          onLogout={handleLogout}
+        >
+          {currentTab === 'dashboard' && (
+            <DashboardPage key={`dashboard-${refreshKey}`} />
+          )}
+          {currentTab === 'insights' && (
+            <InsightsPage insights={[]} />
+          )}
+          {currentTab === 'ceo' && (
+            <CeoPage key={`ceo-${refreshKey}`} />
+          )}
+          {currentTab === 'customers' && (
+            <CustomersPage key={`customers-${refreshKey}`} onRefresh={handleRefresh} />
+          )}
+          {currentTab === 'memberships' && (
+            <MembershipsPage />
+          )}
+          {currentTab === 'loyalty' && (
+            <LoyaltyPage />
+          )}
+          {currentTab === 'coupons' && (
+            <CouponsPage key={`coupons-${refreshKey}`} coupons={[]} onRefresh={handleRefresh} />
+          )}
+          {currentTab === 'payments' && (
+            <PaymentsPage payments={[]} />
+          )}
+          {currentTab === 'reservations' && (
+            <ReservationsPage key={`reservations-${refreshKey}`} reservations={[]} onRefresh={handleRefresh} />
+          )}
+          {currentTab === 'floor' && (
+            <FloorPage key={`floor-${refreshKey}`} />
+          )}
+          {currentTab === 'activity' && (
+            <ActivityPage key={`activity-${refreshKey}`} onNavigate={setCurrentTab} />
+          )}
+          {currentTab === 'redemption' && (
+            <RedemptionPage key={`redemption-${refreshKey}`} />
+          )}
+          {currentTab === 'outlets' && (
+            <OutletsPage key={`outlets-${refreshKey}`} />
+          )}
+          {currentTab === 'events' && (
+            <EventsPage events={[]} />
+          )}
+          {currentTab === 'marketing' && (
+            <MarketingPage channels={[]} presets={[]} />
+          )}
+          {currentTab === 'staff' && (
+            <StaffPage currentUser={currentUser} />
+          )}
+          {currentTab === 'feedback' && (
+            <FeedbackPage feedbacks={[]} />
+          )}
+        </AdminLayout>
+      )}
+    </ErrorBoundary>
   );
 }
 

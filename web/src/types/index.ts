@@ -163,3 +163,52 @@ export interface SubscriptionPlan {
   benefits?: string[];
 }
 
+export interface SystemRight {
+  code: string;
+  name: string;
+  category: string;
+  description: string;
+}
+
+export interface AdminRole {
+  id?: number;
+  roleCode: string;
+  roleName: string;
+  description: string;
+  level: number;
+  permissions: string;
+  isSystem: boolean;
+}
+
+export interface AdminUser {
+  id?: number;
+  username: string;
+  email: string;
+  fullName: string;
+  mobile?: string;
+  password?: string;
+  roleCode: string;
+  roleName?: string;
+  branchName: string;
+  outletId?: number;
+  customPermissions?: string;
+  createdByUsername?: string;
+  active: boolean;
+  createdAt?: string;
+  lastLogin?: string;
+}
+
+export interface AdminAuthUser {
+  id: number;
+  username: string;
+  email: string;
+  fullName: string;
+  mobile?: string;
+  roleCode: string;
+  roleName: string;
+  roleLevel: number;
+  branchName: string;
+  outletId?: number;
+  permissions: string[];
+}
+

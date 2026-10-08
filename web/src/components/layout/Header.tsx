@@ -1,22 +1,38 @@
-import React, { useState } from 'react';
-import { Bell, Search, RefreshCw, RotateCcw, Key, Check, LogOut, Menu } from 'lucide-react';
-import { resetAllData } from '../../api/client';
+import React, { useState, useEffect } from 'react';
+import { Bell, Search, RefreshCw, RotateCcw, Key, Check, LogOut, Menu, Building2 } from 'lucide-react';
+import { resetAllData, fetchOutlets } from '../../api/client';
+import { AdminAuthUser, Outlet } from '../../types';
 
 interface HeaderProps {
   title: string;
   subtitle: string;
+  currentUser?: AdminAuthUser | null;
   onRefresh?: () => void;
   isLoading?: boolean;
   onLogout?: () => void;
   onToggleSidebar?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLoading, onLogout, onToggleSidebar }) => {
-  const [selectedOutlet, setSelectedOutlet] = useState('all');
+export const Header: React.FC<HeaderProps> = ({ title, subtitle, currentUser, onRefresh, isLoading, onLogout, onToggleSidebar }) => {
+  const isSuperAdmin = currentUser?.roleCode === 'SUPER_ADMIN';
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [selectedOutlet, setSelectedOutlet] = useState<string>(currentUser?.branchName || 'All Branches');
   const [searchVal, setSearchVal] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [resetStatus, setResetStatus] = useState<string | null>(null);
   const [showCreds, setShowCreds] = useState(false);
+
+  useEffect(() => {
+    fetchOutlets().then(list => {
+      if (list && list.length > 0) setOutlets(list);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (currentUser?.branchName && !isSuperAdmin) {
+      setSelectedOutlet(currentUser.branchName);
+    }
+  }, [currentUser, isSuperAdmin]);
 
   const handleResetData = async () => {
     if (!window.confirm('Clear all reservations, redemptions & test logs to restore clean default seed state?')) {
@@ -150,18 +166,37 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, onRefresh, isLo
           <span>{isResetting ? 'Resetting...' : 'Clear Test Data'}</span>
         </button>
 
-        {/* Outlet Switcher */}
-        <select 
-          className="outlet-select"
-          value={selectedOutlet}
-          onChange={(e) => setSelectedOutlet(e.target.value)}
-        >
-          <option value="all">🏢 All Outlets (Consolidated)</option>
-          <option value="navrangpura">Navrangpura (Flagship)</option>
-          <option value="shilaj">Shilaj</option>
-          <option value="gandhinagar">Gandhinagar</option>
-          <option value="bodakdev">Bodakdev Signature</option>
-        </select>
+        {/* Outlet Switcher or Scoped Branch Display */}
+        {isSuperAdmin ? (
+          <select 
+            className="outlet-select"
+            value={selectedOutlet}
+            onChange={(e) => setSelectedOutlet(e.target.value)}
+          >
+            <option value="All Branches">🏢 All Branches (Group Consolidated)</option>
+            {outlets.map((o) => (
+              <option key={o.id} value={o.name}>
+                📍 {o.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'rgba(201, 162, 77, 0.12)',
+            border: '1px solid rgba(201, 162, 77, 0.35)',
+            borderRadius: 10,
+            padding: '6px 12px',
+            fontSize: 12,
+            fontWeight: 700,
+            color: 'var(--gold)',
+          }}>
+            <Building2 size={13} color="var(--gold)" />
+            <span>{currentUser?.branchName || 'Assigned Branch'}</span>
+          </div>
+        )}
 
         {/* Global Search */}
         <div className="header-search">

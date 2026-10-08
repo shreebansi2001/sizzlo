@@ -22,7 +22,6 @@ import '../../../core/values/app_constants.dart';
 import '../../../widgets/profile_avatar_widget.dart';
 import '../../../widgets/event_booking_sheet.dart';
 import '../../../widgets/event_pass_dialog.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({Key? key}) : super(key: key);
@@ -298,9 +297,13 @@ class HomeView extends GetView<HomeController> {
                 const SizedBox(height: 20),
               ],
 
+              // Dedicated Subscription Card
+              _buildSubscriptionCard(context, isSub),
+              const SizedBox(height: 24),
+
               // Quick Actions Grid
               SectionHeader(title: 'Quick Actions'),
-          _buildQuickActions(),
+              _buildQuickActions(),
 
           const SizedBox(height: 24),
 
@@ -444,15 +447,15 @@ class HomeView extends GetView<HomeController> {
           ),
         ),
 
-        // 4 High-Contrast Operations (Chapter 01.4 & 04.1 SRS)
+        // 6 High-Contrast Operations (Chapter 01.4 & 04.1 SRS)
         GridView.count(
           padding: EdgeInsets.zero,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 4,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.85,
+          crossAxisCount: 3,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.02,
           children: [
             _buildOpButton(
               icon: Icons.table_restaurant_rounded,
@@ -469,6 +472,26 @@ class HomeView extends GetView<HomeController> {
               icon: Icons.storefront_rounded,
               label: 'Outlets',
               onTap: () => Get.toNamed(AppRoutes.OUTLETS),
+            ),
+            _buildOpButton(
+              icon: Icons.badge_outlined,
+              label: 'Subscription',
+              badge: controller.member.value.isSubscriber ? 'VIP' : null,
+              onTap: () {
+                if (controller.member.value.isSubscriber) {
+                  Get.toNamed(AppRoutes.SUBSCRIPTION_DETAILS);
+                } else {
+                  Get.toNamed(AppRoutes.PLANS);
+                }
+              },
+            ),
+            _buildOpButton(
+              icon: Icons.auto_awesome_rounded,
+              label: 'Loyalty',
+              badge: controller.member.value.loyaltyPoints > 0 ? '${controller.member.value.loyaltyPoints} pts' : null,
+              onTap: () {
+                Get.find<NavigationController>().changeTab(2);
+              },
             ),
             _buildOpButton(
               icon: Icons.wallet_rounded,
@@ -503,7 +526,7 @@ class HomeView extends GetView<HomeController> {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Stack(
           alignment: Alignment.topRight,
           children: [
@@ -512,22 +535,22 @@ class HomeView extends GetView<HomeController> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(12),
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF282421),
+                      shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, color: AppColors.flame, size: 20),
+                    child: Icon(icon, color: AppColors.flame, size: 22),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     label,
                     textAlign: TextAlign.center,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
@@ -547,6 +570,173 @@ class HomeView extends GetView<HomeController> {
                   style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionCard(BuildContext context, bool isSub) {
+    final member = controller.member.value;
+    return GestureDetector(
+      onTap: () {
+        if (isSub) {
+          Get.toNamed(AppRoutes.SUBSCRIPTION_DETAILS);
+        } else {
+          Get.toNamed(AppRoutes.PLANS);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF2B1D12),
+              Color(0xFF1B120B),
+              Color(0xFF100B07),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isSub ? const Color(0xFFD4AF37).withOpacity(0.5) : const Color(0xFF6B4423),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF282421),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.badge_outlined,
+                        color: AppColors.flame,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isSub ? 'ACTIVE VIP SUBSCRIPTION' : 'YANKI VIP SUBSCRIPTION',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.gold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isSub
+                              ? '${member.subscriptionTier.toUpperCase()} MEMBER'
+                              : 'Exclusive Dining Privileges',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontFamily: 'Playfair Display',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isSub
+                        ? const Color(0xFF00E676).withOpacity(0.15)
+                        : AppColors.flame.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSub ? const Color(0xFF00E676) : AppColors.flame,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    isSub ? 'ACTIVE' : 'EXPLORE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: isSub ? const Color(0xFF00E676) : AppColors.flame,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              isSub
+                  ? 'Enjoy flat 10% dining discounts, birthday celebrations, and priority tables all year round.'
+                  : 'Join Classic, Signature, or Elite plan to enjoy flat 10% off entire bills, complimentary couple dinners & welcome vouchers.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withOpacity(0.8),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.stars_rounded, color: AppColors.gold, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      isSub
+                          ? 'Valid till ${member.expiryDate.isNotEmpty ? member.expiryDate : "365 days"}'
+                          : 'Starting from ₹1 test / ₹5,000/yr',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text(
+                      isSub ? 'Manage Plan' : 'View Plans',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 11,
+                      color: AppColors.gold,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ],
         ),
       ),

@@ -13,7 +13,11 @@ import {
   FeedbackItem,
   MarketingChannel,
   CampaignPreset,
-  SubscriptionPlan
+  SubscriptionPlan,
+  SystemRight,
+  AdminRole,
+  AdminUser,
+  AdminAuthUser
 } from '../types';
 
 export const API_BASE = (typeof window !== 'undefined' && window.location.hostname === 'cheeragskitchen.in')
@@ -614,6 +618,122 @@ export async function fetchDiningEventAttendees(id: number): Promise<DiningAtten
   } catch (_) {}
   return [];
 }
+
+// ==========================================
+// RBAC & MULTI-TENANT HIERARCHY APIS
+// ==========================================
+
+export async function fetchAdminRights(): Promise<SystemRight[]> {
+  try {
+    const res = await apiClient.get('/admin/rbac/rights');
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (err) {
+    console.error('Failed to fetch admin rights', err);
+  }
+  return [];
+}
+
+export async function fetchAdminRoles(requesterRole?: string): Promise<AdminRole[]> {
+  try {
+    const res = await apiClient.get('/admin/rbac/roles', {
+      params: requesterRole ? { requesterRole } : undefined,
+    });
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (err) {
+    console.error('Failed to fetch admin roles', err);
+  }
+  return [];
+}
+
+export async function createAdminRole(role: Partial<AdminRole>) {
+  const res = await apiClient.post('/admin/rbac/roles', role);
+  return res.data;
+}
+
+export async function updateAdminRole(id: number, role: Partial<AdminRole>) {
+  const res = await apiClient.put(`/admin/rbac/roles/${id}`, role);
+  return res.data;
+}
+
+export async function fetchAdminUsers(
+  requesterRole?: string,
+  requesterBranch?: string,
+  branch?: string
+): Promise<AdminUser[]> {
+  try {
+    const res = await apiClient.get('/admin/rbac/users', {
+      params: {
+        requesterRole: requesterRole || 'SUPER_ADMIN',
+        requesterBranch: requesterBranch || 'All Branches',
+        branch: branch && branch !== 'All Branches' && branch !== 'All' ? branch : undefined,
+      },
+    });
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (err) {
+    console.error('Failed to fetch admin users', err);
+  }
+  return [];
+}
+
+export async function createAdminUser(
+  user: Partial<AdminUser>,
+  requesterRole?: string,
+  requesterBranch?: string,
+  requesterUsername?: string
+) {
+  const res = await apiClient.post('/admin/rbac/users', user, {
+    params: {
+      requesterRole: requesterRole || 'SUPER_ADMIN',
+      requesterBranch: requesterBranch || 'All Branches',
+      requesterUsername: requesterUsername || 'SYSTEM',
+    },
+  });
+  return res.data;
+}
+
+export async function updateAdminUser(
+  id: number,
+  user: Partial<AdminUser>,
+  requesterRole?: string,
+  requesterBranch?: string
+) {
+  const res = await apiClient.put(`/admin/rbac/users/${id}`, user, {
+    params: {
+      requesterRole: requesterRole || 'SUPER_ADMIN',
+      requesterBranch: requesterBranch || 'All Branches',
+    },
+  });
+  return res.data;
+}
+
+export async function deleteAdminUser(
+  id: number,
+  requesterRole?: string,
+  requesterBranch?: string
+) {
+  const res = await apiClient.delete(`/admin/rbac/users/${id}`, {
+    params: {
+      requesterRole: requesterRole || 'SUPER_ADMIN',
+      requesterBranch: requesterBranch || 'All Branches',
+    },
+  });
+  return res.data;
+}
+
+export async function adminLogin(credentials: { username: string; password: string }): Promise<AdminAuthUser> {
+  const res = await apiClient.post('/admin/rbac/login', credentials);
+  if (res.data?.success && res.data.data) {
+    return res.data.data;
+  }
+  throw new Error(res.data?.message || 'Login failed');
+}
+
 
 
 

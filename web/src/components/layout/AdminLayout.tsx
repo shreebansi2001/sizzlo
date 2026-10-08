@@ -2,9 +2,12 @@ import React from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
+import { AdminAuthUser } from '../../types';
+
 interface AdminLayoutProps {
   currentTab: string;
   onTabChange: (tab: string) => void;
+  currentUser?: AdminAuthUser | null;
   title: string;
   subtitle: string;
   onRefresh?: () => void;
@@ -16,6 +19,7 @@ interface AdminLayoutProps {
 export const AdminLayout: React.FC<AdminLayoutProps> = ({
   currentTab,
   onTabChange,
+  currentUser,
   title,
   subtitle,
   onRefresh,
@@ -42,6 +46,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       <Sidebar 
         currentTab={currentTab} 
         onTabChange={handleTabChange} 
+        currentUser={currentUser}
         onLogout={onLogout}
         onClose={() => setIsSidebarOpen(false)}
       />
@@ -49,6 +54,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         <Header 
           title={title} 
           subtitle={subtitle} 
+          currentUser={currentUser}
           onRefresh={onRefresh} 
           isLoading={isLoading} 
           onLogout={onLogout}

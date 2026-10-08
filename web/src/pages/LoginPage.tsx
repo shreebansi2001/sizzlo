@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, Mail, Eye, EyeOff, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, Eye, EyeOff, Sparkles, ArrowRight, CheckCircle2, Building, User, ChevronRight } from 'lucide-react';
+import { adminLogin } from '../api/client';
+import { AdminAuthUser } from '../types';
 
 interface LoginPageProps {
-  onLoginSuccess: (user: { email: string; role: string }) => void;
+  onLoginSuccess: (user: AdminAuthUser) => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
@@ -12,44 +14,72 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const DEMO_EMAIL = 'admin@sizzlo.com';
-  const DEMO_PASS = 'admin123';
+  const DEMO_ACCOUNTS = [
+    {
+      title: 'Group Owner (Super Admin)',
+      subtitle: 'Global oversight · All Branches',
+      email: 'owner@sizzlo.com',
+      pass: 'admin123',
+      badge: '👑 Owner',
+      color: '#C9A24D',
+    },
+    {
+      title: 'Branch Admin (Bodakdev)',
+      subtitle: 'Branch Admin GM · Bodakdev Branch',
+      email: 'bodakdev.admin@sizzlo.com',
+      pass: 'admin123',
+      badge: '🏢 Branch Admin',
+      color: '#FF8A00',
+    },
+    {
+      title: 'Branch Admin (SG Highway)',
+      subtitle: 'Branch Admin GM · SG Highway Branch',
+      email: 'sghighway.admin@sizzlo.com',
+      pass: 'admin123',
+      badge: '🏢 Branch Admin',
+      color: '#FF8A00',
+    },
+    {
+      title: 'Operations Manager',
+      subtitle: 'Shift Lead · Bodakdev Branch',
+      email: 'manager.bodakdev@sizzlo.com',
+      pass: 'admin123',
+      badge: '👔 Manager',
+      color: '#3B82F6',
+    },
+    {
+      title: 'Floor Captain',
+      subtitle: 'Floor & Table Seating · Bodakdev',
+      email: 'captain.rahul@sizzlo.com',
+      pass: 'admin123',
+      badge: '🎖️ Floor Captain',
+      color: '#10B981',
+    },
+  ];
 
-  const handleLogin = (e?: React.FormEvent) => {
+  const handleLogin = async (e?: React.FormEvent, customEmail?: string, customPass?: string) => {
     if (e) e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    setTimeout(() => {
-      const cleanEmail = email.trim().toLowerCase();
-      const cleanPass = password.trim();
+    const loginUser = (customEmail || email).trim();
+    const loginPass = (customPass || password).trim();
 
-      // Accept official demo credentials or generic admin
-      const isEmailValid = cleanEmail === DEMO_EMAIL || cleanEmail === 'admin';
-      const isPassValid = cleanPass === DEMO_PASS || cleanPass === 'admin';
-
-      if (isEmailValid && isPassValid) {
-        const userData = { email: DEMO_EMAIL, role: 'Super Admin' };
-        localStorage.setItem('yanki_admin_auth', JSON.stringify(userData));
-        onLoginSuccess(userData);
-      } else {
-        setError('Invalid credentials. Use demo email: admin@sizzlo.com & password: admin123');
-        setIsLoading(false);
-      }
-    }, 400);
+    try {
+      const authData = await adminLogin({ username: loginUser, password: loginPass });
+      localStorage.setItem('yanki_admin_auth', JSON.stringify(authData));
+      onLoginSuccess(authData);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || 'Invalid credentials. Please verify your email and password.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleQuickDemoLogin = () => {
-    setEmail(DEMO_EMAIL);
-    setPassword(DEMO_PASS);
-    setError(null);
-    setIsLoading(true);
-
-    setTimeout(() => {
-      const userData = { email: DEMO_EMAIL, role: 'Super Admin' };
-      localStorage.setItem('yanki_admin_auth', JSON.stringify(userData));
-      onLoginSuccess(userData);
-    }, 300);
+  const handleQuickLogin = (acc: typeof DEMO_ACCOUNTS[0]) => {
+    setEmail(acc.email);
+    setPassword(acc.pass);
+    handleLogin(undefined, acc.email, acc.pass);
   };
 
   return (
@@ -134,15 +164,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </p>
         </div>
 
-        {/* Demo Credentials Notice Card */}
+        {/* Multi-Tenant RBAC Quick Role Selection */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(201, 162, 77, 0.12) 0%, rgba(201, 162, 77, 0.04) 100%)',
-          border: '1px solid rgba(201, 162, 77, 0.35)',
-          borderRadius: 16,
-          padding: '14px 16px',
-          marginBottom: 24,
+          background: 'linear-gradient(135deg, rgba(201, 162, 77, 0.1) 0%, rgba(20, 20, 20, 0.6) 100%)',
+          border: '1px solid rgba(201, 162, 77, 0.28)',
+          borderRadius: 18,
+          padding: '16px',
+          marginBottom: 20,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -154,43 +184,65 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               textTransform: 'uppercase' 
             }}>
               <Sparkles size={13} color="var(--gold)" />
-              Client Demo Credentials
+              Role-Based Access Preview
             </span>
-            <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 10, color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
               <CheckCircle2 size={12} />
-              Single Key Active
+              API Connected
             </span>
           </div>
 
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 10 }}>
-            <div>Email: <strong style={{ color: '#FFFFFF' }}>{DEMO_EMAIL}</strong></div>
-            <div>Password: <strong style={{ color: '#FFFFFF' }}>{DEMO_PASS}</strong></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 185, overflowY: 'auto' }}>
+            {DEMO_ACCOUNTS.map((acc) => (
+              <button
+                key={acc.email}
+                type="button"
+                onClick={() => handleQuickLogin(acc)}
+                disabled={isLoading}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.07)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(201, 162, 77, 0.12)';
+                  e.currentTarget.style.borderColor = 'rgba(201, 162, 77, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.07)';
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#FFFFFF' }}>{acc.title}</span>
+                    <span style={{ 
+                      fontSize: 9, 
+                      fontWeight: 700, 
+                      padding: '1px 6px', 
+                      borderRadius: 6, 
+                      background: 'rgba(201, 162, 77, 0.15)',
+                      color: acc.color,
+                      border: `1px solid ${acc.color}40`
+                    }}>
+                      {acc.badge}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+                    {acc.subtitle}
+                  </div>
+                </div>
+                <ChevronRight size={14} color="var(--text-dim)" />
+              </button>
+            ))}
           </div>
-
-          <button
-            type="button"
-            onClick={handleQuickDemoLogin}
-            disabled={isLoading}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              borderRadius: 10,
-              background: 'var(--gold-subtle)',
-              border: '1px solid rgba(201, 162, 77, 0.4)',
-              color: 'var(--gold)',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <ShieldCheck size={14} />
-            <span>1-Click Client Demo Sign In</span>
-          </button>
         </div>
 
         {/* Error message */}

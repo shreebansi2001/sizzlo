@@ -6,69 +6,93 @@ import {
   Ticket, 
   CalendarCheck, 
   Store, 
-  Sparkles,
-  Wallet,
-  PartyPopper,
-  Megaphone,
-  ShieldCheck,
-  MessageSquareText,
-  BadgeCheck,
-  Brain,
-  Armchair,
-  Activity,
-  ScanLine,
-  LogOut,
-  UserCheck,
-  X
+  Sparkles, 
+  Wallet, 
+  PartyPopper, 
+  Megaphone, 
+  ShieldCheck, 
+  MessageSquareText, 
+  BadgeCheck, 
+  Brain, 
+  Armchair, 
+  Activity, 
+  ScanLine, 
+  LogOut, 
+  UserCheck, 
+  Building2, 
+  X 
 } from 'lucide-react';
+import { AdminAuthUser } from '../../types';
 
 interface SidebarProps {
   currentTab: string;
   onTabChange: (tab: string) => void;
+  currentUser?: AdminAuthUser | null;
   onLogout?: () => void;
   onClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout, onClose }) => {
-  const navGroups = [
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, currentUser, onLogout, onClose }) => {
+  const isSuperAdmin = currentUser?.roleCode === 'SUPER_ADMIN';
+  const userPerms = currentUser?.permissions || [];
+
+  const hasAccess = (requiredPerm?: string) => {
+    if (!requiredPerm) return true;
+    if (isSuperAdmin) return true;
+    return userPerms.includes(requiredPerm);
+  };
+
+  const allNavGroups = [
     {
       group: 'Overview',
       items: [
-        { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
-        { id: 'insights', label: 'AI Predictive Engine', icon: Brain, badge: '5' },
-        { id: 'ceo', label: 'CEO Strategic Suite', icon: Crown },
+        { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, perm: 'DASHBOARD_VIEW' },
+        { id: 'insights', label: 'AI Predictive Engine', icon: Brain, badge: 'AI', perm: 'INSIGHTS_VIEW' },
+        { id: 'ceo', label: 'CEO Strategic Suite', icon: Crown, perm: 'CEO_SUITE_VIEW' },
       ],
     },
     {
       group: 'Subscribers',
       items: [
-        { id: 'customers', label: 'Patron 360 CRM', icon: Users },
-        { id: 'memberships', label: 'Subscriptions', icon: BadgeCheck },
-        { id: 'loyalty', label: 'Loyalty Points', icon: Sparkles },
+        { id: 'customers', label: 'Patron 360 CRM', icon: Users, perm: 'CUSTOMERS_MANAGE' },
+        { id: 'memberships', label: 'Subscriptions', icon: BadgeCheck, perm: 'MEMBERSHIPS_MANAGE' },
+        { id: 'loyalty', label: 'Loyalty Points', icon: Sparkles, perm: 'LOYALTY_MANAGE' },
       ],
     },
     {
       group: 'Operations',
       items: [
-        { id: 'coupons', label: 'Voucher Manager', icon: Ticket },
-        { id: 'payments', label: 'Pending Payments', icon: Wallet, badge: '12' },
-        { id: 'reservations', label: 'Host Station Bookings', icon: CalendarCheck },
-        { id: 'floor', label: 'Floor & Tables', icon: Armchair },
-        { id: 'activity', label: 'Live Activity', icon: Activity },
-        { id: 'redemption', label: 'Redemption Desk', icon: ScanLine },
-        { id: 'outlets', label: 'Venues & Outlets', icon: Store },
-        { id: 'events', label: 'Banquet & ODC', icon: PartyPopper },
+        { id: 'coupons', label: 'Voucher Manager', icon: Ticket, perm: 'COUPONS_MANAGE' },
+        { id: 'payments', label: 'Pending Payments', icon: Wallet, perm: 'PAYMENTS_SETTLE_APPROVE' },
+        { id: 'reservations', label: 'Host Station Bookings', icon: CalendarCheck, perm: 'RESERVATIONS_MANAGE' },
+        { id: 'floor', label: 'Floor & Tables', icon: Armchair, perm: 'FLOOR_TABLES_MANAGE' },
+        { id: 'activity', label: 'Live Activity', icon: Activity, perm: 'DASHBOARD_VIEW' },
+        { id: 'redemption', label: 'Redemption Desk', icon: ScanLine, perm: 'REDEMPTION_VALIDATE' },
+        { id: 'outlets', label: 'Venues & Outlets', icon: Store, perm: 'OUTLETS_MANAGE' },
+        { id: 'events', label: 'Banquet & ODC', icon: PartyPopper, perm: 'EVENTS_MANAGE' },
       ],
     },
     {
       group: 'Growth & Governance',
       items: [
-        { id: 'marketing', label: 'Marketing Campaigns', icon: Megaphone },
-        { id: 'staff', label: 'Staff & Roles', icon: ShieldCheck },
-        { id: 'feedback', label: 'Patron Feedback', icon: MessageSquareText },
+        { id: 'marketing', label: 'Marketing Campaigns', icon: Megaphone, perm: 'MARKETING_MANAGE' },
+        { id: 'staff', label: 'Staff & Roles (RBAC)', icon: ShieldCheck, perm: 'USER_MGMT' },
+        { id: 'feedback', label: 'Patron Feedback', icon: MessageSquareText, perm: 'FEEDBACK_VIEW' },
       ],
     },
   ];
+
+  // Filter navigation by effective permissions
+  const navGroups = allNavGroups.map(g => ({
+    ...g,
+    items: g.items.filter(item => hasAccess(item.perm))
+  })).filter(g => g.items.length > 0);
+
+  const displayRoleBadge = currentUser?.roleCode ? (
+    currentUser.roleCode === 'SUPER_ADMIN' ? 'SUPER ADMIN (OWNER)' :
+    currentUser.roleCode === 'BRANCH_ADMIN' ? 'BRANCH ADMIN' :
+    currentUser.roleCode === 'MANAGER' ? 'OPERATIONS MANAGER' : 'FLOOR CAPTAIN'
+  ) : 'SUPER ADMIN';
 
   return (
     <aside className="admin-sidebar">
@@ -88,11 +112,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLog
               <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, fontWeight: 700, color: 'var(--text-main)', letterSpacing: 0.5 }}>
                 YANKI
               </span>
-              <span className="brand-badge">SUPER ADMIN</span>
+              <span className="brand-badge" style={{ fontSize: 9 }}>
+                {displayRoleBadge}
+              </span>
             </div>
-            <p style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 0.5, marginTop: 2 }}>
-              Privilege & Dining Console
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+              <Building2 size={11} color="var(--gold)" />
+              <span style={{ fontSize: 10, color: 'var(--gold)', fontWeight: 600, letterSpacing: 0.3 }}>
+                {currentUser?.branchName || 'All Branches'}
+              </span>
+            </div>
           </div>
         </div>
         {onClose && (
@@ -142,15 +171,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLog
       <div className="sidebar-footer-card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)' }}>
-            Tonight Service
+            Branch Scoping
           </span>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)' }}></span>
         </div>
-        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 15, color: 'var(--text-main)', marginTop: 4 }}>
-          26 VIPs Dining
+        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 13, color: 'var(--text-main)', marginTop: 4, fontWeight: 600 }}>
+          {currentUser?.branchName || 'All Branches'}
         </p>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-          Across 4 outlets · 92% capacity
+        <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+          {isSuperAdmin ? 'Full group permissions active' : `Scoped to ${currentUser?.branchName}`}
         </p>
 
         {/* Logged in Admin & Logout */}
@@ -164,22 +193,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLog
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
             <div style={{
-              width: 26,
-              height: 26,
+              width: 28,
+              height: 28,
               borderRadius: '50%',
               background: 'rgba(201, 162, 77, 0.2)',
               border: '1px solid var(--gold)',
               display: 'grid',
               placeItems: 'center',
+              flexShrink: 0,
             }}>
-              <UserCheck size={13} color="var(--gold)" />
+              <UserCheck size={14} color="var(--gold)" />
             </div>
             <div style={{ overflow: 'hidden' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                admin@sizzlo.com
+                {currentUser?.fullName || currentUser?.email || 'admin@sizzlo.com'}
               </div>
               <div style={{ fontSize: 9, color: 'var(--gold)', letterSpacing: 0.5 }}>
-                Super Admin
+                {currentUser?.roleName || 'Super Admin'}
               </div>
             </div>
           </div>

@@ -445,8 +445,12 @@ class AuthController extends GetxController {
           duration: const Duration(seconds: 3),
         );
 
-        // Route to SUBSCRIPTION PLANS first upon successful login / OTP verification
-        Get.offAllNamed(AppRoutes.PLANS, arguments: {'fromLogin': true});
+        // If already subscribed, navigate directly to Home; otherwise show Subscription Plans
+        if (member.isSubscriber) {
+          Get.offAllNamed(AppRoutes.HOME);
+        } else {
+          Get.offAllNamed(AppRoutes.PLANS, arguments: {'fromLogin': true});
+        }
       } else {
         Get.snackbar('Verification Failed', 'Invalid or expired OTP. Please try again.',
             backgroundColor: Colors.redAccent, colorText: Colors.white);

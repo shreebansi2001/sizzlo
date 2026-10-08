@@ -11,7 +11,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'https://cheeragskitchen.in/Sizzlo',
+        target: process.env.VITE_PROXY_TARGET || 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },

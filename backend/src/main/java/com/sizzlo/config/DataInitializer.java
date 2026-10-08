@@ -26,6 +26,8 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private SalesTargetRepository salesTargetRepository;
     @Autowired private FeedbackTicketRepository feedbackTicketRepository;
     @Autowired private OutletTimeSlotRepository outletTimeSlotRepository;
+    @Autowired private AdminRoleRepository adminRoleRepository;
+    @Autowired private AdminUserRepository adminUserRepository;
 
     @Override
     public void run(String... args) {
@@ -46,6 +48,8 @@ public class DataInitializer implements CommandLineRunner {
         corporateLeadRepository.deleteAll();
         salesTargetRepository.deleteAll();
         feedbackTicketRepository.deleteAll();
+        adminUserRepository.deleteAll();
+        adminRoleRepository.deleteAll();
         initData();
     }
 
@@ -79,6 +83,9 @@ public class DataInitializer implements CommandLineRunner {
         }
         if (outletTimeSlotRepository.count() == 0) {
             seedTimeSlots();
+        }
+        if (adminRoleRepository.count() == 0 || adminUserRepository.count() == 0) {
+            seedRbacData();
         }
     }
 
@@ -378,5 +385,139 @@ public class DataInitializer implements CommandLineRunner {
 
         waitlistEntryRepository.save(new WaitlistEntry("Mehta family", 4, 12));
         waitlistEntryRepository.save(new WaitlistEntry("Aarav Shah", 2, 7));
+    }
+
+    private void seedRbacData() {
+        if (adminRoleRepository.count() == 0) {
+            // Level 1: Super Admin (Owner)
+            AdminRole superAdmin = new AdminRole(
+                    "SUPER_ADMIN",
+                    "Owner (Super Admin)",
+                    "Group Owner & Managing Director with global oversight across all outlets",
+                    1,
+                    "DASHBOARD_VIEW,INSIGHTS_VIEW,CEO_SUITE_VIEW,CUSTOMERS_MANAGE,MEMBERSHIPS_MANAGE,LOYALTY_MANAGE,COUPONS_MANAGE,PAYMENTS_SETTLE_APPROVE,RESERVATIONS_MANAGE,FLOOR_TABLES_MANAGE,REDEMPTION_VALIDATE,OUTLETS_MANAGE,EVENTS_MANAGE,MARKETING_MANAGE,USER_MGMT,FEEDBACK_VIEW",
+                    true
+            );
+            adminRoleRepository.save(superAdmin);
+
+            // Level 2: Branch Admin
+            AdminRole branchAdmin = new AdminRole(
+                    "BRANCH_ADMIN",
+                    "Branch Admin / General Manager",
+                    "Full administrative authority within their assigned outlet branch",
+                    2,
+                    "DASHBOARD_VIEW,CUSTOMERS_MANAGE,LOYALTY_MANAGE,COUPONS_MANAGE,PAYMENTS_SETTLE_APPROVE,RESERVATIONS_MANAGE,FLOOR_TABLES_MANAGE,REDEMPTION_VALIDATE,OUTLETS_MANAGE,EVENTS_MANAGE,USER_MGMT,FEEDBACK_VIEW",
+                    true
+            );
+            adminRoleRepository.save(branchAdmin);
+
+            // Level 3: Manager
+            AdminRole manager = new AdminRole(
+                    "MANAGER",
+                    "Operations Manager / Shift Lead",
+                    "Daily dining operations, table seating, reservations, staff shifts and approvals",
+                    3,
+                    "DASHBOARD_VIEW,CUSTOMERS_MANAGE,RESERVATIONS_MANAGE,FLOOR_TABLES_MANAGE,REDEMPTION_VALIDATE,PAYMENTS_SETTLE_APPROVE,FEEDBACK_VIEW",
+                    true
+            );
+            adminRoleRepository.save(manager);
+
+            // Level 4: Floor Captain
+            AdminRole floorCaptain = new AdminRole(
+                    "FLOOR_CAPTAIN",
+                    "Floor Captain / Head Waiter",
+                    "Table seating assignments, waitlist coordination and dining floor management",
+                    4,
+                    "RESERVATIONS_MANAGE,FLOOR_TABLES_MANAGE,REDEMPTION_VALIDATE",
+                    true
+            );
+            adminRoleRepository.save(floorCaptain);
+        }
+
+        if (adminUserRepository.count() == 0) {
+            // 1. Super Admin (Owner)
+            adminUserRepository.save(new AdminUser(
+                    "owner@sizzlo.com",
+                    "owner@sizzlo.com",
+                    "Rajesh Patel (Group Owner)",
+                    "+91 98250 11000",
+                    "admin123",
+                    "SUPER_ADMIN",
+                    "Owner (Super Admin)",
+                    "All Branches",
+                    null,
+                    "SYSTEM"
+            ));
+
+            // 2. Branch Admin: Yanki Sizzlerr Bodakdev
+            adminUserRepository.save(new AdminUser(
+                    "bodakdev.admin@sizzlo.com",
+                    "bodakdev.admin@sizzlo.com",
+                    "Sanjay Verma (Bodakdev GM)",
+                    "+91 98251 22001",
+                    "admin123",
+                    "BRANCH_ADMIN",
+                    "Branch Admin / General Manager",
+                    "Yanki Sizzlerr Bodakdev",
+                    1L,
+                    "owner@sizzlo.com"
+            ));
+
+            // 3. Branch Admin: Yanki Sizzlerr SG Highway
+            adminUserRepository.save(new AdminUser(
+                    "sghighway.admin@sizzlo.com",
+                    "sghighway.admin@sizzlo.com",
+                    "Neha Trivedi (SG Highway GM)",
+                    "+91 98252 33002",
+                    "admin123",
+                    "BRANCH_ADMIN",
+                    "Branch Admin / General Manager",
+                    "Yanki Sizzlerr SG Highway",
+                    2L,
+                    "owner@sizzlo.com"
+            ));
+
+            // 4. Branch Admin: Yanki Sizzlerr Vastrapur Lake
+            adminUserRepository.save(new AdminUser(
+                    "vastrapur.admin@sizzlo.com",
+                    "vastrapur.admin@sizzlo.com",
+                    "Pooja Desai (Vastrapur GM)",
+                    "+91 98255 66005",
+                    "admin123",
+                    "BRANCH_ADMIN",
+                    "Branch Admin / General Manager",
+                    "Yanki Sizzlerr Vastrapur Lake",
+                    5L,
+                    "owner@sizzlo.com"
+            ));
+
+            // 5. Manager: Yanki Sizzlerr Bodakdev
+            adminUserRepository.save(new AdminUser(
+                    "manager.bodakdev@sizzlo.com",
+                    "manager.bodakdev@sizzlo.com",
+                    "Amit Shah (Operations Manager)",
+                    "+91 98253 44003",
+                    "admin123",
+                    "MANAGER",
+                    "Operations Manager / Shift Lead",
+                    "Yanki Sizzlerr Bodakdev",
+                    1L,
+                    "bodakdev.admin@sizzlo.com"
+            ));
+
+            // 6. Floor Captain: Yanki Sizzlerr Bodakdev
+            adminUserRepository.save(new AdminUser(
+                    "captain.rahul@sizzlo.com",
+                    "captain.rahul@sizzlo.com",
+                    "Rahul Mehta (Floor Captain)",
+                    "+91 98254 55004",
+                    "admin123",
+                    "FLOOR_CAPTAIN",
+                    "Floor Captain / Head Waiter",
+                    "Yanki Sizzlerr Bodakdev",
+                    1L,
+                    "manager.bodakdev@sizzlo.com"
+            ));
+        }
     }
 }
