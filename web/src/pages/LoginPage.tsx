@@ -383,7 +383,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           fontSize: 11,
         }}>
           <ShieldCheck size={13} color="var(--gold)" />
-          <span>Secured VIP Operations & Patrons Telemetry</span>
+          <span>Secured VIP Operations & Users Telemetry</span>
         </div>
       </div>
     </div>

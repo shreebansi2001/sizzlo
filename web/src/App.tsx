@@ -178,13 +178,13 @@ export function App() {
   const getPageInfo = () => {
     switch (currentTab) {
       case 'dashboard':
-        return { title: 'Executive Overview', subtitle: 'Live business performance & patron telemetry' };
+        return { title: 'Executive Overview', subtitle: 'Live business performance & user telemetry' };
       case 'insights':
         return { title: 'AI Predictive Engine', subtitle: 'Automated intelligence to unlock group revenue growth' };
       case 'ceo':
         return { title: 'CEO Strategic Suite', subtitle: 'Consolidated group revenue, forecast and margins' };
       case 'customers':
-        return { title: 'Patron 360 CRM', subtitle: 'Manage VIP memberships, spending records & dues' };
+        return { title: 'Users Management', subtitle: 'View registered users, subscribed VIP members & free accounts' };
       case 'memberships':
         return { title: 'Subscription Management', subtitle: 'Track subscriptions, renewal forecast and lifetime growth' };
       case 'loyalty':
@@ -204,13 +204,14 @@ export function App() {
       case 'outlets':
         return { title: 'Venues & Dining Concepts', subtitle: 'Compare venue revenues, ABV, and ratings' };
       case 'events':
-        return { title: 'Banquet & ODC Management', subtitle: 'Pipeline, event calendar and lead conversion for celebrations' };
+        return { title: 'Exclusive Events & Sunday Brunches', subtitle: 'Manage Sunday Brunches, Chef Table passes, guest capacities, attendee lists and banquet desk' };
+      case 'notifications':
       case 'marketing':
-        return { title: 'Marketing & Campaigns', subtitle: 'Audience reach, automated journeys and broadcast messaging' };
+        return { title: 'Broadcast & Push Notifications', subtitle: 'Compose and dispatch instant push notifications, WhatsApp alerts, and subscriber broadcasts' };
       case 'staff':
         return { title: 'Staff & Roles (RBAC)', subtitle: 'Multi-tenant branch staff, roles & permission matrix' };
       case 'feedback':
-        return { title: 'Subscriber Reviews & Feedback', subtitle: 'Direct dining ratings and comments from VIP patrons' };
+        return { title: 'Subscriber Reviews & Feedback', subtitle: 'Direct dining ratings and comments from VIP users' };
       default:
         return { title: 'Sizzlo Admin Console', subtitle: 'Operations management' };
     }
@@ -280,7 +281,7 @@ export function App() {
           {currentTab === 'events' && (
             <EventsPage events={[]} />
           )}
-          {currentTab === 'marketing' && (
+          {(currentTab === 'marketing' || currentTab === 'notifications') && (
             <MarketingPage channels={[]} presets={[]} />
           )}
           {currentTab === 'staff' && (

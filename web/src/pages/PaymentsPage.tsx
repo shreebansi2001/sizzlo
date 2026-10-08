@@ -29,6 +29,7 @@ import {
   RazorpaySummaryDTO
 } from '../api/client';
 import { PendingPayment, Member } from '../types';
+import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
 import axios from 'axios';
 
 const safeCurrency = (val: any): string => {
@@ -82,23 +83,34 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
   }, []);
 
   useEffect(() => {
-    axios.get('/api/members')
+    axios.get('/api/members', { timeout: 2000 })
       .then(res => {
-        if (res.data?.success && res.data.data) {
-          const duesMembers = res.data.data
-            .filter((m: Member) => (m.pendingDues && m.pendingDues > 0) || m.status === 'Renewal Due')
-            .map((m: Member) => ({
-              id: m.membershipId,
-              name: m.fullName,
-              mobile: m.mobile,
-              pending: m.pendingDues > 0 ? m.pendingDues : 10000,
-              dueDate: m.expiryDate,
-              reminder: 'Ready to send',
-            }));
-          setPaymentList(duesMembers);
-        }
+        const membersToUse = (res.data?.success && res.data.data?.length) ? res.data.data : DEFAULT_USERS_DATASET;
+        const duesMembers = membersToUse
+          .filter((m: Member) => (m.pendingDues && m.pendingDues > 0) || m.status === 'Renewal Due')
+          .map((m: Member) => ({
+            id: m.membershipId,
+            name: m.fullName,
+            mobile: m.mobile,
+            pending: m.pendingDues > 0 ? m.pendingDues : 10000,
+            dueDate: m.expiryDate,
+            reminder: 'Ready to send',
+          }));
+        setPaymentList(duesMembers);
       })
-      .catch(() => {});
+      .catch(() => {
+        const duesMembers = DEFAULT_USERS_DATASET
+          .filter((m: Member) => (m.pendingDues && m.pendingDues > 0) || m.status === 'Renewal Due')
+          .map((m: Member) => ({
+            id: m.membershipId,
+            name: m.fullName,
+            mobile: m.mobile,
+            pending: m.pendingDues > 0 ? m.pendingDues : 10000,
+            dueDate: m.expiryDate,
+            reminder: 'Ready to send',
+          }));
+        setPaymentList(duesMembers);
+      });
   }, []);
 
   const handleApprove = async (billId: number, invoiceNo: string) => {
@@ -746,7 +758,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                   <tr>
                     <td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
                       <Check size={24} color="#10B981" style={{ display: 'block', margin: '0 auto 8px' }} />
-                      No subscriber dues currently pending. All patron accounts are fully settled and cleared!
+                      No subscriber dues currently pending. All user accounts are fully settled and cleared!
                     </td>
                   </tr>
                 ) : (
@@ -1053,7 +1065,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
                         <div style={{ color: 'var(--primary)', fontSize: 11, fontFamily: 'monospace' }}>{tx.paymentId}</div>
                       </td>
                       <td style={{ padding: '12px 16px' }}>
-                        <div style={{ fontWeight: 600, color: '#FFFFFF' }}>{tx.customerName || 'Patron'}</div>
+                        <div style={{ fontWeight: 600, color: '#FFFFFF' }}>{tx.customerName || 'User'}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tx.customerMobile || '+91 98250 12345'}</div>
                       </td>
                       <td style={{ padding: '12px 16px' }}>

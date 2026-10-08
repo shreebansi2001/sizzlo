@@ -20,6 +20,7 @@ import {
   LogOut, 
   UserCheck, 
   Building2, 
+  Bell,
   X 
 } from 'lucide-react';
 import { AdminAuthUser } from '../../types';
@@ -52,9 +53,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
       ],
     },
     {
-      group: 'Subscribers',
+      group: 'Users & Subscriptions',
       items: [
-        { id: 'customers', label: 'Patron 360 CRM', icon: Users, perm: 'CUSTOMERS_MANAGE' },
+        { id: 'customers', label: 'Users', icon: Users, perm: 'CUSTOMERS_MANAGE' },
         { id: 'memberships', label: 'Subscriptions', icon: BadgeCheck, perm: 'MEMBERSHIPS_MANAGE' },
         { id: 'loyalty', label: 'Loyalty Points', icon: Sparkles, perm: 'LOYALTY_MANAGE' },
       ],
@@ -63,21 +64,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
       group: 'Operations',
       items: [
         { id: 'coupons', label: 'Voucher Manager', icon: Ticket, perm: 'COUPONS_MANAGE' },
-        { id: 'payments', label: 'Pending Payments', icon: Wallet, perm: 'PAYMENTS_SETTLE_APPROVE' },
+        { id: 'payments', label: 'Pending Payments', icon: Wallet, badge: '12', perm: 'PAYMENTS_SETTLE_APPROVE' },
         { id: 'reservations', label: 'Host Station Bookings', icon: CalendarCheck, perm: 'RESERVATIONS_MANAGE' },
         { id: 'floor', label: 'Floor & Tables', icon: Armchair, perm: 'FLOOR_TABLES_MANAGE' },
         { id: 'activity', label: 'Live Activity', icon: Activity, perm: 'DASHBOARD_VIEW' },
         { id: 'redemption', label: 'Redemption Desk', icon: ScanLine, perm: 'REDEMPTION_VALIDATE' },
         { id: 'outlets', label: 'Venues & Outlets', icon: Store, perm: 'OUTLETS_MANAGE' },
-        { id: 'events', label: 'Banquet & ODC', icon: PartyPopper, perm: 'EVENTS_MANAGE' },
+        { id: 'events', label: 'Events & Brunches', icon: PartyPopper, perm: 'EVENTS_MANAGE' },
       ],
     },
     {
       group: 'Growth & Governance',
       items: [
-        { id: 'marketing', label: 'Marketing Campaigns', icon: Megaphone, perm: 'MARKETING_MANAGE' },
+        { id: 'marketing', label: 'Broadcast & Notifications', icon: Bell, perm: 'MARKETING_MANAGE' },
         { id: 'staff', label: 'Staff & Roles (RBAC)', icon: ShieldCheck, perm: 'USER_MGMT' },
-        { id: 'feedback', label: 'Patron Feedback', icon: MessageSquareText, perm: 'FEEDBACK_VIEW' },
+        { id: 'feedback', label: 'User Feedback', icon: MessageSquareText, perm: 'FEEDBACK_VIEW' },
       ],
     },
   ];

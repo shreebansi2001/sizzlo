@@ -51,6 +51,7 @@ public class Outlet {
 
     private Double longitude;
 
+    @Lob
     @Column(name = "image_url")
     private String imageUrl;
 

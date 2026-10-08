@@ -554,11 +554,12 @@ class ApiService {
     return null;
   }
 
-  Future<List<BillSettlementModel>> getMyBills([String? mobile]) async {
+  Future<List<BillSettlementModel>> getMyBills([String? mobile, String? membershipId]) async {
     final mob = mobile ?? AppConstants.currentUserMobile;
+    final id = membershipId ?? AppConstants.currentMembershipId;
     try {
       final res = await _client.get(
-        Uri.parse('${AppConstants.baseUrl}/bills/my?mobile=${Uri.encodeComponent(mob)}'),
+        Uri.parse('${AppConstants.baseUrl}/bills/my?mobile=${Uri.encodeComponent(mob)}&membershipId=${Uri.encodeComponent(id)}'),
         headers: _headers,
       ).timeout(const Duration(seconds: 4));
       if (res.statusCode == 200) {
@@ -867,7 +868,10 @@ class ApiService {
   }
 
   Future<List<LoyaltyTransactionModel>> getLoyaltyHistory([String? memberId]) async {
-    final id = memberId ?? AppConstants.currentMembershipId;
+    final id = (memberId != null && memberId.isNotEmpty) 
+        ? memberId 
+        : (AppConstants.currentMembershipId.isNotEmpty ? AppConstants.currentMembershipId : AppConstants.currentUserMobile);
+    if (id.isEmpty) return [];
     try {
       final res = await _client.get(
         Uri.parse('${AppConstants.baseUrl}/members/$id/loyalty'),

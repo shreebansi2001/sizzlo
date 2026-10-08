@@ -25,8 +25,8 @@ import {
   Tooltip, 
   CartesianGrid 
 } from 'recharts';
-import { Reservation, OutletTimeSlot } from '../types';
-import { fetchAllTimeSlots, createTimeSlot, toggleTimeSlot, deleteTimeSlot } from '../api/client';
+import { Reservation, OutletTimeSlot, Outlet } from '../types';
+import { fetchAllTimeSlots, createTimeSlot, toggleTimeSlot, deleteTimeSlot, fetchOutlets } from '../api/client';
 
 interface ReservationsPageProps {
   reservations: Reservation[];
@@ -94,6 +94,8 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
   
   // Dynamic Slots State
   const [slotsList, setSlotsList] = useState<OutletTimeSlot[]>([]);
+  const [availableOutlets, setAvailableOutlets] = useState<Outlet[]>([]);
+  const [slotFilterOutlet, setSlotFilterOutlet] = useState<string>('All Outlets');
   const [showSlotModal, setShowSlotModal] = useState(false);
   const [newSlotTime, setNewSlotTime] = useState('08:00 PM');
   const [newSlotSession, setNewSlotSession] = useState<'LUNCH' | 'DINNER'>('DINNER');
@@ -120,6 +122,9 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
   useEffect(() => {
     fetchLiveReservations();
     loadSlots();
+    fetchOutlets().then((data) => {
+      if (data && data.length > 0) setAvailableOutlets(data);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -900,10 +905,10 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                     color: 'var(--text-main)'
                   }}
                 >
-                  <option value="All Outlets">All Outlets</option>
-                  <option value="Yanki Sizzlerr Bodakdev">Bodakdev</option>
-                  <option value="Yanki Sizzlerr SG Highway">SG Highway</option>
-                  <option value="Dough by Yanki CG Road">CG Road</option>
+                  <option value="All Outlets">All Outlets (Universal)</option>
+                  {availableOutlets.map((o) => (
+                    <option key={o.id} value={o.name}>{o.name}</option>
+                  ))}
                 </select>
                 <button
                   type="submit"
@@ -916,13 +921,37 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
               </div>
             </form>
 
-            {/* List of Existing Slots */}
+            {/* List of Existing Slots with Outlet Filter */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>Configured Slots</h4>
-              {slotsList.length === 0 ? (
-                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>No slots configured yet.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>Configured Slots</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Filter Outlet:</span>
+                  <select
+                    value={slotFilterOutlet}
+                    onChange={(e) => setSlotFilterOutlet(e.target.value)}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: 6,
+                      border: '1px solid var(--border)',
+                      background: 'var(--surface-alt)',
+                      color: 'var(--text-main)',
+                      fontSize: 11
+                    }}
+                  >
+                    <option value="All Outlets">All Configured Slots</option>
+                    {availableOutlets.map(o => (
+                      <option key={o.id} value={o.name}>{o.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {slotsList.filter(s => slotFilterOutlet === 'All Outlets' || s.outlet === 'All Outlets' || s.outlet === slotFilterOutlet).length === 0 ? (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>No slots found for this selection.</p>
               ) : (
-                slotsList.map((slot) => (
+                slotsList
+                  .filter(s => slotFilterOutlet === 'All Outlets' || s.outlet === 'All Outlets' || s.outlet === slotFilterOutlet)
+                  .map((slot) => (
                   <div
                     key={slot.id}
                     style={{

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../controllers/loyalty_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/sizzlo_mascot_animated.dart';
@@ -25,6 +26,22 @@ class LoyaltyView extends GetView<LoyaltyController> {
     }
     result = '$remaining$result,$last3';
     return (isNegative ? '-' : '') + result;
+  }
+
+  String _formatTxDate(String raw) {
+    if (raw.isEmpty) return 'Recent';
+    try {
+      DateTime? dt;
+      if (raw.contains('T')) {
+        dt = DateTime.tryParse(raw);
+      } else if (raw.contains('-')) {
+        dt = DateTime.tryParse(raw.replaceFirst(' ', 'T'));
+      }
+      if (dt != null) {
+        return DateFormat('dd MMM yyyy, hh:mm a').format(dt.toLocal());
+      }
+    } catch (_) {}
+    return raw.contains('T') ? raw.split('T')[0] : raw;
   }
 
   @override
@@ -461,7 +478,7 @@ class LoyaltyView extends GetView<LoyaltyController> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${t.time.contains('T') ? t.time.split('T')[0] : t.time} · ${t.outletName}',
+                      '${_formatTxDate(t.time)} · ${t.outletName}',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.white.withOpacity(0.4),

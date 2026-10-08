@@ -57,7 +57,7 @@ export const ActivityPage: React.FC<{ onNavigate?: (tab: string) => void }> = ({
       <div className="page-header">
         <div>
           <h1 className="page-title">Live Activity Feed</h1>
-          <p className="page-subtitle">Real-time patron interactions, redemptions, and visits across every outlet</p>
+          <p className="page-subtitle">Real-time user interactions, redemptions, and visits across every outlet</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-outline" onClick={() => setPaused(!paused)}>

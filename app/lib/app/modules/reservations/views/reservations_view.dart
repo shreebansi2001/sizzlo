@@ -457,7 +457,7 @@ class ReservationsView extends GetView<ReservationsController> {
                         const SizedBox(height: 2),
                         Text(
                           isSub
-                              ? 'Your table is guaranteed with priority host seating. Tables held for 15 mins.'
+                              ? 'Your table is guaranteed with priority host seating. Nominal ₹99 cover charge is 100% deducted from your dining bill.'
                               : 'Instant table reservations are reserved for Yanki VIP subscribers. Subscribe to reserve tables instantly.',
                           style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[400]),
                         ),
@@ -475,7 +475,7 @@ class ReservationsView extends GetView<ReservationsController> {
             text: controller.isSubmitting.value
                 ? 'Reserving Table...'
                 : controller.isSubscribedMember.value
-                    ? 'Confirm VIP Priority Table (₹0)'
+                    ? 'Book VIP Table • ₹99 Advance Cover'
                     : 'Subscribe to Reserve Table 🔒',
             isLoading: controller.isSubmitting.value,
             onPressed: controller.confirmAndBookTable,

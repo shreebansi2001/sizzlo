@@ -99,7 +99,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           />
           <div>
             <h1 className="page-title">Executive Operations Hub</h1>
-            <p className="page-subtitle">Live real-time telemetry across all Yanki hospitality outlets & patron activities.</p>
+            <p className="page-subtitle">Live real-time telemetry across all Yanki hospitality outlets & user activities.</p>
           </div>
         </div>
 
@@ -249,7 +249,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
             <div>
               <h2 className="card-title">Outlet Performance</h2>
-              <p className="card-subtitle">Top revenue and active VIP patrons by dining outlet</p>
+              <p className="card-subtitle">Top revenue and active VIP users by dining outlet</p>
             </div>
           </div>
           <div className="data-table-container">
@@ -258,7 +258,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <tr>
                   <th>Outlet Venue</th>
                   <th>Revenue</th>
-                  <th>Patrons</th>
+                  <th>Users</th>
                   <th>Rating</th>
                 </tr>
               </thead>

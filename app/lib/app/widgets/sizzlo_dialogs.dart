@@ -300,6 +300,7 @@ class SizzloDialogs {
     required String time,
     required int guests,
     required bool isVip,
+    double bookingCharge = 99.0,
     String? specialRequests,
     required VoidCallback onConfirm,
   }) {
@@ -364,15 +365,18 @@ class SizzloDialogs {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          outlet,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                        Expanded(
+                          child: Text(
+                            outlet,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
-                        if (isVip)
+                        if (isVip) ...[
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
@@ -388,6 +392,7 @@ class SizzloDialogs {
                               ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -411,6 +416,57 @@ class SizzloDialogs {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.gold.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.receipt_long_rounded, color: AppColors.gold, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Table Advance Cover',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${bookingCharge.toStringAsFixed(0)}',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: AppColors.gold,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '100% deducted from your final dining bill',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.65),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -453,7 +509,7 @@ class SizzloDialogs {
                         ),
                       ),
                       child: Text(
-                        'Reserve Now',
+                        bookingCharge > 0 ? 'Pay ₹${bookingCharge.toStringAsFixed(0)} & Reserve' : 'Reserve Now',
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.bold,
                         ),

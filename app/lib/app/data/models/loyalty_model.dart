@@ -25,7 +25,10 @@ class LoyaltyTransactionModel {
       points: json['points'] ?? 0,
       type: json['type'] ?? 'EARN',
       outletName: json['outletName'] ?? 'Yanki Outlets',
-      time: json['transactionTime']?.toString() ?? 'Recent',
+      time: json['transactionTime']?.toString() ??
+          json['createdAt']?.toString() ??
+          json['date']?.toString() ??
+          'Recent',
     );
   }
 }

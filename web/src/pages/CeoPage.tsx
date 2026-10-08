@@ -143,7 +143,7 @@ export const CeoPage: React.FC<CeoPageProps> = ({ kpis: initialKpis, outlets: in
             <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', display: 'grid', placeItems: 'center' }}>
               <Users size={20} color="#10B981" />
             </div>
-            <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>VIP Patron Retention</h4>
+            <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>VIP User Retention</h4>
           </div>
           <p style={{ fontSize: 26, fontWeight: 800, color: 'var(--primary)' }}>88.6%</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>3.2x higher visit cadence vs non-members</p>

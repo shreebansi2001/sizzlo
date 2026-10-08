@@ -203,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, currentUser, on
           <Search size={15} />
           <input 
             type="text" 
-            placeholder="Search patron, phone, or voucher..." 
+            placeholder="Search user, phone, or voucher..." 
             value={searchVal}
             onChange={(e) => setSearchVal(e.target.value)}
           />

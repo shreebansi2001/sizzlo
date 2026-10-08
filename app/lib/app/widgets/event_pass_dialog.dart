@@ -254,7 +254,7 @@ class EventPassDialog extends StatelessWidget {
                           child: _buildInfoItem(
                             icon: Icons.person_rounded,
                             label: 'Guest Name',
-                            value: booking.customerName.isNotEmpty ? booking.customerName : 'Patron',
+                            value: booking.customerName.isNotEmpty ? booking.customerName : 'Guest',
                           ),
                         ),
                       ],

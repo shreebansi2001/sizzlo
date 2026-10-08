@@ -296,7 +296,7 @@ class PlansController extends GetxController {
         'order_id': orderId.startsWith('order_') && !orderId.startsWith('order_rzp_') ? orderId : null,
         'prefill': {
           'contact': AppConstants.currentUserMobile,
-          'email': 'patron@sizzlo.com',
+          'email': 'user@sizzlo.com',
         },
         'theme': {
           'color': '#DF9E5B',

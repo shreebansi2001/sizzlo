@@ -58,6 +58,13 @@ public class OutletController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<Outlet>> createOutlet(@RequestBody Outlet outlet) {
+        if (outlet.getIsUpcoming() == null) outlet.setIsUpcoming(false);
+        if (outlet.getRating() == null) outlet.setRating(4.8);
+        if (outlet.getRevenueLakhs() == null) outlet.setRevenueLakhs(0.0);
+        if (outlet.getActiveMembers() == null) outlet.setActiveMembers(0);
+        if (outlet.getAverageBillValue() == null) outlet.setAverageBillValue(1250);
+        if (outlet.getCouponsRedeemed() == null) outlet.setCouponsRedeemed(0);
+        if (outlet.getBrand() == null || outlet.getBrand().trim().isEmpty()) outlet.setBrand("Yanki Sizzlerr");
         return ResponseEntity.ok(ApiResponse.success("Outlet registered", outletRepository.save(outlet)));
     }
 
@@ -67,11 +74,29 @@ public class OutletController {
         if (updated.getName() != null) existing.setName(updated.getName());
         if (updated.getBrand() != null) existing.setBrand(updated.getBrand());
         if (updated.getAddress() != null) existing.setAddress(updated.getAddress());
+        if (updated.getCity() != null) existing.setCity(updated.getCity());
         if (updated.getOpeningHours() != null) existing.setOpeningHours(updated.getOpeningHours());
         if (updated.getContactNumber() != null) existing.setContactNumber(updated.getContactNumber());
         if (updated.getIsUpcoming() != null) existing.setIsUpcoming(updated.getIsUpcoming());
         if (updated.getConceptTag() != null) existing.setConceptTag(updated.getConceptTag());
         if (updated.getTargetLaunchDate() != null) existing.setTargetLaunchDate(updated.getTargetLaunchDate());
+        if (updated.getRating() != null) existing.setRating(updated.getRating());
+        if (updated.getRevenueLakhs() != null) existing.setRevenueLakhs(updated.getRevenueLakhs());
+        if (updated.getActiveMembers() != null) existing.setActiveMembers(updated.getActiveMembers());
+        if (updated.getAverageBillValue() != null) existing.setAverageBillValue(updated.getAverageBillValue());
+        if (updated.getCouponsRedeemed() != null) existing.setCouponsRedeemed(updated.getCouponsRedeemed());
+        if (updated.getImageUrl() != null) existing.setImageUrl(updated.getImageUrl());
+        if (updated.getLatitude() != null) existing.setLatitude(updated.getLatitude());
+        if (updated.getLongitude() != null) existing.setLongitude(updated.getLongitude());
         return ResponseEntity.ok(ApiResponse.success("Outlet updated", outletRepository.save(existing)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteOutlet(@PathVariable Long id) {
+        if (outletRepository.existsById(id)) {
+            outletRepository.deleteById(id);
+            return ResponseEntity.ok(ApiResponse.success("Outlet deleted successfully", "OK"));
+        }
+        return ResponseEntity.status(404).body(ApiResponse.error("Outlet not found"));
     }
 }

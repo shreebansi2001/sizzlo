@@ -6,6 +6,7 @@ export interface Member {
   mobile: string;
   email: string;
   membershipType: string;
+  planId?: string;
   status: 'Active' | 'Renewal Due' | 'Expired';
   issuedDate: string;
   expiryDate: string;
@@ -69,6 +70,7 @@ export interface OutletTimeSlot {
 export interface Outlet {
   id: string | number;
   name: string;
+  brand?: string;
   address: string;
   city: string;
   contactNumber: string;
@@ -77,6 +79,14 @@ export interface Outlet {
   averageBillValue: number;
   couponsRedeemed: number;
   rating: number;
+  isUpcoming?: boolean;
+  conceptTag?: string;
+  targetLaunchDate?: string;
+  openingHours?: string;
+  imageUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  subscribersCount?: number;
 }
 
 export interface KPI {

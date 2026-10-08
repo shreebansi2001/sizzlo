@@ -91,8 +91,8 @@ public class ReservationServiceImpl implements ReservationService {
 
         reservation.setVip(isVip);
         reservation.setTierPriorityTag(isVip ? (tier != null ? tier : "Signature") : "Non-Subscriber");
-        // Subscribed members enjoy complimentary priority table reservation; non-subscribers pay holding deposit (₹100)
-        double advanceAmount = isVip ? 0.0 : (request.getBookingAdvance() != null ? request.getBookingAdvance() : 100.0);
+        // Subscribed members pay nominal booking charge (₹99) which is 100% deducted from final dining bill
+        double advanceAmount = request.getBookingAdvance() != null ? request.getBookingAdvance() : 99.0;
         reservation.setBookingAdvance(advanceAmount);
         reservation.setAdvancePaid(true);
         reservation.setAdvanceDeducted(false);

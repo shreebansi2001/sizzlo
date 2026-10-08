@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
-
 import '../../../../data/services/api_service.dart';
+import '../../../../data/services/local_storage_service.dart';
+import '../../../../data/models/member_model.dart';
+import '../../../../core/values/app_constants.dart';
 
 class TransactionHistoryView extends StatefulWidget {
   const TransactionHistoryView({Key? key}) : super(key: key);
@@ -24,40 +27,219 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
     _fetchTransactions();
   }
 
+  DateTime? _parseDateTime(dynamic raw) {
+    if (raw == null) return null;
+    final str = raw.toString().trim();
+    if (str.isEmpty || str == '—' || str == 'Today' || str == 'Recent') return null;
+    try {
+      if (str.contains('T')) {
+        return DateTime.tryParse(str);
+      }
+      if (str.contains('-')) {
+        return DateTime.tryParse(str.replaceFirst(' ', 'T'));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  String _formatDynamicDate(String? raw, {String fallback = 'Recent'}) {
+    if (raw == null || raw.trim().isEmpty) return fallback;
+    final str = raw.trim();
+    final dt = _parseDateTime(str);
+    if (dt != null) {
+      final now = DateTime.now();
+      final local = dt.toLocal();
+      final isToday = local.year == now.year && local.month == now.month && local.day == now.day;
+      final isYesterday = local.year == now.year && local.month == now.month && local.day == (now.day - 1);
+      final timeStr = DateFormat('hh:mm a').format(local);
+
+      if (isToday) {
+        return 'Today, $timeStr';
+      } else if (isYesterday) {
+        return 'Yesterday, $timeStr';
+      } else {
+        return DateFormat('dd MMM yyyy, hh:mm a').format(local);
+      }
+    }
+    return str;
+  }
+
   Future<void> _fetchTransactions() async {
     setState(() => _isLoading = true);
     try {
-      final loyaltyTxs = await _apiService.getLoyaltyHistory();
-      final reservations = await _apiService.getReservations();
-
       final List<Map<String, dynamic>> list = [];
+      var phone = AppConstants.currentUserMobile;
+      var memId = AppConstants.currentMembershipId;
 
-      for (final r in reservations) {
+      if (phone.isEmpty || memId.isEmpty) {
+        try {
+          final session = await LocalStorageService.getUserSession();
+          if (phone.isEmpty && (session['mobile']?.isNotEmpty ?? false)) {
+            phone = session['mobile']!;
+            AppConstants.currentUserMobile = phone;
+          }
+          if (memId.isEmpty && (session['membershipId']?.isNotEmpty ?? false)) {
+            memId = session['membershipId']!;
+            AppConstants.currentMembershipId = memId;
+          }
+        } catch (_) {}
+      }
+
+      MemberModel? member;
+      try {
+        member = await _apiService.getMemberProfile(
+          memId.isNotEmpty ? memId : null,
+          phone.isNotEmpty ? phone : null,
+        );
+        if (phone.isEmpty && member.mobile.isNotEmpty) {
+          phone = member.mobile;
+          AppConstants.currentUserMobile = phone;
+        }
+        if (memId.isEmpty && member.membershipId.isNotEmpty) {
+          memId = member.membershipId;
+          AppConstants.currentMembershipId = memId;
+        }
+      } catch (_) {}
+
+      // 1. Fetch Settled Dine-in Bills
+      try {
+        final bills = await _apiService.getMyBills(phone, memId);
+        for (final b in bills) {
+          final rawDate = b.createdAt;
+          list.add({
+            'title': b.posInvoiceNumber.isNotEmpty
+                ? 'Dine-In Bill #${b.posInvoiceNumber}'
+                : 'Dine-In Bill #${b.id}',
+            'location': b.outletName.isNotEmpty ? b.outletName : 'House of Yanki',
+            'date': _formatDynamicDate(rawDate),
+            'rawDate': _parseDateTime(rawDate),
+            'amount': '₹${b.netPayable.toStringAsFixed(0)}',
+            'saved': b.discountAmount > 0
+                ? 'Saved ₹${b.discountAmount.toStringAsFixed(0)}'
+                : 'Paid via ${b.paymentMode}',
+            'points': '+${b.pointsCredited > 0 ? b.pointsCredited : b.netPayable.round()} pts',
+            'type': 'dining',
+            'status': b.status,
+          });
+        }
+      } catch (_) {}
+
+      // 2. Fetch Table Reservations (including nominal booking covers)
+      try {
+        final reservations = await _apiService.getReservations(phone);
+        for (final r in reservations) {
+          final rawDate = r.createdAt.isNotEmpty ? r.createdAt : r.reservationTime;
+          list.add({
+            'title': 'Table Reservation (${r.guests} Guests)',
+            'location': r.reservationTime.isNotEmpty
+                ? '${r.outlet} • Slot: ${r.reservationTime}'
+                : r.outlet,
+            'date': _formatDynamicDate(rawDate),
+            'rawDate': _parseDateTime(rawDate),
+            'amount': r.bookingAdvance > 0
+                ? '₹${r.bookingAdvance.toStringAsFixed(0)} Cover'
+                : (r.status.isNotEmpty ? r.status : 'Confirmed'),
+            'saved': r.vip ? '👑 VIP Priority Seat' : 'Reserved Table',
+            'points': '+99 pts',
+            'type': 'dining',
+            'status': r.status,
+          });
+        }
+      } catch (_) {}
+
+      // 3. Fetch Event & Sunday Brunch Bookings
+      if (phone.isNotEmpty) {
+        try {
+          final eventBookings = await _apiService.getMyEventBookings(phone);
+          for (final eb in eventBookings) {
+            final rawDate = eb.createdAt;
+            list.add({
+              'title': '${eb.eventTitle} (${eb.guestCount} Guests)',
+              'location': 'Yanki Signature Venue',
+              'date': _formatDynamicDate(rawDate),
+              'rawDate': _parseDateTime(rawDate),
+              'amount': '₹${eb.totalAmount.toStringAsFixed(0)}',
+              'saved': 'Ref: ${eb.bookingReference}',
+              'points': '+${eb.totalAmount.round()} pts',
+              'type': 'dining',
+              'status': eb.status,
+            });
+          }
+        } catch (_) {}
+      }
+
+      // 4. Fetch Banquet & Outdoor Catering Inquiries
+      if (phone.isNotEmpty) {
+        try {
+          final banquets = await _apiService.getMyBanquetInquiries(phone);
+          for (final bi in banquets) {
+            final rawDate = (bi.createdAt != null && bi.createdAt!.isNotEmpty)
+                ? bi.createdAt
+                : bi.eventDate;
+            list.add({
+              'title': '${bi.eventCategory} Inquiry (${bi.estimatedPax} Pax)',
+              'location': 'House of Yanki Banquets • Shift: ${bi.eventShift}',
+              'date': _formatDynamicDate(rawDate),
+              'rawDate': _parseDateTime(rawDate),
+              'amount': bi.status,
+              'saved': 'Event: ${bi.eventDate}',
+              'points': 'ODC Lead',
+              'type': 'delivery',
+              'status': bi.status,
+            });
+          }
+        } catch (_) {}
+      }
+
+      // 5. Fetch Loyalty Points Activity
+      try {
+        final loyaltyTxs = await _apiService.getLoyaltyHistory(memId.isNotEmpty ? memId : null);
+        for (final l in loyaltyTxs) {
+          final isRedeem = l.points < 0 || l.type == 'REDEEM';
+          final rawDate = l.time;
+          list.add({
+            'title': l.title,
+            'location': l.outletName,
+            'date': _formatDynamicDate(rawDate),
+            'rawDate': _parseDateTime(rawDate),
+            'amount': isRedeem ? 'Redeemed' : 'Earned',
+            'saved': l.description,
+            'points': '${l.points >= 0 ? '+' : ''}${l.points} pts',
+            'type': isRedeem ? 'voucher' : 'dining',
+            'status': isRedeem ? 'Redeemed' : 'Completed',
+          });
+        }
+      } catch (_) {}
+
+      // 6. Active VIP Membership Subscription Record
+      if (member != null && member.isSubscriber) {
+        final rawDate = member.issuedDate.isNotEmpty ? member.issuedDate : null;
         list.add({
-          'title': 'Table Reservation (${r.guests} Guests)',
-          'location': r.outlet,
-          'date': r.reservationTime,
-          'amount': r.status,
-          'saved': r.vip ? 'VIP Seated' : 'Reserved',
-          'points': '+100 pts',
-          'type': 'dining',
-          'status': r.status,
+          'title': '${member.subscriptionTier} VIP Membership',
+          'location': 'House of Yanki Privilege',
+          'date': rawDate != null && rawDate != 'Today'
+              ? _formatDynamicDate(rawDate)
+              : (member.expiryDate.isNotEmpty ? 'Expires ${member.expiryDate}' : 'Active Plan'),
+          'rawDate': _parseDateTime(rawDate),
+          'amount': 'Active',
+          'saved': '12 Dining Vouchers + VIP Table Access',
+          'points': '+5,000 pts',
+          'type': 'voucher',
+          'status': 'Active',
         });
       }
 
-      for (final l in loyaltyTxs) {
-        final isRedeem = l.points < 0 || l.type == 'REDEEM';
-        list.add({
-          'title': l.title,
-          'location': l.outletName,
-          'date': l.time.contains('T') ? l.time.split('T')[0] : l.time,
-          'amount': isRedeem ? 'Redeemed' : 'Earned',
-          'saved': l.description,
-          'points': '${l.points >= 0 ? '+' : ''}${l.points} pts',
-          'type': isRedeem ? 'voucher' : 'dining',
-          'status': isRedeem ? 'Redeemed' : 'Completed',
-        });
-      }
+      // Sort dynamically: newest activities first
+      list.sort((a, b) {
+        final DateTime? dtA = a['rawDate'] as DateTime?;
+        final DateTime? dtB = b['rawDate'] as DateTime?;
+        if (dtA != null && dtB != null) {
+          return dtB.compareTo(dtA);
+        }
+        if (dtA != null) return -1;
+        if (dtB != null) return 1;
+        return 0;
+      });
 
       setState(() {
         _transactions = list;
@@ -120,9 +302,41 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.history_toggle_off_rounded, size: 48, color: Colors.white24),
-                            const SizedBox(height: 12),
-                            Text('No activity records found', style: TextStyle(color: Colors.white.withOpacity(0.6))),
+                            const Icon(Icons.history_toggle_off_rounded, size: 52, color: Colors.white24),
+                            const SizedBox(height: 14),
+                            Text(
+                              'No transactions found yet',
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 40),
+                              child: Text(
+                                'Your table bookings, bill settlements, dining event passes, and loyalty point rewards will appear here.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.55),
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            ElevatedButton.icon(
+                              onPressed: _fetchTransactions,
+                              icon: const Icon(Icons.refresh_rounded, size: 16),
+                              label: const Text('Refresh Activity'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.gold,
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                              ),
+                            ),
                           ],
                         ),
                       )
@@ -171,21 +385,27 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
                           children: [
                             Text(
                               t['title'] as String,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               t['location'] as String,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.45)),
                             ),
                             const SizedBox(height: 6),
-                            Row(
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
                                   t['date'] as String,
-                                  style: TextStyle(fontSize: 10.5, color: Colors.white.withOpacity(0.35)),
+                                  style: TextStyle(fontSize: 10.5, color: Colors.white.withOpacity(0.4)),
                                 ),
-                                const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                   decoration: BoxDecoration(

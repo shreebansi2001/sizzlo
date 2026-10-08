@@ -72,7 +72,7 @@ export const RedemptionPage: React.FC = () => {
         setResult('success');
         setConfirmModal(false);
         setRecentList(prev => [
-          { id: Date.now(), actorName: 'Patron', actionType: 'REDEMPTION', description: `${code} · Redeemed`, outletName: 'Counter', timeAgo: 'Just now' },
+          { id: Date.now(), actorName: 'User', actionType: 'REDEMPTION', description: `${code} · Redeemed`, outletName: 'Counter', timeAgo: 'Just now' },
           ...prev
         ]);
       })
@@ -165,7 +165,7 @@ export const RedemptionPage: React.FC = () => {
               <div>
                 <p>Voucher Redeemed Successfully!</p>
                 <p style={{ fontSize: 12, opacity: 0.85, fontWeight: 400, marginTop: 2 }}>
-                  Bill discount applied. Patron notification dispatched.
+                  Bill discount applied. User notification dispatched.
                 </p>
               </div>
             </div>
@@ -177,10 +177,10 @@ export const RedemptionPage: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-                    Verified Patron
+                    Verified User
                   </span>
                   <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, color: 'var(--text-main)', marginTop: 4 }}>
-                    Patron
+                    User
                   </h2>
                   <p style={{ fontSize: 12, color: 'var(--gold)', marginTop: 2 }}>
                     Verified via Code
@@ -271,7 +271,7 @@ export const RedemptionPage: React.FC = () => {
             </div>
             
             <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              You are about to redeem this voucher for the verified patron. This action will deduct 1 voucher from their annual quota and cannot be undone.
+              You are about to redeem this voucher for the verified user. This action will deduct 1 voucher from their annual quota and cannot be undone.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>

@@ -29,48 +29,185 @@ export const apiClient = axios.create({
   timeout: 10000,
 });
 
+export const DEFAULT_PLANS: SubscriptionPlan[] = [
+  {
+    id: 'free',
+    name: 'Non-Subscribed Users',
+    memberLabel: 'FREE REGISTERED USER',
+    price: 0,
+    couponLimit: 0,
+    giftVoucherLimit: 0,
+    offerLabel: 'FREE TIER PERKS',
+    description: 'Standard registered accounts & welcome benefits',
+    personality: 'Welcoming & Accessible',
+    highlights: [
+      'Welcome digital dining pass',
+      'Instant table booking at all outlets',
+      '1 Loyalty Point per ₹1 net spend'
+    ],
+    benefits: [
+      'Table reservations across all House of Yanki outlets',
+      '1 Loyalty Point earned for every ₹1 net dining spend',
+      'Exclusive access to special festival event tickets',
+      'Upgrade to VIP at any time for unlimited dining vouchers'
+    ]
+  },
+  {
+    id: 'classic',
+    name: 'Classic',
+    memberLabel: 'CLASSIC SUBSCRIBER',
+    price: 5000,
+    couponLimit: 6,
+    giftVoucherLimit: 0,
+    offerLabel: '6 OFFERS',
+    description: 'Yanki Sizzlerr only',
+    personality: 'Warm Premium',
+    highlights: [
+      '10% off across 6 visits',
+      'Birthday week benefit',
+      'Complimentary couple meal'
+    ],
+    benefits: [
+      '10% off bill amount, 6 times a year',
+      'Complimentary birthday dessert and gift voucher',
+      'Complimentary couple meal on special anniversary',
+      'Priority table reservations on weekends',
+      'Valid across all Yanki Sizzlerr locations'
+    ]
+  },
+  {
+    id: 'signature',
+    name: 'Signature',
+    memberLabel: 'SIGNATURE SUBSCRIBER',
+    price: 10000,
+    couponLimit: 12,
+    giftVoucherLimit: 0,
+    offerLabel: '12 OFFERS',
+    description: 'Restaurant, Dough, banquet and catering',
+    personality: 'Rich & Sophisticated',
+    highlights: [
+      '12 dining visits annually',
+      'Dough by Yanki rewards',
+      'Banquet and catering benefits'
+    ],
+    benefits: [
+      '12 dining visits annually with 10% privilege discount',
+      'Couple dinner at 50% off twice per year',
+      'Dough by Yanki Buy 1 Get 1 complimentary',
+      'Banquet & catering privileges at House of Yanki',
+      'Free renewal subscription upon earning 25,000 points',
+      'VIP private table reservation with dedicated manager'
+    ]
+  },
+  {
+    id: 'elite',
+    name: 'Elite',
+    memberLabel: 'ELITE SUBSCRIBER',
+    price: 15000,
+    couponLimit: 10,
+    giftVoucherLimit: 5,
+    offerLabel: '10 OFFERS + GIFT VOUCHERS',
+    description: 'All Yanki outlets',
+    personality: 'Exclusive VIP',
+    highlights: [
+      '18 dining visits annually',
+      'Premium banquet benefits',
+      'Exclusive gift vouchers'
+    ],
+    benefits: [
+      '18 dining visits annually across all Yanki outlets',
+      'Premium banquet reservations with dedicated catering manager',
+      'Exclusive gift vouchers worth Rs. 5,000 for family & friends',
+      'All access pass to Yanki Signature, Dough & Banquets',
+      'Complimentary VIP birthday dinner for up to 4 guests',
+      'Highest priority reservation window even on rush days'
+    ]
+  }
+];
+
+const PLANS_STORAGE_KEY = 'sizzlo_admin_plans_db';
+
+const getStoredPlans = (): SubscriptionPlan[] => {
+  try {
+    const raw = localStorage.getItem(PLANS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (_) {}
+  return DEFAULT_PLANS;
+};
+
 export async function fetchPlans(): Promise<SubscriptionPlan[]> {
   try {
-    const res = await apiClient.get('/plans');
-    if (res.data?.success && res.data.data) {
+    const res = await apiClient.get('/plans', { timeout: 2500 });
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(res.data.data));
       return res.data.data;
     }
   } catch (_) {}
-  return [];
+  return getStoredPlans();
 }
 
 export async function addOfferToPlan(planId: string, offer: string): Promise<SubscriptionPlan | null> {
-  try {
-    const res = await apiClient.post(`/plans/${planId}/offers`, { offer });
-    if (res.data?.success && res.data.data) {
-      return res.data.data;
+  const current = getStoredPlans();
+  const target = current.find(p => p.id === planId);
+  if (target) {
+    if (!target.highlights.includes(offer)) {
+      target.highlights.push(offer);
     }
-  } catch (err) {
-    console.error('Failed to add offer to plan', err);
+    localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(current));
   }
-  return null;
-}
-
-export async function removeOfferFromPlan(planId: string, offer: string): Promise<SubscriptionPlan | null> {
   try {
-    const res = await apiClient.delete(`/plans/${planId}/offers?offer=${encodeURIComponent(offer)}`);
-    if (res.data?.success && res.data.data) {
-      return res.data.data;
-    }
-  } catch (err) {
-    console.error('Failed to remove offer from plan', err);
-  }
-  return null;
-}
-
-export async function resetPlans(): Promise<SubscriptionPlan[]> {
-  try {
-    const res = await apiClient.post('/plans/reset');
+    const res = await apiClient.post(`/plans/${planId}/offers`, { offer }, { timeout: 2000 });
     if (res.data?.success && res.data.data) {
       return res.data.data;
     }
   } catch (_) {}
-  return [];
+  return target || null;
+}
+
+export async function removeOfferFromPlan(planId: string, offer: string): Promise<SubscriptionPlan | null> {
+  const current = getStoredPlans();
+  const target = current.find(p => p.id === planId);
+  if (target) {
+    target.highlights = target.highlights.filter(h => h !== offer);
+    localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(current));
+  }
+  try {
+    const res = await apiClient.delete(`/plans/${planId}/offers?offer=${encodeURIComponent(offer)}`, { timeout: 2000 });
+    if (res.data?.success && res.data.data) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return target || null;
+}
+
+export async function updatePlanDetails(planId: string, updates: Partial<SubscriptionPlan>): Promise<SubscriptionPlan | null> {
+  const current = getStoredPlans();
+  const target = current.find(p => p.id === planId);
+  if (target) {
+    Object.assign(target, updates);
+    localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(current));
+  }
+  try {
+    const res = await apiClient.put(`/plans/${planId}`, updates, { timeout: 2500 });
+    if (res.data?.success && res.data.data) {
+      // Re-sync with returned object
+      const updatedList = current.map(p => p.id === planId ? { ...p, ...res.data.data } : p);
+      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(updatedList));
+      return res.data.data;
+    }
+  } catch (_) {}
+  return target || null;
+}
+
+export async function resetPlans(): Promise<SubscriptionPlan[]> {
+  localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
+  try {
+    await apiClient.post('/plans/reset', {}, { timeout: 2000 });
+  } catch (_) {}
+  return DEFAULT_PLANS;
 }
 
 // Empty fallbacks — all data comes from API only
@@ -102,7 +239,9 @@ export const fallbackOutlets: Outlet[] = [];
 
 export const fallbackInsights: AIInsight[] = [];
 
-export const fallbackCustomers: Member[] = [];
+import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
+
+export const fallbackCustomers: Member[] = DEFAULT_USERS_DATASET;
 
 export const fallbackReservations: Reservation[] = [];
 
@@ -178,12 +317,70 @@ export async function fetchReservations(): Promise<Reservation[]> {
 
 export async function fetchOutlets(): Promise<Outlet[]> {
   try {
-    const res = await apiClient.get('/admin/outlets');
-    if (res.data?.success && res.data.data?.length) {
+    const res = await apiClient.get('/outlets/all');
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length) {
       return res.data.data;
+    }
+    const adminRes = await apiClient.get('/admin/outlets');
+    if (adminRes.data?.success && adminRes.data.data?.length) {
+      return adminRes.data.data;
     }
   } catch (_) {}
   return fallbackOutlets;
+}
+
+export async function fetchUpcomingOutlets(): Promise<Outlet[]> {
+  try {
+    const res = await apiClient.get('/outlets/upcoming');
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return [];
+}
+
+export async function createOutlet(outlet: Partial<Outlet>): Promise<{ success: boolean; data?: Outlet; message?: string }> {
+  try {
+    const res = await apiClient.post('/outlets', outlet);
+    return { success: true, data: res.data?.data, message: res.data?.message };
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message };
+  }
+}
+
+export async function updateOutlet(id: number | string, outlet: Partial<Outlet>): Promise<{ success: boolean; data?: Outlet; message?: string }> {
+  try {
+    const res = await apiClient.put(`/outlets/${id}`, outlet);
+    return { success: true, data: res.data?.data, message: res.data?.message };
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message };
+  }
+}
+
+export async function deleteOutlet(id: number | string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await apiClient.delete(`/outlets/${id}`);
+    return { success: true, message: res.data?.message };
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message };
+  }
+}
+
+export async function uploadImageFile(file: File, category = 'outlet'): Promise<{ success: boolean; url?: string; message?: string }> {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', category);
+    const res = await apiClient.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    if (res.data?.success && res.data.data?.url) {
+      return { success: true, url: res.data.data.url };
+    }
+    return { success: false, message: res.data?.message || 'Upload failed' };
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message };
+  }
 }
 
 export async function resetAllData(): Promise<{ success: boolean; message: string }> {
@@ -478,7 +675,7 @@ export async function fetchRazorpaySummary(): Promise<RazorpaySummaryDTO | null>
 }
 
 export interface SendNotificationPayload {
-  targetType: 'ALL' | 'SPECIFIC';
+  targetType: 'ALL' | 'SPECIFIC' | 'VIP' | 'FREE';
   targetMembershipId?: string;
   targetMobile?: string;
   title: string;
@@ -497,6 +694,16 @@ export async function sendNotification(payload: SendNotificationPayload) {
       message: err.response?.data?.message || err.message || 'Failed to dispatch notification',
     };
   }
+}
+
+export async function fetchNotificationHistory(): Promise<any[]> {
+  try {
+    const res = await apiClient.get('/notifications/history');
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return [];
 }
 
 // Dynamic Outlet Time Slots API

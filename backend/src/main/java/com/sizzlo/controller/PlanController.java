@@ -23,6 +23,30 @@ public class PlanController {
     private synchronized void resetDefaults() {
         plans.clear();
 
+        // Non-Subscribed Free Tier
+        Map<String, Object> free = new LinkedHashMap<>();
+        free.put("id", "free");
+        free.put("name", "Non-Subscribed Users");
+        free.put("memberLabel", "FREE REGISTERED USER");
+        free.put("price", 0);
+        free.put("couponLimit", 0);
+        free.put("giftVoucherLimit", 0);
+        free.put("offerLabel", "FREE TIER PERKS");
+        free.put("description", "Standard registered accounts & app perks");
+        free.put("personality", "Welcoming & Accessible");
+        free.put("highlights", new ArrayList<>(Arrays.asList(
+                "Welcome digital dining pass",
+                "Instant table booking at all outlets",
+                "1 Loyalty Point per Rs. 1 net spend"
+        )));
+        free.put("benefits", new ArrayList<>(Arrays.asList(
+                "Table reservations across all House of Yanki outlets",
+                "1 Loyalty Point earned for every Rs. 1 net dining spend",
+                "Exclusive access to special festival event tickets",
+                "Upgrade to VIP at any time for unlimited dining vouchers"
+        )));
+        plans.add(free);
+
         // Classic Plan
         Map<String, Object> classic = new LinkedHashMap<>();
         classic.put("id", "classic");
@@ -183,11 +207,39 @@ public class PlanController {
             @RequestBody Map<String, Object> updates) {
         for (Map<String, Object> plan : plans) {
             if (id.equalsIgnoreCase(String.valueOf(plan.get("id")))) {
-                if (updates.containsKey("price")) plan.put("price", updates.get("price"));
-                if (updates.containsKey("description")) plan.put("description", updates.get("description"));
-                if (updates.containsKey("offerLabel")) plan.put("offerLabel", updates.get("offerLabel"));
+                if (updates.containsKey("name") && updates.get("name") != null) {
+                    plan.put("name", updates.get("name"));
+                }
+                if (updates.containsKey("memberLabel") && updates.get("memberLabel") != null) {
+                    plan.put("memberLabel", updates.get("memberLabel"));
+                }
+                if (updates.containsKey("price") && updates.get("price") != null) {
+                    Object p = updates.get("price");
+                    if (p instanceof Number) {
+                        plan.put("price", ((Number) p).intValue());
+                    } else if (p instanceof String) {
+                        try {
+                            plan.put("price", Integer.parseInt(((String) p).replaceAll("[^0-9]", "")));
+                        } catch (Exception ignored) {}
+                    }
+                }
+                if (updates.containsKey("description") && updates.get("description") != null) {
+                    plan.put("description", updates.get("description"));
+                }
+                if (updates.containsKey("offerLabel") && updates.get("offerLabel") != null) {
+                    plan.put("offerLabel", updates.get("offerLabel"));
+                }
+                if (updates.containsKey("couponLimit") && updates.get("couponLimit") != null) {
+                    plan.put("couponLimit", updates.get("couponLimit"));
+                }
+                if (updates.containsKey("giftVoucherLimit") && updates.get("giftVoucherLimit") != null) {
+                    plan.put("giftVoucherLimit", updates.get("giftVoucherLimit"));
+                }
                 if (updates.containsKey("highlights") && updates.get("highlights") instanceof List) {
                     plan.put("highlights", new ArrayList<>((List<String>) updates.get("highlights")));
+                }
+                if (updates.containsKey("benefits") && updates.get("benefits") instanceof List) {
+                    plan.put("benefits", new ArrayList<>((List<String>) updates.get("benefits")));
                 }
                 return ResponseEntity.ok(ApiResponse.success("Plan updated successfully", plan));
             }

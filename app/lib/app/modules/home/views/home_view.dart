@@ -526,31 +526,32 @@ class HomeView extends GetView<HomeController> {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 3),
         child: Stack(
           alignment: Alignment.topRight,
           children: [
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF282421),
-                      shape: BoxShape.circle,
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon, color: AppColors.flame, size: 22),
+                    child: Icon(icon, color: AppColors.flame, size: 18),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 3),
                   Text(
                     label,
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 9.5,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
