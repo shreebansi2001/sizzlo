@@ -32,12 +32,35 @@ class ProfileAvatarWidget extends StatelessWidget {
     this.borderColor,
   }) : super(key: key);
 
+  static const List<Color> _googleAvatarColors = [
+    Color(0xFF1A73E8), // Google Blue
+    Color(0xFFD93025), // Google Red
+    Color(0xFF1E8E3E), // Google Green
+    Color(0xFFE8710A), // Google Orange
+    Color(0xFF9334E6), // Google Purple
+    Color(0xFF007B83), // Google Teal
+    Color(0xFFC2185B), // Google Pink
+    Color(0xFF3949AB), // Google Indigo
+    Color(0xFF00897B), // Google Sea Green
+    Color(0xFFE64A19), // Google Deep Orange
+  ];
+
+  Color _getGoogleColor(String letter) {
+    if (letter.isEmpty) return const Color(0xFF1A73E8);
+    final code = letter.codeUnitAt(0);
+    return _googleAvatarColors[code % _googleAvatarColors.length];
+  }
+
   String get _avatarLetter {
     final clean = name.trim();
     if (clean.isNotEmpty && clean.toLowerCase() != 'guest') {
-      return clean[0].toUpperCase();
+      return clean.characters.first.toUpperCase();
     }
-    return 'V';
+    final sessionName = AppConstants.currentUserName.trim();
+    if (sessionName.isNotEmpty && sessionName.toLowerCase() != 'guest') {
+      return sessionName.characters.first.toUpperCase();
+    }
+    return 'U';
   }
 
   @override
@@ -49,19 +72,26 @@ class ProfileAvatarWidget extends StatelessWidget {
             ? AppConstants.currentUserProfilePic.trim()
             : '');
 
+    final bool hasCustomImage = url.isNotEmpty;
+    final letter = _avatarLetter;
+    final googleColor = _getGoogleColor(letter);
+
     final avatarBody = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        color: hasCustomImage ? Colors.transparent : googleColor,
         border: Border.all(
-          color: borderColor ?? const Color(0xFFDF9E5B),
+          color: borderColor ?? (hasCustomImage ? const Color(0xFFDF9E5B) : Colors.white.withOpacity(0.18)),
           width: borderWidth,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFDF9E5B).withOpacity(0.18),
-            blurRadius: 10,
+            color: hasCustomImage
+                ? const Color(0xFFDF9E5B).withOpacity(0.18)
+                : googleColor.withOpacity(0.25),
+            blurRadius: 8,
             spreadRadius: 1,
           ),
         ],
@@ -180,24 +210,24 @@ class ProfileAvatarWidget extends StatelessWidget {
   }
 
   Widget _buildInitialsPlaceholder(double size) {
+    final letter = _avatarLetter;
+    final googleColor = _getGoogleColor(letter);
+
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
+        color: googleColor,
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [Color(0xFF4A301D), Color(0xFF23160D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
       ),
       child: Center(
         child: Text(
-          _avatarLetter,
-          style: GoogleFonts.playfairDisplay(
-            fontSize: size * 0.42,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFFDF9E5B),
+          letter,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: size * 0.48,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            height: 1.0,
           ),
         ),
       ),
@@ -326,18 +356,6 @@ class ProfileAvatarWidget extends StatelessWidget {
                 onTap: () {
                   Get.back();
                   _showPresetAvatarsDialog(context, onDone);
-                },
-              ),
-              const SizedBox(height: 8),
-
-              // Option 4: Enter Direct URL
-              _buildPickerOption(
-                icon: Icons.link_rounded,
-                title: 'Enter Image URL',
-                subtitle: 'Paste web image address',
-                onTap: () {
-                  Get.back();
-                  _showUrlInputDialog(context, onDone);
                 },
               ),
               const SizedBox(height: 12),

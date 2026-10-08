@@ -172,25 +172,35 @@ class MemberModel {
     final plan = (rawTier == 'registered' || rawTier == 'none' || rawTier.isEmpty) ? 'none' : rawTier;
     final bool isSub = plan != 'none';
 
+    final rawEmail = (json['email'] ?? '').toString().trim();
+    final cleanEmail = (rawEmail.isNotEmpty && !rawEmail.toLowerCase().endsWith('@sizzlo.in')) ? rawEmail : '';
+
+    final rawStatus = (json['status'] ?? '').toString().trim();
+    final statusText = isSub ? (rawStatus.isNotEmpty ? rawStatus : 'Active') : 'Registered';
+
+    final rawMemId = (json['membershipId'] ?? '').toString().trim();
+    // Non-subscribers do not have a VIP membership pass
+    final effectiveMemId = isSub ? rawMemId : '';
+
     return MemberModel(
       id: json['id']?.toString() ?? '1',
       fullName: name,
       firstName: (json['firstName'] != null && json['firstName'].toString().trim().isNotEmpty)
           ? json['firstName'].toString().trim()
           : derivedFirst,
-      membershipId: json['membershipId']?.toString() ?? AppConstants.currentMembershipId,
-      membershipType: json['membershipType']?.toString() ?? (isSub ? '${plan.toUpperCase()} SUBSCRIBER' : 'REGISTERED USER'),
+      membershipId: effectiveMemId,
+      membershipType: json['membershipType']?.toString() ?? (isSub ? '${plan.toUpperCase()} SUBSCRIBER' : 'STANDARD GUEST'),
       mobile: json['mobile']?.toString() ?? AppConstants.currentUserMobile,
-      email: json['email']?.toString() ?? '',
+      email: cleanEmail,
       issuedDate: json['issuedDate']?.toString() ?? 'Today',
-      expiryDate: json['expiryDate']?.toString() ?? '1 Year',
+      expiryDate: isSub ? (json['expiryDate']?.toString() ?? '1 Year') : '—',
       totalSavings: (json['totalSavings'] as num?)?.toInt() ?? 0,
       couponsUsed: (json['couponsUsed'] as num?)?.toInt() ?? 0,
       couponsTotal: (json['couponsTotal'] as num?)?.toInt() ?? (isSub ? 12 : 0),
       loyaltyPoints: (json['loyaltyPoints'] as num?)?.toInt() ?? 0,
       loyaltyGoal: (json['loyaltyGoal'] as num?)?.toInt() ?? 250000,
       daysRemaining: (json['daysRemaining'] as num?)?.toInt() ?? (isSub ? 365 : 0),
-      status: json['status']?.toString() ?? 'Active',
+      status: statusText,
       planId: plan,
       address: json['address']?.toString() ?? '',
       gender: json['gender']?.toString() ?? '',
@@ -293,19 +303,19 @@ class MemberModel {
       id: '0',
       fullName: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : 'Guest',
       firstName: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName.split(' ').first : 'Guest',
-      membershipId: AppConstants.currentMembershipId,
-      membershipType: 'REGISTERED USER',
+      membershipId: '',
+      membershipType: 'STANDARD GUEST',
       mobile: AppConstants.currentUserMobile,
-      email: AppConstants.currentUserEmail,
+      email: AppConstants.currentUserEmail.endsWith('@sizzlo.in') ? '' : AppConstants.currentUserEmail,
       issuedDate: 'Today',
-      expiryDate: '1 Year',
+      expiryDate: '—',
       totalSavings: 0,
       couponsUsed: 0,
       couponsTotal: 0,
       loyaltyPoints: 0,
       loyaltyGoal: 250000,
       daysRemaining: 0,
-      status: 'Active',
+      status: 'Registered',
       planId: 'none',
       profilePictureUrl: '',
     );

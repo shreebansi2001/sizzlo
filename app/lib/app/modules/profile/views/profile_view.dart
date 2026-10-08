@@ -146,7 +146,8 @@ class ProfileView extends GetView<ProfileController> {
     final displayName = (m.fullName.trim().isNotEmpty && m.fullName.trim() != 'Guest')
         ? m.fullName.trim()
         : (AppConstants.currentUserName != 'Guest' ? AppConstants.currentUserName : 'Member');
-    final displayContact = (m.email.isNotEmpty)
+    final bool hasValidEmail = m.email.isNotEmpty && !m.email.endsWith('@sizzlo.in');
+    final displayContact = hasValidEmail
         ? '${m.mobile} · ${m.email}'
         : m.mobile;
 
@@ -194,22 +195,26 @@ class ProfileView extends GetView<ProfileController> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF281C10),
+                      color: isSub ? const Color(0xFF281C10) : Colors.white.withOpacity(0.06),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF6B4520)),
+                      border: Border.all(color: isSub ? const Color(0xFF6B4520) : Colors.white.withOpacity(0.12)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star, size: 10, color: Color(0xFFDF9E5B)),
+                        Icon(
+                          isSub ? Icons.star : Icons.person_outline,
+                          size: 10,
+                          color: isSub ? const Color(0xFFDF9E5B) : Colors.white.withOpacity(0.6),
+                        ),
                         const SizedBox(width: 4),
                         Text(
-                          isSub ? (m.membershipType.isNotEmpty ? m.membershipType : 'VIP SUBSCRIBER') : 'STANDARD GUEST',
-                          style: const TextStyle(
+                          isSub ? (m.membershipType.isNotEmpty ? m.membershipType : 'VIP SUBSCRIBER') : 'FREE ACCOUNT',
+                          style: TextStyle(
                             fontSize: 9,
                             letterSpacing: 1.0,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFFDF9E5B),
+                            color: isSub ? const Color(0xFFDF9E5B) : Colors.white.withOpacity(0.7),
                           ),
                         ),
                       ],
