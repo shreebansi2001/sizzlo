@@ -86,6 +86,8 @@ public class OutletController {
         if (updated.getAverageBillValue() != null) existing.setAverageBillValue(updated.getAverageBillValue());
         if (updated.getCouponsRedeemed() != null) existing.setCouponsRedeemed(updated.getCouponsRedeemed());
         if (updated.getImageUrl() != null) existing.setImageUrl(updated.getImageUrl());
+        if (updated.getLatitude() != null) existing.setLatitude(updated.getLatitude());
+        if (updated.getLongitude() != null) existing.setLongitude(updated.getLongitude());
         return ResponseEntity.ok(ApiResponse.success("Outlet updated", outletRepository.save(existing)));
     }
 

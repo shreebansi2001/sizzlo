@@ -1,16 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Store, MapPin, Phone, Star, Clock, Bell, Sparkles, Plus, 
-  Edit3, Trash2, X, ArrowRight, CheckCircle2, AlertCircle, Image as ImageIcon 
+  Edit3, Trash2, X, ArrowRight, CheckCircle2, AlertCircle, 
+  Upload, ExternalLink, Navigation, Compass, LocateFixed, Eye 
 } from 'lucide-react';
 import { Outlet } from '../types';
 import { 
-  fetchOutlets, fetchUpcomingOutlets, createOutlet, updateOutlet, deleteOutlet, fallbackOutlets 
+  fetchOutlets, fetchUpcomingOutlets, createOutlet, updateOutlet, 
+  deleteOutlet, uploadImageFile, fallbackOutlets 
 } from '../api/client';
 
 interface OutletsPageProps {
   outlets?: Outlet[];
 }
+
+const PRESET_COORDINATES = [
+  { name: 'Bodakdev, SG Highway', lat: 23.0373, lng: 72.5115, city: 'Ahmedabad' },
+  { name: 'CG Road, Navrangpura', lat: 23.0350, lng: 72.5604, city: 'Ahmedabad' },
+  { name: 'Vastrapur Lake, Alpha One', lat: 23.0358, lng: 72.5293, city: 'Ahmedabad' },
+  { name: 'Sindhu Bhavan Road', lat: 23.0448, lng: 72.5020, city: 'Ahmedabad' },
+  { name: 'Prahlad Nagar, Anand Nagar', lat: 23.0125, lng: 72.5108, city: 'Ahmedabad' },
+  { name: 'Kudasan, Gandhinagar', lat: 23.1895, lng: 72.6288, city: 'Gandhinagar' },
+  { name: 'Dumas Road, Surat', lat: 21.1458, lng: 72.7667, city: 'Surat' },
+  { name: 'Alkapuri, Vadodara', lat: 22.3107, lng: 73.1706, city: 'Vadodara' },
+];
 
 export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlets }) => {
   const [activeTab, setActiveTab] = useState<'active' | 'upcoming'>('active');
@@ -38,9 +51,16 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
     conceptTag: 'Signature Sizzlers & Teppanyaki',
     targetLaunchDate: 'December 2026',
     isUpcoming: false,
+    latitude: 23.0373,
+    longitude: 72.5115,
     imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Photo Upload State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -63,6 +83,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
 
   const handleOpenCreate = (isUpcoming = false) => {
     setEditingId(null);
+    setPhotoPreview(null);
     setFormData({
       name: '',
       brand: 'Yanki Sizzlerr',
@@ -78,6 +99,8 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
       conceptTag: isUpcoming ? 'Rooftop Dining & Smoke Lounge' : 'Signature Sizzlers & Teppanyaki',
       targetLaunchDate: 'December 2026',
       isUpcoming: isUpcoming,
+      latitude: 23.0373,
+      longitude: 72.5115,
       imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=80',
     });
     setShowModal(true);
@@ -85,6 +108,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
 
   const handleOpenEdit = (outlet: Outlet) => {
     setEditingId(outlet.id);
+    setPhotoPreview(outlet.imageUrl || null);
     setFormData({
       name: outlet.name,
       brand: outlet.brand || 'Yanki Sizzlerr',
@@ -100,9 +124,67 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
       conceptTag: outlet.conceptTag || 'Signature Sizzlers & Teppanyaki',
       targetLaunchDate: outlet.targetLaunchDate || 'December 2026',
       isUpcoming: Boolean(outlet.isUpcoming),
-      imageUrl: outlet.imageUrl || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
+      latitude: outlet.latitude || 23.0373,
+      longitude: outlet.longitude || 72.5115,
+      imageUrl: outlet.imageUrl || '',
     });
     setShowModal(true);
+  };
+
+  // Photo Upload Handler (Local instant preview + Server API upload)
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 1. Instant client-side preview via FileReader
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setPhotoPreview(dataUrl);
+      setFormData(prev => ({ ...prev, imageUrl: dataUrl }));
+    };
+    reader.readAsDataURL(file);
+
+    // 2. Upload file to backend /api/upload
+    setIsUploadingPhoto(true);
+    try {
+      const res = await uploadImageFile(file, 'outlet');
+      if (res.success && res.url) {
+        setFormData(prev => ({ ...prev, imageUrl: res.url }));
+      }
+    } catch (_) {}
+    finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  // Detect Current Geolocation
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = Number(pos.coords.latitude.toFixed(6));
+        const lng = Number(pos.coords.longitude.toFixed(6));
+        setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+        setToastNotice(`Location detected: [${lat}, ${lng}]`);
+        setTimeout(() => setToastNotice(null), 3500);
+      },
+      () => {
+        alert('Could not retrieve your location. Please check browser permissions or select a preset location.');
+      }
+    );
+  };
+
+  const handleApplyPresetCoords = (preset: typeof PRESET_COORDINATES[0]) => {
+    setFormData(prev => ({
+      ...prev,
+      latitude: preset.lat,
+      longitude: preset.lng,
+      city: preset.city,
+    }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -117,7 +199,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
       if (editingId) {
         const res = await updateOutlet(editingId, formData);
         if (res.success) {
-          setToastNotice(`Outlet "${formData.name}" updated successfully!`);
+          setToastNotice(`Outlet "${formData.name}" updated successfully! Coordinates: [${formData.latitude}, ${formData.longitude}]`);
           setShowModal(false);
           await loadData();
         } else {
@@ -126,7 +208,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
       } else {
         const res = await createOutlet(formData);
         if (res.success) {
-          setToastNotice(`New venue "${formData.name}" published & visible in Mobile App!`);
+          setToastNotice(`New venue "${formData.name}" published & synced to Mobile App!`);
           setShowModal(false);
           await loadData();
         } else {
@@ -142,7 +224,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
   };
 
   const handleDelete = async (id: number | string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete outlet "${name}"? This will remove it from Mobile App reservation selection.`)) {
+    if (!window.confirm(`Are you sure you want to delete outlet "${name}"? This will remove it from Mobile App map and reservation selection.`)) {
       return;
     }
 
@@ -159,6 +241,14 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
     } finally {
       setTimeout(() => setToastNotice(null), 4000);
     }
+  };
+
+  const getMapsUrl = (outlet: Partial<Outlet>) => {
+    if (outlet.latitude && outlet.longitude) {
+      return `https://www.google.com/maps/search/?api=1&query=${outlet.latitude},${outlet.longitude}`;
+    }
+    const query = `${outlet.name || ''}, ${outlet.address || ''}, ${outlet.city || ''}`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   };
 
   const brands = ['All', 'Yanki Sizzlerr', 'Dough by Yanki', 'House of Yanki'];
@@ -200,7 +290,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)' }}>Venues &amp; Store Outlets Management</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            Create and edit operational venues, contact numbers, hours, and upcoming expansion locations synced with Mobile App
+            Manage physical dining destinations, photo banners, exact Google Maps latitude/longitude coordinates &amp; phone contacts
           </p>
         </div>
 
@@ -302,7 +392,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
 
       {/* TAB 1: OPERATIONAL OUTLETS */}
       {activeTab === 'active' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 20 }}>
           {filteredActive.map((outlet) => (
             <div 
               key={outlet.id}
@@ -310,7 +400,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                 background: 'var(--surface)',
                 borderRadius: 20,
                 border: '1px solid var(--border)',
-                padding: 24,
+                overflow: 'hidden',
                 boxShadow: 'var(--shadow-card)',
                 display: 'flex',
                 flexDirection: 'column',
@@ -318,35 +408,91 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                 position: 'relative',
               }}
             >
-              <div>
+              {/* Photo Banner */}
+              {outlet.imageUrl && (
+                <div style={{ height: 160, position: 'relative', overflow: 'hidden' }}>
+                  <img
+                    src={outlet.imageUrl}
+                    alt={outlet.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    background: 'rgba(7, 10, 9, 0.75)',
+                    backdropFilter: 'blur(4px)',
+                    padding: '4px 10px',
+                    borderRadius: 999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    color: 'var(--gold)',
+                    fontSize: 12,
+                    fontWeight: 800,
+                    border: '1px solid rgba(232, 184, 74, 0.4)'
+                  }}>
+                    <Star size={12} fill="#BF8E22" />
+                    {outlet.rating || 4.8}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ padding: 22 }}>
                 {/* Header Row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <div>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                     <span style={{
                       fontSize: 10,
                       fontWeight: 800,
                       letterSpacing: 1,
                       textTransform: 'uppercase',
                       color: 'var(--gold)',
-                      display: 'block',
-                      marginBottom: 2
                     }}>
                       {outlet.brand || 'Yanki Sizzlerr'}
                     </span>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)' }}>{outlet.name}</h3>
-                    <p style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                      <MapPin size={12} />
-                      {outlet.address}, {outlet.city}
-                    </p>
+                    {outlet.latitude && outlet.longitude && (
+                      <span style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace' }}>
+                        📍 {outlet.latitude.toFixed(4)}, {outlet.longitude.toFixed(4)}
+                      </span>
+                    )}
                   </div>
-                  <span className="badge badge-gold" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Star size={12} fill="#BF8E22" />
-                    {outlet.rating || 4.8}
-                  </span>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)' }}>{outlet.name}</h3>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    <MapPin size={12} color="var(--primary)" />
+                    {outlet.address}, {outlet.city}
+                  </p>
+                </div>
+
+                {/* Google Maps Redirect Button */}
+                <div style={{ marginBottom: 14 }}>
+                  <a
+                    href={getMapsUrl(outlet)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 12px',
+                      borderRadius: 10,
+                      background: 'rgba(66, 133, 244, 0.1)',
+                      border: '1px solid rgba(66, 133, 244, 0.35)',
+                      color: '#60A5FA',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Navigation size={12} />
+                    <span>Open in Google Maps</span>
+                    <ExternalLink size={10} />
+                  </a>
                 </div>
 
                 {/* Performance KPI Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: 'var(--surface-alt)', padding: 14, borderRadius: 14, marginBottom: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: 'var(--surface-alt)', padding: 12, borderRadius: 14, marginBottom: 14 }}>
                   <div>
                     <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Monthly Revenue</p>
                     <p style={{ fontSize: 15, fontWeight: 800, color: 'var(--primary)' }}>₹{outlet.revenueLakhs} Lakh</p>
@@ -377,7 +523,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
               </div>
 
               {/* Action Buttons: Edit / Delete */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 10, borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 22px', borderTop: '1px solid rgba(255, 255, 255, 0.05)', background: 'rgba(255, 255, 255, 0.01)' }}>
                 <button
                   onClick={() => handleOpenEdit(outlet)}
                   style={{
@@ -422,7 +568,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
 
       {/* TAB 2: UPCOMING OUTLETS */}
       {activeTab === 'upcoming' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 20 }}>
           {filteredUpcoming.map((item) => (
             <div
               key={item.id}
@@ -464,6 +610,11 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                     <span style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700 }}>
                       Target: {item.targetLaunchDate || 'Late 2026'}
                     </span>
+                    {item.latitude && item.longitude && (
+                      <span style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace' }}>
+                        📍 {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+                      </span>
+                    )}
                   </div>
 
                   <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-main)' }}>
@@ -477,8 +628,34 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                     {item.address}, {item.city}
                   </p>
 
+                  {/* Google Maps link */}
+                  <div style={{ marginTop: 10 }}>
+                    <a
+                      href={getMapsUrl(item)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '4px 10px',
+                        borderRadius: 8,
+                        background: 'rgba(66, 133, 244, 0.1)',
+                        border: '1px solid rgba(66, 133, 244, 0.35)',
+                        color: '#60A5FA',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <Navigation size={11} />
+                      <span>Preview on Google Maps</span>
+                      <ExternalLink size={9} />
+                    </a>
+                  </div>
+
                   <div style={{
-                    marginTop: 16,
+                    marginTop: 14,
                     padding: 10,
                     borderRadius: 12,
                     background: 'var(--surface-alt)',
@@ -550,7 +727,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
+          background: 'rgba(0, 0, 0, 0.82)',
           backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
@@ -563,7 +740,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
             border: '1px solid var(--border)',
             borderRadius: 24,
             padding: '28px',
-            maxWidth: 640,
+            maxWidth: 680,
             width: '100%',
             boxShadow: '0 24px 64px rgba(0, 0, 0, 0.6)',
             position: 'relative',
@@ -586,7 +763,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
               </button>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
-              All venue details, contact numbers, hours, and addresses automatically synchronize with the customer VIP Mobile App.
+              Venue details, uploaded banner photos, and exact Google Maps latitude/longitude coordinates automatically sync with the customer VIP Mobile App.
             </p>
 
             <form onSubmit={handleSave}>
@@ -687,7 +864,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
               <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.6fr', gap: 14, marginBottom: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
-                    Full Address
+                    Full Physical Address (Used by Google Maps)
                   </label>
                   <input
                     type="text"
@@ -729,6 +906,276 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                     }}
                   />
                 </div>
+              </div>
+
+              {/* GOOGLE MAPS LATITUDE & LONGITUDE SECTION */}
+              <div style={{
+                background: 'rgba(66, 133, 244, 0.05)',
+                border: '1px solid rgba(66, 133, 244, 0.25)',
+                borderRadius: 16,
+                padding: '16px',
+                marginBottom: 16,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Compass size={16} color="#60A5FA" />
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#60A5FA', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                      Google Maps Geo-Coordinates (Redirect Pin)
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={handleDetectLocation}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: 8,
+                        background: 'rgba(66, 133, 244, 0.15)',
+                        border: '1px solid rgba(66, 133, 244, 0.4)',
+                        color: '#93C5FD',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <LocateFixed size={12} />
+                      <span>Detect My Location</span>
+                    </button>
+                    {formData.latitude && formData.longitude && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${formData.latitude},${formData.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 8,
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          border: '1px solid rgba(16, 185, 129, 0.4)',
+                          color: '#34D399',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}
+                      >
+                        <Eye size={12} />
+                        <span>Test on Maps</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 10 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
+                      Latitude (e.g. 23.0373)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      placeholder="23.0373"
+                      value={formData.latitude !== undefined ? formData.latitude : ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, latitude: parseFloat(e.target.value) || 0 }))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        background: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-main)',
+                        fontSize: 13,
+                        outline: 'none',
+                        fontFamily: 'monospace'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
+                      Longitude (e.g. 72.5115)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      placeholder="72.5115"
+                      value={formData.longitude !== undefined ? formData.longitude : ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, longitude: parseFloat(e.target.value) || 0 }))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        background: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-main)',
+                        fontSize: 13,
+                        outline: 'none',
+                        fontFamily: 'monospace'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Area Presets */}
+                <div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
+                    Quick Ahmedabad Location Presets:
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {PRESET_COORDINATES.map(p => (
+                      <button
+                        key={p.name}
+                        type="button"
+                        onClick={() => handleApplyPresetCoords(p)}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          color: 'var(--text-muted)',
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          fontSize: 10,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        + {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* PHOTO UPLOAD BOX (File Upload Input with Live Preview) */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--border)',
+                borderRadius: 16,
+                padding: '16px',
+                marginBottom: 16,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <label style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)' }}>
+                    Venue Photo Upload
+                  </label>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    {isUploadingPhoto ? 'Uploading to server...' : 'JPG, PNG, WebP (Max 10MB)'}
+                  </span>
+                </div>
+
+                {/* Hidden File Input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handlePhotoSelect}
+                  style={{ display: 'none' }}
+                />
+
+                {/* Photo Preview or Upload Dropzone */}
+                {formData.imageUrl ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    background: 'var(--surface-alt)',
+                    padding: 12,
+                    borderRadius: 12,
+                    border: '1px solid var(--border)'
+                  }}>
+                    <img
+                      src={formData.imageUrl}
+                      alt="Venue Preview"
+                      style={{
+                        width: 90,
+                        height: 70,
+                        objectFit: 'cover',
+                        borderRadius: 8,
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-main)', marginBottom: 2 }}>
+                        Photo Ready
+                      </p>
+                      <p style={{ fontSize: 11, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {formData.imageUrl.startsWith('data:') ? 'Local file uploaded' : formData.imageUrl}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 8,
+                          background: 'rgba(255, 138, 0, 0.15)',
+                          border: '1px solid var(--primary)',
+                          color: 'var(--primary)',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Change Photo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhotoPreview(null);
+                          setFormData(prev => ({ ...prev, imageUrl: '' }));
+                        }}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: 8,
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          color: '#EF4444',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      border: '2px dashed rgba(255, 138, 0, 0.4)',
+                      borderRadius: 14,
+                      padding: '24px 16px',
+                      textAlign: 'center',
+                      background: 'rgba(255, 138, 0, 0.03)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      background: 'rgba(255, 138, 0, 0.15)',
+                      display: 'grid',
+                      placeItems: 'center',
+                      margin: '0 auto 10px'
+                    }}>
+                      <Upload size={20} color="var(--primary)" />
+                    </div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)', marginBottom: 2 }}>
+                      Click to Browse or Drag &amp; Drop Venue Photo
+                    </p>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      Supports high-resolution camera photos from your device
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Contact Number & Opening Hours */}
@@ -779,7 +1226,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
               </div>
 
               {/* Concept Tag & Target Launch Date (if upcoming) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
                     Concept Tag
@@ -846,29 +1293,6 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                 </div>
               </div>
 
-              {/* Image URL banner */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
-                  Venue Photo URL
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  value={formData.imageUrl || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 12,
-                    background: 'var(--surface-alt)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-main)',
-                    fontSize: 13,
-                    outline: 'none',
-                  }}
-                />
-              </div>
-
               {/* Action Buttons */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                 <button
@@ -882,7 +1306,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isUploadingPhoto}
                   style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   <span>{isSubmitting ? 'Saving...' : editingId ? 'Save Changes' : 'Register Outlet'}</span>

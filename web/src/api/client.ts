@@ -362,6 +362,23 @@ export async function deleteOutlet(id: number | string): Promise<{ success: bool
   }
 }
 
+export async function uploadImageFile(file: File, category = 'outlet'): Promise<{ success: boolean; url?: string; message?: string }> {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', category);
+    const res = await apiClient.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    if (res.data?.success && res.data.data?.url) {
+      return { success: true, url: res.data.data.url };
+    }
+    return { success: false, message: res.data?.message || 'Upload failed' };
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message };
+  }
+}
+
 export async function resetAllData(): Promise<{ success: boolean; message: string }> {
   try {
     const res = await apiClient.post('/admin/reset-data');
