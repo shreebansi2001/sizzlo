@@ -336,9 +336,7 @@ class OutletsView extends GetView<OutletsController> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
-                          Get.snackbar('Google Maps', 'Deep-linking to driving route for ${outlet.name}', backgroundColor: const Color(0xFF1E1A16), colorText: Colors.white);
-                        },
+                        onPressed: () => controller.openDirections(outlet),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFF3B2E1E)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -360,9 +358,7 @@ class OutletsView extends GetView<OutletsController> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
-                          Get.snackbar('Calling Outlet', 'Dialing hostess desk at ${outlet.contactNumber}', backgroundColor: const Color(0xFF0F261E), colorText: Colors.white);
-                        },
+                        onPressed: () => controller.callOutlet(outlet.contactNumber),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFF1E4D3C)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

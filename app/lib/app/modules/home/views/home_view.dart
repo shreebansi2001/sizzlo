@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../controllers/home_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -286,12 +287,13 @@ class HomeView extends GetView<HomeController> {
                 const SizedBox(height: 20),
               ],
 
-              // Hot Sizzler Platter & Rising Smoke Hero Animation
-              const RepaintBoundary(
-                child: SizzlerHeroAnimation(),
-              ),
-
-              const SizedBox(height: 20),
+              // Hot Sizzler Platter & Rising Smoke Hero Animation (Only for non-subscribers)
+              if (!isSub) ...[
+                const RepaintBoundary(
+                  child: SizzlerHeroAnimation(),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               // Quick Actions Grid
               SectionHeader(title: 'Quick Actions'),
@@ -346,7 +348,16 @@ class HomeView extends GetView<HomeController> {
       children: [
         // High-Priority Direct Table Settlement Action (Chapter 10 SRS)
         GestureDetector(
-          onTap: () => Get.toNamed(AppRoutes.BILLING),
+          onTap: () {
+            if (!controller.member.value.isSubscriber) {
+              _showVipSubscriptionRequiredDialog(
+                title: 'VIP Subscription Required',
+                description: 'Table bill discounts, coupon redemptions, and instant table settlement are exclusive benefits for Sizzlo VIP members.\n\nSubscribe now to unlock your discount coupons vault, welcome vouchers, and free birthday rewards!',
+              );
+            } else {
+              Get.toNamed(AppRoutes.BILLING);
+            }
+          },
           child: Container(
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1090,6 +1101,77 @@ class HomeView extends GetView<HomeController> {
             snackPosition: SnackPosition.BOTTOM,
           );
         },
+      ),
+    );
+  }
+
+  void _showVipSubscriptionRequiredDialog({required String title, required String description}) {
+    Get.dialog(
+      Dialog(
+        backgroundColor: const Color(0xFF16120E),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFF3D2A18)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.goldAccent.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.goldAccent),
+                ),
+                child: const Icon(Icons.workspace_premium_rounded, color: AppColors.goldAccent, size: 34),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[300], height: 1.4),
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.goldAccent,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () {
+                    Get.back();
+                    Get.toNamed(AppRoutes.PLANS);
+                  },
+                  child: Text(
+                    'Explore VIP Subscription Plans',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Get.back(),
+                child: Text('Maybe Later', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -70,5 +70,12 @@
 	<string>Sizzlo requires camera access to take your profile picture.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Sizzlo requires photo library access to upload your profile picture.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>https</string>
+		<string>http</string>
+		<string>comgooglemaps</string>
+	</array>
 </dict>
 </plist>
