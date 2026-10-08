@@ -13,6 +13,7 @@ class ReservationModel {
   final double bookingAdvance;
   final bool advancePaid;
   final bool advanceDeducted;
+  final String createdAt;
 
   ReservationModel({
     required this.id,
@@ -29,6 +30,7 @@ class ReservationModel {
     this.bookingAdvance = 0.0,
     this.advancePaid = false,
     this.advanceDeducted = false,
+    this.createdAt = '',
   });
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class ReservationModel {
       bookingAdvance: (json['bookingAdvance'] as num?)?.toDouble() ?? 0.0,
       advancePaid: json['advancePaid'] ?? false,
       advanceDeducted: json['advanceDeducted'] ?? false,
+      createdAt: json['createdAt']?.toString() ?? '',
     );
   }
 }

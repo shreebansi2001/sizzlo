@@ -365,15 +365,18 @@ class SizzloDialogs {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          outlet,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                        Expanded(
+                          child: Text(
+                            outlet,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
-                        if (isVip)
+                        if (isVip) ...[
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
@@ -389,6 +392,7 @@ class SizzloDialogs {
                               ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 8),

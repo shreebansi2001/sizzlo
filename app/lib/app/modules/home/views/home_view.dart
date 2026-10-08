@@ -22,7 +22,6 @@ import '../../../core/values/app_constants.dart';
 import '../../../widgets/profile_avatar_widget.dart';
 import '../../../widgets/event_booking_sheet.dart';
 import '../../../widgets/event_pass_dialog.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({Key? key}) : super(key: key);

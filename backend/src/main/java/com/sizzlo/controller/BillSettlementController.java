@@ -152,8 +152,35 @@ public class BillSettlementController {
 
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<List<BillSettlement>>> getMySettlements(
-            @RequestParam(required = false, defaultValue = "+91 98250 12345") String mobile) {
-        return ResponseEntity.ok(ApiResponse.success(billSettlementRepository.findByCustomerMobileOrderByCreatedAtDesc(mobile)));
+            @RequestParam(required = false) String mobile,
+            @RequestParam(required = false) String membershipId) {
+        String cleanPhone = mobile != null ? mobile.replaceAll("\\D", "") : "";
+        if (cleanPhone.length() > 10) {
+            cleanPhone = cleanPhone.substring(cleanPhone.length() - 10);
+        }
+
+        List<BillSettlement> all = billSettlementRepository.findAllByOrderByCreatedAtDesc();
+        List<BillSettlement> matched = new ArrayList<>();
+
+        for (BillSettlement b : all) {
+            boolean matches = false;
+            if (membershipId != null && !membershipId.trim().isEmpty() && membershipId.equalsIgnoreCase(b.getMembershipId())) {
+                matches = true;
+            } else if (!cleanPhone.isEmpty() && b.getCustomerMobile() != null) {
+                String bPhone = b.getCustomerMobile().replaceAll("\\D", "");
+                if (bPhone.equals(cleanPhone) || (bPhone.length() >= 10 && bPhone.endsWith(cleanPhone))) {
+                    matches = true;
+                }
+            }
+            if (matches) {
+                matched.add(b);
+            }
+        }
+
+        if (matched.isEmpty() && mobile != null && !mobile.trim().isEmpty()) {
+            matched = billSettlementRepository.findByCustomerMobileOrderByCreatedAtDesc(mobile);
+        }
+        return ResponseEntity.ok(ApiResponse.success(matched));
     }
 
     @GetMapping("/{id}")

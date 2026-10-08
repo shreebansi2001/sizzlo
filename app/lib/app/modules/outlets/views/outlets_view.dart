@@ -234,20 +234,26 @@ class OutletsView extends GetView<OutletsController> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00E676).withOpacity(0.9),
+                    color: outlet.isOpenNow
+                        ? const Color(0xFF00E676).withOpacity(0.95)
+                        : const Color(0xFFEF4444).withOpacity(0.95),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.circle, color: Colors.black, size: 8),
+                      Icon(
+                        Icons.circle,
+                        color: outlet.isOpenNow ? Colors.black : Colors.white,
+                        size: 8,
+                      ),
                       const SizedBox(width: 4),
                       Text(
-                        'OPEN NOW',
+                        outlet.statusBadgeText,
                         style: GoogleFonts.outfit(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          color: Colors.black,
+                          color: outlet.isOpenNow ? Colors.black : Colors.white,
                         ),
                       ),
                     ],
@@ -321,11 +327,19 @@ class OutletsView extends GetView<OutletsController> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.access_time_rounded, color: Colors.grey[600], size: 14),
+                    Icon(
+                      Icons.access_time_rounded,
+                      color: outlet.isOpenNow ? const Color(0xFF00E676) : const Color(0xFFEF4444),
+                      size: 14,
+                    ),
                     const SizedBox(width: 6),
                     Text(
-                      outlet.openingHours,
-                      style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500]),
+                      '${outlet.openingHours} • ${outlet.statusBadgeText}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: outlet.isOpenNow ? const Color(0xFF4EE3B8) : const Color(0xFFF87171),
+                      ),
                     ),
                   ],
                 ),
