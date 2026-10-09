@@ -298,7 +298,7 @@ export function App() {
             <StaffPage currentUser={currentUser} />
           )}
           {currentTab === 'feedback' && (
-            <FeedbackPage feedbacks={[]} />
+            <FeedbackPage key={`feedback-${refreshKey}`} />
           )}
         </AdminLayout>
       )}
