@@ -46,7 +46,31 @@ class BillingController extends GetxController {
   void onInit() {
     super.onInit();
     _initRazorpay();
+    _extractPassedCoupon();
     loadInitialData();
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    if (Get.arguments != null) {
+      _extractPassedCoupon();
+      calculateAmounts();
+    }
+  }
+
+  void _extractPassedCoupon() {
+    if (Get.arguments != null) {
+      CouponModel? c;
+      if (Get.arguments is CouponModel) {
+        c = Get.arguments as CouponModel;
+      } else if (Get.arguments is Map && Get.arguments['coupon'] is CouponModel) {
+        c = Get.arguments['coupon'] as CouponModel;
+      }
+      if (c != null) {
+        selectedCoupon.value = c;
+      }
+    }
   }
 
   void _initRazorpay() {
@@ -69,18 +93,44 @@ class BillingController extends GetxController {
   Future<void> loadInitialData() async {
     isLoading.value = true;
     try {
-      final profile = await _apiService.getMemberProfile();
-      isSubscriber.value = profile.isSubscriber;
+      String? memId = AppConstants.currentMembershipId;
+      String? mobile = AppConstants.currentUserMobile;
+      if (Get.isRegistered<HomeController>()) {
+        final hm = Get.find<HomeController>().member.value;
+        if (hm.isSubscriber) {
+          isSubscriber.value = true;
+        }
+        if (hm.membershipId.isNotEmpty) memId = hm.membershipId;
+        if (hm.mobile.isNotEmpty) mobile = hm.mobile;
+      }
+
+      final profile = await _apiService.getMemberProfile(memId, mobile);
+      if (profile.isSubscriber) {
+        isSubscriber.value = true;
+      } else if (Get.isRegistered<HomeController>() && Get.find<HomeController>().member.value.isSubscriber) {
+        isSubscriber.value = true;
+      } else {
+        isSubscriber.value = profile.isSubscriber;
+      }
 
       final fetchedOutlets = await _apiService.getActiveOutlets();
       outlets.value = fetchedOutlets;
-      if (outlets.isNotEmpty) {
+      if (outlets.isNotEmpty && selectedOutlet.value == null) {
         selectedOutlet.value = outlets.first;
       }
 
-      final allCoupons = await _apiService.getCoupons();
+      final allCoupons = await _apiService.getCoupons(memId, mobile);
       availableCoupons.value = allCoupons.where((c) => c.isAvailable).toList();
-      if (availableCoupons.isNotEmpty) {
+      
+      if (selectedCoupon.value != null) {
+        final current = selectedCoupon.value!;
+        final match = availableCoupons.firstWhereOrNull((c) => c.id == current.id || c.code == current.code);
+        if (match != null) {
+          selectedCoupon.value = match;
+        } else if (current.isAvailable) {
+          availableCoupons.insert(0, current);
+        }
+      } else if (availableCoupons.isNotEmpty) {
         selectedCoupon.value = availableCoupons.first;
       }
 
@@ -160,7 +210,9 @@ class BillingController extends GetxController {
 
   Future<void> submitSettlement() async {
     // 1. VIP Subscription Guard
-    if (!isSubscriber.value) {
+    final hasActiveSub = isSubscriber.value ||
+        (Get.isRegistered<HomeController>() && Get.find<HomeController>().member.value.isSubscriber);
+    if (!hasActiveSub) {
       showSubscriptionRequiredModal();
       return;
     }

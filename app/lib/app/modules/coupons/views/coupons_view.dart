@@ -301,6 +301,7 @@ class CouponsView extends GetView<CouponsController> {
                   return CouponTicket(
                     coupon: coupon,
                     onRedeem: () => controller.redeemCoupon(coupon),
+                    onTap: () => controller.redeemCoupon(coupon),
                   );
                 },
               ),

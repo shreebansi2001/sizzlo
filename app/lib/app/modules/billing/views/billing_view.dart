@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../controllers/billing_controller.dart';
+import '../../home/controllers/home_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/sizzlo_button.dart';
 import '../../../routes/app_routes.dart';
@@ -114,7 +115,9 @@ class BillingView extends GetView<BillingController> {
 
           // VIP Lock Banner if user is not subscribed
           Obx(() {
-            if (!controller.isSubscriber.value) {
+            final hasActiveSub = controller.isSubscriber.value ||
+                (Get.isRegistered<HomeController>() && Get.find<HomeController>().member.value.isSubscriber);
+            if (!hasActiveSub) {
               return Container(
                 margin: const EdgeInsets.only(bottom: 20),
                 padding: const EdgeInsets.all(16),
@@ -457,77 +460,6 @@ class BillingView extends GetView<BillingController> {
                       ),
                     ],
                   ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 16),
-
-          // Upload Physical POS Receipt Photo (Optional sync to Admin)
-          Obx(() {
-            final hasPhoto = controller.receiptImageUrl.value.isNotEmpty;
-            return Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFF141312),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: hasPhoto ? const Color(0xFF10B981) : const Color(0xFF262320)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: hasPhoto ? const Color(0xFF0E3B32) : const Color(0xFF201B17),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      hasPhoto ? Icons.receipt_long : Icons.camera_alt_outlined,
-                      color: hasPhoto ? const Color(0xFF4EE3B8) : Colors.grey,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          hasPhoto ? 'Bill Receipt Photo Attached' : 'Attach Physical Bill Photo',
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          hasPhoto ? 'Syncs directly to Admin Cashier Desk' : 'Upload photo of paper bill for instant verification',
-                          style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (hasPhoto)
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
-                      onPressed: controller.removeReceiptPhoto,
-                    )
-                  else
-                    ElevatedButton(
-                      onPressed: controller.attachSampleReceiptPhoto,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2C241B),
-                        foregroundColor: AppColors.goldAccent,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: const BorderSide(color: Color(0xFF6B4E22)),
-                        ),
-                      ),
-                      child: Text('Attach', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700)),
-                    ),
                 ],
               ),
             );

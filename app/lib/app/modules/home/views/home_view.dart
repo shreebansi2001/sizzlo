@@ -420,17 +420,6 @@ class HomeView extends GetView<HomeController> {
                               fontFamily: 'Playfair Display',
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF00E676),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'NON-INTEGRATED POS',
-                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black),
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 2),
@@ -759,7 +748,13 @@ class HomeView extends GetView<HomeController> {
             final c = controller.featuredCoupons[index];
             final isGold = c.color == 'gold';
             return GestureDetector(
-              onTap: () => Get.find<NavigationController>().changeTab(2),
+              onTap: () {
+                if (!controller.member.value.isSubscriber) {
+                  Get.toNamed(AppRoutes.PLANS);
+                } else {
+                  Get.toNamed(AppRoutes.BILLING, arguments: c);
+                }
+              },
               child: Container(
                 width: 260,
                 padding: const EdgeInsets.all(16),

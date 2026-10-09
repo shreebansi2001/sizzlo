@@ -256,7 +256,7 @@ class CouponTicket extends StatelessWidget {
                               const SizedBox(width: 4),
                             ],
                             Text(
-                              coupon.isVipExclusive ? 'Unlock VIP' : 'Redeem',
+                              coupon.isVipExclusive ? 'Unlock VIP' : 'Apply to Bill',
                               style: TextStyle(
                                 color: coupon.isVipExclusive ? AppColors.gold : const Color(0xFF4EE3B8),
                                 fontSize: 11,
