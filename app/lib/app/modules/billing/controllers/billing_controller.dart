@@ -9,6 +9,7 @@ import '../../../data/models/outlet_model.dart';
 import '../../../data/models/coupon_model.dart';
 import '../../../data/models/bill_settlement_model.dart';
 import '../../../data/services/api_service.dart';
+import '../../../data/services/local_storage_service.dart';
 import '../../../routes/app_routes.dart';
 import '../../coupons/controllers/coupons_controller.dart';
 import '../../home/controllers/home_controller.dart';
@@ -20,6 +21,12 @@ class BillingController extends GetxController {
   final RxList<CouponModel> availableCoupons = <CouponModel>[].obs;
   final Rx<OutletModel?> selectedOutlet = Rx<OutletModel?>(null);
   final Rx<CouponModel?> selectedCoupon = Rx<CouponModel?>(null);
+
+  // Pre-filled booking info observables
+  final RxString bookedOutletName = ''.obs;
+  final RxString bookedTimeSlot = ''.obs;
+  final RxInt bookedGuests = 0.obs;
+  final RxString bookedOccasion = ''.obs;
 
   final TextEditingController invoiceController = TextEditingController();
   final TextEditingController grossAmountController = TextEditingController();
@@ -145,11 +152,49 @@ class BillingController extends GetxController {
 
   Future<void> _checkActiveTableAdvance() async {
     try {
+      // 1. Check local storage for immediately confirmed booking
+      final localBooking = await LocalStorageService.getLastBooking();
+      if (localBooking != null && localBooking['outlet'] != null) {
+        final bOutlet = localBooking['outlet'].toString();
+        bookedOutletName.value = bOutlet;
+        bookedTimeSlot.value = localBooking['time']?.toString() ?? '';
+        bookedGuests.value = (localBooking['guests'] as num?)?.toInt() ?? 2;
+        bookedOccasion.value = localBooking['occasion']?.toString() ?? 'Regular';
+        linkedBookingReference.value = localBooking['bookingReference']?.toString() ?? '';
+        tableAdvanceDeduction.value = (localBooking['advancePaid'] as num?)?.toDouble() ?? 99.0;
+
+        // Auto-select matching outlet in dropdown
+        if (outlets.isNotEmpty) {
+          final matched = outlets.firstWhereOrNull((o) =>
+              o.name.trim().toLowerCase() == bOutlet.trim().toLowerCase() ||
+              bOutlet.toLowerCase().contains(o.name.toLowerCase()) ||
+              o.name.toLowerCase().contains(bOutlet.toLowerCase()));
+          if (matched != null) {
+            selectedOutlet.value = matched;
+          }
+        }
+      }
+
+      // 2. Cross-verify with active backend reservations
       final reservations = await _apiService.getReservations();
       for (final r in reservations) {
         if (r.advancePaid && !r.advanceDeducted) {
-          tableAdvanceDeduction.value = r.bookingAdvance > 0 ? r.bookingAdvance : 100.0;
+          tableAdvanceDeduction.value = r.bookingAdvance > 0 ? r.bookingAdvance : 99.0;
           linkedBookingReference.value = r.bookingReference;
+          bookedOutletName.value = r.outlet;
+          bookedTimeSlot.value = r.reservationTime;
+          bookedGuests.value = r.guests;
+
+          // Preselect branch
+          if (outlets.isNotEmpty) {
+            final matched = outlets.firstWhereOrNull((o) =>
+                o.name.trim().toLowerCase() == r.outlet.trim().toLowerCase() ||
+                r.outlet.toLowerCase().contains(o.name.toLowerCase()) ||
+                o.name.toLowerCase().contains(r.outlet.toLowerCase()));
+            if (matched != null) {
+              selectedOutlet.value = matched;
+            }
+          }
           break;
         }
       }

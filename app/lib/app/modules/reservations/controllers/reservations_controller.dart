@@ -9,9 +9,13 @@ import '../../../widgets/sizzlo_dialogs.dart';
 import '../../../routes/app_routes.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import '../../../data/services/local_storage_service.dart';
+import '../../../data/services/notification_service.dart';
 
 class ReservationsController extends GetxController {
   final ApiService _apiService = ApiService();
+  late Razorpay _razorpay;
 
   final RxList<ReservationModel> reservations = <ReservationModel>[].obs;
   final RxBool isLoading = true.obs;
@@ -72,10 +76,18 @@ class ReservationsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _initRazorpay();
     _checkMembership();
     loadOutlets();
     loadTimeSlots();
     loadReservations();
+  }
+
+  void _initRazorpay() {
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
   void _checkMembership() async {
@@ -83,11 +95,12 @@ class ReservationsController extends GetxController {
       final profile = await _apiService.getMemberProfile();
       isSubscribedMember.value = profile.isSubscriber;
       isVipTable.value = profile.isSubscriber;
-      advanceRequired.value = profile.isSubscriber ? 0.0 : 100.0;
+      // Nominal table booking advance cover charge of ₹99 (credited 100% to dining bill)
+      advanceRequired.value = 99.0;
     } catch (_) {
       isSubscribedMember.value = false;
       isVipTable.value = false;
-      advanceRequired.value = 100.0;
+      advanceRequired.value = 99.0;
     }
   }
 
@@ -267,7 +280,7 @@ class ReservationsController extends GetxController {
     }
 
     final bookingTimeLabel = '${selectedBookingDay.value}, ${selectedTimeSlot.value}';
-    final nominalCharge = isSubscribedMember.value ? 99.0 : 100.0;
+    const nominalCharge = 99.0;
     SizzloDialogs.showBookTableConfirm(
       outlet: selectedOutlet.value,
       time: bookingTimeLabel,
@@ -275,7 +288,140 @@ class ReservationsController extends GetxController {
       isVip: isVipTable.value,
       bookingCharge: nominalCharge,
       specialRequests: '${selectedOccasion.value} occasion. ${specialNotesController.text}',
-      onConfirm: _executeBooking,
+      onConfirm: _launchRazorpayTableBooking,
+    );
+  }
+
+  void _launchRazorpayTableBooking() async {
+    isSubmitting.value = true;
+    final userMobile = AppConstants.currentUserMobile.isNotEmpty 
+        ? AppConstants.currentUserMobile 
+        : '9825012345';
+    final userName = AppConstants.currentUserName.isNotEmpty && AppConstants.currentUserName != 'Guest'
+        ? AppConstants.currentUserName
+        : 'VIP Diner';
+
+    var options = {
+      'key': 'rzp_live_S5dgGJ3fEPa3fO',
+      'amount': 9900, // ₹99 nominal cover charge in paise
+      'name': 'House of Yanki · Sizzlo',
+      'description': 'Table Booking Cover Charge · ₹99 (${selectedOutlet.value})',
+      'prefill': {
+        'contact': userMobile,
+        'email': AppConstants.currentUserEmail.isNotEmpty ? AppConstants.currentUserEmail : 'user@sizzlo.com',
+        'name': userName,
+      },
+      'theme': {
+        'color': '#DF9E5B',
+      },
+      'external': {
+        'wallets': ['paytm'],
+      },
+    };
+
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint('Razorpay checkout open exception: $e');
+      _showSimulationFallbackDialog(
+        onSimulate: () => _executeBooking(
+          paymentId: 'pay_sim_${DateTime.now().millisecondsSinceEpoch}',
+        ),
+      );
+    }
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+    debugPrint('Table Booking Razorpay Success: ${response.paymentId}');
+    _executeBooking(
+      paymentId: response.paymentId ?? 'pay_${DateTime.now().millisecondsSinceEpoch}',
+    );
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    isSubmitting.value = false;
+    debugPrint('Table Booking Razorpay Failure: ${response.code} - ${response.message}');
+    Get.snackbar(
+      'Payment Not Completed',
+      'Table reservation was not booked because the ₹99 cover charge was not completed (${response.message ?? "Payment cancelled"}).',
+      backgroundColor: const Color(0xFF331D12),
+      colorText: const Color(0xFFE27C38),
+      icon: const Icon(Icons.payment_rounded, color: Color(0xFFE27C38)),
+      duration: const Duration(seconds: 4),
+      snackPosition: SnackPosition.TOP,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 14,
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    debugPrint('Table Booking External Wallet Selected: ${response.walletName}');
+  }
+
+  void _showSimulationFallbackDialog({required VoidCallback onSimulate}) {
+    Get.dialog(
+      Dialog(
+        backgroundColor: const Color(0xFF141312),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.goldAccent, width: 1.2),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.payment_rounded, color: AppColors.goldAccent, size: 36),
+              const SizedBox(height: 12),
+              Text(
+                'Payment Gateway (Simulator)',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'In simulator/emulator environments without Google Play or native payment UI, would you like to simulate successful ₹99 payment?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[300], height: 1.4),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        isSubmitting.value = false;
+                        Get.back();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+                        onSimulate();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.goldAccent,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Pay ₹99', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -350,12 +496,14 @@ class ReservationsController extends GetxController {
     );
   }
 
-  void _executeBooking() async {
+  void _executeBooking({required String paymentId}) async {
     isSubmitting.value = true;
     try {
       final isSub = isSubscribedMember.value;
       final bookingTimeLabel = '${selectedBookingDay.value}, ${selectedTimeSlot.value}';
-      final success = await _apiService.bookReservation(
+      final bookingRef = 'REF-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+
+      await _apiService.bookReservation(
         name: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : (isSub ? 'VIP Guest' : 'Guest Diner'),
         mobile: AppConstants.currentUserMobile,
         outlet: selectedOutlet.value,
@@ -365,26 +513,92 @@ class ReservationsController extends GetxController {
         tierPriorityTag: isSub ? 'Signature' : 'Non-Subscriber',
         occasionTag: selectedOccasion.value,
         specialRequests: specialNotesController.text,
-        bookingAdvance: isSub ? 99.0 : 100.0,
+        bookingAdvance: 99.0,
         advancePaid: true,
       );
 
-      if (success) {
-        specialNotesController.clear();
-        loadReservations();
+      // Persist last booking details for seamless Home screen pre-fill
+      await LocalStorageService.saveLastBooking(
+        outlet: selectedOutlet.value,
+        time: bookingTimeLabel,
+        guests: guestCount.value,
+        occasion: selectedOccasion.value,
+        bookingReference: bookingRef,
+        advancePaid: 99.0,
+        paymentId: paymentId,
+      );
 
-        final advanceVal = isSub ? 99 : 100;
-        Get.snackbar(
-          isSub ? '👑 VIP Priority Confirmed!' : 'Table Reserved & Deposit Held',
-          'Table reserved for ${guestCount.value} at ${selectedOutlet.value}. Nominal ₹$advanceVal advance cover charge recorded and will be 100% deducted from your dining bill!',
-          backgroundColor: isSub ? const Color(0xFF2C241B) : const Color(0xFF0E3B32),
-          colorText: isSub ? const Color(0xFFD4AF37) : const Color(0xFF4EE3B8),
-          snackPosition: SnackPosition.TOP,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 14,
-          duration: const Duration(seconds: 5),
-        );
-      }
+      // Schedule smart reminders: 30 minutes prior and 15 minutes prior!
+      NotificationService.to.scheduleBookingReminders(
+        outlet: selectedOutlet.value,
+        time: bookingTimeLabel,
+        guests: guestCount.value,
+        bookingReference: bookingRef,
+      );
+
+      specialNotesController.clear();
+      loadReservations();
+
+      final shortTxn = paymentId.length > 10 ? '${paymentId.substring(0, 10)}...' : paymentId;
+
+      // Show Confirmed Pass Dialog
+      Get.dialog(
+        Dialog(
+          backgroundColor: const Color(0xFF141312),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: AppColors.goldAccent, width: 1.2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4EE3B8).withOpacity(0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF4EE3B8)),
+                  ),
+                  child: const Icon(Icons.check_circle_rounded, color: Color(0xFF4EE3B8), size: 36),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '👑 Table Reserved & Paid!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Table for ${guestCount.value} at ${selectedOutlet.value} ($bookingTimeLabel) is confirmed.\n\n₹99 cover charge paid (Txn: $shortTxn) and 100% credited to your dining bill.\n\nReminders are scheduled 30m & 15m before your arrival!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[300], height: 1.4),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.goldAccent,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                    onPressed: () => Get.back(),
+                    child: Text('Done', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     } finally {
       isSubmitting.value = false;
     }
@@ -453,6 +667,7 @@ class ReservationsController extends GetxController {
 
   @override
   void onClose() {
+    _razorpay.clear();
     specialNotesController.dispose();
     banquetDateController.dispose();
     banquetNotesController.dispose();

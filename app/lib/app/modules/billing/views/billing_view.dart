@@ -182,6 +182,135 @@ class BillingView extends GetView<BillingController> {
             return const SizedBox.shrink();
           }),
 
+          // Pre-filled Table Booking Card (if booked by user)
+          Obx(() {
+            final hasBooking = controller.bookedOutletName.value.isNotEmpty ||
+                controller.linkedBookingReference.value.isNotEmpty;
+            if (!hasBooking) return const SizedBox.shrink();
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E2822), Color(0xFF111714)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF4EE3B8).withOpacity(0.4), width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4EE3B8).withOpacity(0.18),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.bookmark_added_rounded, color: Color(0xFF4EE3B8), size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'BOOKING INFORMATION PRE-FILLED',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF4EE3B8),
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                            Text(
+                              'Details linked from your table reservation',
+                              style: GoogleFonts.inter(fontSize: 11, color: Colors.white60),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.goldAccent.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
+                        ),
+                        child: Text(
+                          '₹${controller.tableAdvanceDeduction.value.toStringAsFixed(0)} DEDUCTION',
+                          style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.goldAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(color: Colors.white12, height: 1),
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.storefront_rounded, color: AppColors.goldAccent, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Branch: ${controller.selectedOutlet.value?.name ?? controller.bookedOutletName.value}',
+                          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (controller.bookedTimeSlot.value.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time_rounded, color: Colors.white70, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Reserved Slot: ${controller.bookedTimeSlot.value}',
+                          style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 12),
+                        ),
+                        if (controller.bookedGuests.value > 0) ...[
+                          const SizedBox(width: 12),
+                          const Icon(Icons.people_outline_rounded, color: Colors.white70, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${controller.bookedGuests.value} Guests',
+                            style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 12),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                  if (controller.linkedBookingReference.value.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.qr_code_rounded, color: AppColors.goldAccent, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Ref: ${controller.linkedBookingReference.value}',
+                          style: GoogleFonts.plusJakartaSans(color: AppColors.goldAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }),
+
           const SizedBox(height: 4),
 
           // 1. Select Outlet
