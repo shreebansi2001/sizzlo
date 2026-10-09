@@ -365,16 +365,7 @@ class HomeView extends GetView<HomeController> {
       children: [
         // High-Priority Direct Table Settlement Action (Chapter 10 SRS)
         GestureDetector(
-          onTap: () {
-            if (!controller.member.value.isSubscriber) {
-              _showVipSubscriptionRequiredDialog(
-                title: 'VIP Subscription Required',
-                description: 'Table bill discounts, coupon redemptions, and instant table settlement are exclusive benefits for Sizzlo VIP members.\n\nSubscribe now to unlock your discount coupons vault, welcome vouchers, and free birthday rewards!',
-              );
-            } else {
-              Get.toNamed(AppRoutes.BILLING);
-            }
-          },
+          onTap: () => Get.toNamed(AppRoutes.BILLING),
           child: Container(
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1544,6 +1535,7 @@ class HomeView extends GetView<HomeController> {
       ),
     );
   }
+<<<<<<< HEAD
 
   void _showVipSubscriptionRequiredDialog({required String title, required String description}) {
     Get.dialog(

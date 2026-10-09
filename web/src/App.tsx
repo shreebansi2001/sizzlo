@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { LogOut, X } from 'lucide-react';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { DashboardPage } from './pages/DashboardPage';
 import { CeoPage } from './pages/CeoPage';
@@ -15,8 +16,6 @@ import { MarketingPage } from './pages/MarketingPage';
 import { StaffPage } from './pages/StaffPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { FloorPage } from './pages/FloorPage';
-import { RedemptionPage } from './pages/RedemptionPage';
-import { ActivityPage } from './pages/ActivityPage';
 import { LoginPage } from './pages/LoginPage';
 
 import { AdminAuthUser } from './types';
@@ -135,7 +134,7 @@ export function App() {
     const hash = window.location.hash.replace('#', '');
     const validTabs = [
       'dashboard', 'insights', 'ceo', 'customers', 'memberships', 'loyalty', 
-      'coupons', 'payments', 'reservations', 'floor', 'activity', 'redemption',
+      'coupons', 'payments', 'reservations', 'floor',
       'outlets', 'events', 'marketing', 'staff', 'feedback'
     ];
     return validTabs.includes(hash) ? hash : 'dashboard';
@@ -194,13 +193,9 @@ export function App() {
       case 'payments':
         return { title: 'Pending Collections & Dues', subtitle: 'Automated reminders via WhatsApp, SMS, and Email' };
       case 'reservations':
-        return { title: 'Reservation Analytics', subtitle: 'Real-time bookings, peak hours and VIP load' };
+        return { title: 'Table Reservations & Inquiries', subtitle: 'Live customer booking requests, table settlements, waitlist queue, and audio alerts' };
       case 'floor':
         return { title: 'Floor & Tables', subtitle: 'Live seating capacity, dining table states and waitlist queue' };
-      case 'activity':
-        return { title: 'Live Activity Feed', subtitle: 'Updates across every Yanki destination in real time' };
-      case 'redemption':
-        return { title: 'Redemption Desk', subtitle: 'Counter verification and redemption terminal' };
       case 'outlets':
         return { title: 'Venues & Dining Concepts', subtitle: 'Compare venue revenues, ABV, and ratings' };
       case 'events':
@@ -219,10 +214,31 @@ export function App() {
 
   const { title, subtitle } = getPageInfo();
 
-  const handleLogout = () => {
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleInitiateLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
     localStorage.removeItem('yanki_admin_auth');
     setCurrentUser(null);
   };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showLogoutConfirm) {
+        setShowLogoutConfirm(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showLogoutConfirm]);
 
   return (
     <ErrorBoundary>
@@ -237,13 +253,13 @@ export function App() {
           subtitle={subtitle}
           onRefresh={handleRefresh}
           isLoading={false}
-          onLogout={handleLogout}
+          onLogout={handleInitiateLogout}
         >
           {currentTab === 'dashboard' && (
             <DashboardPage key={`dashboard-${refreshKey}`} />
           )}
           {currentTab === 'insights' && (
-            <InsightsPage insights={[]} />
+            <InsightsPage />
           )}
           {currentTab === 'ceo' && (
             <CeoPage key={`ceo-${refreshKey}`} />
@@ -269,12 +285,6 @@ export function App() {
           {currentTab === 'floor' && (
             <FloorPage key={`floor-${refreshKey}`} />
           )}
-          {currentTab === 'activity' && (
-            <ActivityPage key={`activity-${refreshKey}`} onNavigate={setCurrentTab} />
-          )}
-          {currentTab === 'redemption' && (
-            <RedemptionPage key={`redemption-${refreshKey}`} />
-          )}
           {currentTab === 'outlets' && (
             <OutletsPage key={`outlets-${refreshKey}`} />
           )}
@@ -291,6 +301,174 @@ export function App() {
             <FeedbackPage feedbacks={[]} />
           )}
         </AdminLayout>
+      )}
+
+      {/* Logout Confirmation Dialog Modal */}
+      {showLogoutConfirm && (
+        <div 
+          className="modal-overlay" 
+          onClick={handleCancelLogout}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(5, 8, 7, 0.85)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 20,
+            animation: 'fadeIn 0.2s ease',
+          }}
+        >
+          <div 
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(155deg, #18231E 0%, #0F1613 100%)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: 20,
+              maxWidth: 440,
+              width: '100%',
+              padding: '28px 26px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(239, 68, 68, 0.12)',
+              textAlign: 'center',
+              position: 'relative',
+            }}
+          >
+            {/* Close X button */}
+            <button
+              onClick={handleCancelLogout}
+              style={{
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: 'none',
+                color: 'var(--text-muted)',
+                borderRadius: '50%',
+                width: 28,
+                height: 28,
+                display: 'grid',
+                placeItems: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={15} />
+            </button>
+
+            {/* Warning / Sign out glowing badge */}
+            <div style={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1.5px solid rgba(239, 68, 68, 0.45)',
+              display: 'grid',
+              placeItems: 'center',
+              margin: '0 auto 16px',
+              boxShadow: '0 0 24px rgba(239, 68, 68, 0.3)',
+            }}>
+              <LogOut size={30} color="#EF4444" />
+            </div>
+
+            <h3 style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 20,
+              fontWeight: 700,
+              color: 'var(--text-main)',
+              letterSpacing: -0.2,
+              marginBottom: 8,
+            }}>
+              Confirm Sign Out?
+            </h3>
+
+            <p style={{
+              fontSize: 13,
+              color: 'var(--text-muted)',
+              lineHeight: 1.5,
+              marginBottom: 20,
+            }}>
+              Are you sure you want to sign out of the <strong>Yanki / Sizzlo Admin Console</strong>? You will need to re-enter your administrator credentials to access live operations and floor controls.
+            </p>
+
+            {/* Current Session Chip */}
+            {currentUser && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 24,
+                textAlign: 'left',
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-main)' }}>
+                    {currentUser.fullName || currentUser.email || currentUser.username}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--gold)', marginTop: 2 }}>
+                    {currentUser.roleName || 'Administrator'} • {currentUser.branchName || 'All Outlets'}
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: 10,
+                  padding: '3px 8px',
+                  borderRadius: 6,
+                  background: 'rgba(201, 162, 77, 0.15)',
+                  color: 'var(--gold)',
+                  fontWeight: 700,
+                }}>
+                  ACTIVE SESSION
+                </span>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={handleCancelLogout}
+                className="btn btn-outline"
+                style={{
+                  flex: 1,
+                  padding: '11px 16px',
+                  borderRadius: 12,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  borderColor: 'rgba(255, 255, 255, 0.15)',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmLogout}
+                style={{
+                  flex: 1,
+                  padding: '11px 16px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+                  border: '1px solid #EF4444',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <LogOut size={14} />
+                <span>Yes, Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </ErrorBoundary>
   );

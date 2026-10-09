@@ -2,8 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
-  Download 
+  Download,
+  FileText 
 } from 'lucide-react';
+import { exportExecutivePdf } from '../utils/exportExecutivePdf';
 import { 
   AreaChart, 
   Area, 
@@ -111,7 +113,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     return revenueSeries;
   }, [revenueSeries, chartPeriod]);
 
-  const handleExportReport = () => {
+  const handleExportPdf = () => {
+    exportExecutivePdf({
+      kpis,
+      outlets,
+      reservations,
+      couponMix,
+      branchScope: 'All Branches (Group Consolidated)',
+      adminName: 'Super Admin (Group Owner)',
+    });
+  };
+
+  const handleExportCsv = () => {
     const headers = ['Category', 'Metric / Entity', 'Value', 'Details'];
     const rows: string[][] = [];
 
@@ -159,9 +172,41 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-outline" onClick={handleExportReport} title="Download live telemetry and outlet metrics report">
-            <Download size={15} /> Export Report
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button 
+            className="btn btn-primary" 
+            onClick={handleExportPdf} 
+            title="Generate and print/save publication-ready Executive PDF Report"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 8, 
+              fontWeight: 700,
+              padding: '9px 16px',
+              borderRadius: 10,
+              boxShadow: '0 4px 14px rgba(201, 162, 77, 0.35)',
+              cursor: 'pointer'
+            }}
+          >
+            <FileText size={16} />
+            <span>Export Executive PDF</span>
+          </button>
+
+          <button 
+            className="btn btn-outline" 
+            onClick={handleExportCsv} 
+            title="Download raw tabular metrics as CSV spreadsheet"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 7, 
+              padding: '9px 14px', 
+              borderRadius: 10,
+              cursor: 'pointer'
+            }}
+          >
+            <Download size={14} />
+            <span>Export CSV</span>
           </button>
         </div>
       </div>

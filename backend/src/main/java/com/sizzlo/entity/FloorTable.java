@@ -25,6 +25,12 @@ public class FloorTable {
 
     private String outletName = "Navrangpura";
 
+    private String floorSection = "Main Dining Floor";
+
+    private String notes;
+
+    private String reservationRef;
+
     public FloorTable() {}
 
     public FloorTable(Integer tableNumber, Integer seats, String state, String guest, Boolean premium) {
@@ -33,6 +39,7 @@ public class FloorTable {
         this.state = state;
         this.guest = guest;
         this.premium = premium;
+        this.floorSection = "Main Dining Floor";
     }
 
     public Long getId() { return id; }
@@ -55,4 +62,13 @@ public class FloorTable {
 
     public String getOutletName() { return outletName; }
     public void setOutletName(String outletName) { this.outletName = outletName; }
+
+    public String getFloorSection() { return floorSection; }
+    public void setFloorSection(String floorSection) { this.floorSection = floorSection; }
+
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
+
+    public String getReservationRef() { return reservationRef; }
+    public void setReservationRef(String reservationRef) { this.reservationRef = reservationRef; }
 }

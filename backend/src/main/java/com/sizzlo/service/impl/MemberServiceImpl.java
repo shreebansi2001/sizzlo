@@ -96,7 +96,7 @@ public class MemberServiceImpl implements MemberService {
                     p.setCouponsUsed(0);
                     p.setCouponsTotal(0);
                     p.setLoyaltyPoints(0);
-                    p.setLoyaltyGoal(250000);
+                    p.setLoyaltyGoal(25000);
                     p.setTotalSpend(0);
                     p.setPendingDues(0);
                     p.setStatus("Registered");
@@ -263,26 +263,35 @@ public class MemberServiceImpl implements MemberService {
     public MemberProfile renewWithPoints(String membershipId) {
         MemberProfile m = getProfileByMembershipId(membershipId);
         int points = m.getLoyaltyPoints() != null ? m.getLoyaltyPoints() : 0;
-        if (points < 250000) {
-            throw new RuntimeException("Insufficient points for free renewal. Required: 250,000 points. Current: " + points);
+        int goal = m.getLoyaltyGoal() != null && m.getLoyaltyGoal() > 0 ? m.getLoyaltyGoal() : 25000;
+        if (points < goal) {
+            throw new RuntimeException("Insufficient points for free renewal. Required: " + goal + " points. Current: " + points);
         }
 
-        // Deduct 250,000 points and extend subscription for 365 days
-        m.setLoyaltyPoints(points - 250000);
+        m.setLoyaltyPoints(points - goal);
         m.setStatus("Active");
         m.setIssuedDate(LocalDate.now());
         m.setExpiryDate(LocalDate.now().plusDays(365));
 
         LoyaltyTransaction tx = new LoyaltyTransaction();
         tx.setMembershipId(m.getMembershipId());
-        tx.setTitle("Annual Plan Free Renewal (250,000 Points)");
+        tx.setTitle("Annual Plan Free Renewal (" + goal + " Points)");
         tx.setDescription("1-Tap Loyalty Milestone Redemption");
-        tx.setPoints(-250000);
+        tx.setPoints(-goal);
         tx.setType("REDEEM");
         tx.setOutletName("All Yanki Outlets");
         tx.setTransactionTime(LocalDateTime.now());
         loyaltyTransactionRepository.save(tx);
 
         return memberProfileRepository.save(m);
+    }
+
+    @Override
+    public void updateGlobalLoyaltyGoal(int newGoal) {
+        List<MemberProfile> list = memberProfileRepository.findAll();
+        for (MemberProfile p : list) {
+            p.setLoyaltyGoal(newGoal);
+        }
+        memberProfileRepository.saveAll(list);
     }
 }
