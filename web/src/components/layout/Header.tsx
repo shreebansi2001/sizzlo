@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Search, RefreshCw, LogOut, Menu, Building2 } from 'lucide-react';
+import { Search, LogOut, Menu, Building2 } from 'lucide-react';
 import { fetchOutlets } from '../../api/client';
 import { AdminAuthUser, Outlet } from '../../types';
+import { NotificationCenter } from './NotificationCenter';
 
 interface HeaderProps {
   title: string;
@@ -11,9 +12,19 @@ interface HeaderProps {
   isLoading?: boolean;
   onLogout?: () => void;
   onToggleSidebar?: () => void;
+  onTabChange?: (tab: string) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle, currentUser, onRefresh, isLoading, onLogout, onToggleSidebar }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  title, 
+  subtitle, 
+  currentUser, 
+  onRefresh, 
+  isLoading, 
+  onLogout, 
+  onToggleSidebar,
+  onTabChange 
+}) => {
   const isSuperAdmin = currentUser?.roleCode === 'SUPER_ADMIN';
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [selectedOutlet, setSelectedOutlet] = useState<string>(currentUser?.branchName || 'All Branches');
@@ -102,42 +113,8 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, currentUser, on
           />
         </div>
 
-        {/* Sync Java Backend Button */}
-        {onRefresh && (
-          <button 
-            className="btn btn-outline btn-sm" 
-            onClick={onRefresh}
-            title="Sync current feature data with Java 8 Spring Boot API"
-          >
-            <RefreshCw size={13} className={isLoading ? 'spin' : ''} />
-            <span>Sync</span>
-          </button>
-        )}
-
-        {/* Notification Bell */}
-        <div style={{
-          width: 38,
-          height: 38,
-          borderRadius: 12,
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          display: 'grid',
-          placeItems: 'center',
-          position: 'relative',
-          cursor: 'pointer'
-        }}>
-          <Bell size={16} color="var(--text-main)" />
-          <span style={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            width: 7,
-            height: 7,
-            borderRadius: '50%',
-            background: 'var(--primary)',
-            boxShadow: '0 0 8px var(--primary)'
-          }} />
-        </div>
+        {/* Notification Center */}
+        <NotificationCenter onTabChange={onTabChange} />
 
         {/* Header Logout Button */}
         {onLogout && (

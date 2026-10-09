@@ -68,10 +68,21 @@ public class MemberController {
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 
+    @PutMapping("/loyalty-goal")
+    public ResponseEntity<ApiResponse<String>> updateGlobalLoyaltyGoal(@RequestBody Map<String, Object> req) {
+        Object goalObj = req.get("goal");
+        if (goalObj != null) {
+            int newGoal = Integer.parseInt(goalObj.toString());
+            memberService.updateGlobalLoyaltyGoal(newGoal);
+            return ResponseEntity.ok(ApiResponse.success("Loyalty milestone goal updated to " + newGoal + " points across all patron accounts.", "OK"));
+        }
+        return ResponseEntity.badRequest().body(ApiResponse.error("Missing goal in request body"));
+    }
+
     @PostMapping("/{membershipId}/renew-points")
     public ResponseEntity<ApiResponse<MemberProfile>> renewWithPoints(@PathVariable String membershipId) {
         MemberProfile renewed = memberService.renewWithPoints(membershipId);
-        return ResponseEntity.ok(ApiResponse.success("Subscription renewed for 365 days via 250,000 loyalty points!", renewed));
+        return ResponseEntity.ok(ApiResponse.success("Subscription renewed for 365 days via loyalty milestone points!", renewed));
     }
 
     @DeleteMapping("/account")

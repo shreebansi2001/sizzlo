@@ -106,7 +106,7 @@ public class MemberProfile {
         if (couponsUsed == null) couponsUsed = 0;
         if (couponsTotal == null) couponsTotal = 12;
         if (loyaltyPoints == null) loyaltyPoints = 0;
-        if (loyaltyGoal == null) loyaltyGoal = 250000;
+        if (loyaltyGoal == null) loyaltyGoal = 25000;
         if (pendingDues == null) pendingDues = 0;
         if (totalSpend == null) totalSpend = 0;
         if (subscriptionTier == null) subscriptionTier = "REGISTERED";

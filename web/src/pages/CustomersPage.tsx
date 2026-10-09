@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, ShieldCheck, Mail, Phone, MapPin, Crown, Eye, X, Send, 
   RefreshCw, Calendar, CreditCard, User, UserCheck, UserX, Sparkles, CheckCircle2,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import axios from 'axios';
 import { Member } from '../types';
@@ -112,15 +112,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ members: initialMe
 
   useEffect(() => {
     fetchLiveMembers();
-  }, []);
-
-  const handleResetSeedData = () => {
-    localStorage.removeItem(USERS_STORAGE_KEY);
-    setMemberList(DEFAULT_USERS_DATASET);
-    setCurrentPage(1);
-    setActionNotice('✨ Users database reset to default 24 seed accounts!');
-    setTimeout(() => setActionNotice(null), 3500);
-  };
+  }, [onRefresh]);
 
   const isUserSubscribed = (m: Member): boolean => {
     const tier = (m.membershipType || '').toUpperCase();
@@ -378,25 +370,6 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ members: initialMe
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button 
-            onClick={fetchLiveMembers}
-            className="btn btn-outline" 
-            style={{ fontSize: 12, padding: '8px 14px' }}
-          >
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            Refresh Users
-          </button>
-          <button
-            onClick={handleResetSeedData}
-            className="btn btn-outline"
-            style={{ fontSize: 12, padding: '8px 14px', borderColor: 'rgba(232, 184, 74, 0.4)', color: 'var(--gold)' }}
-            title="Reset to default 24 users dataset"
-          >
-            <RotateCcw size={13} />
-            Reset Data
-          </button>
-        </div>
       </div>
 
       {/* Users CRM Table */}

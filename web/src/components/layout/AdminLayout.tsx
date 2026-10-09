@@ -59,6 +59,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           isLoading={isLoading} 
           onLogout={onLogout}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          onTabChange={onTabChange}
         />
         <main className="admin-content">
           {children}

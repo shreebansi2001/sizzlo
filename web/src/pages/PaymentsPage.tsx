@@ -29,7 +29,6 @@ import {
   RazorpaySummaryDTO
 } from '../api/client';
 import { PendingPayment, Member } from '../types';
-import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
 import axios from 'axios';
 
 const safeCurrency = (val: any): string => {
@@ -83,33 +82,26 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
   }, []);
 
   useEffect(() => {
-    axios.get('/api/members', { timeout: 2000 })
+    axios.get('/api/members', { timeout: 2500 })
       .then(res => {
-        const membersToUse = (res.data?.success && res.data.data?.length) ? res.data.data : DEFAULT_USERS_DATASET;
-        const duesMembers = membersToUse
-          .filter((m: Member) => (m.pendingDues && m.pendingDues > 0) || m.status === 'Renewal Due')
-          .map((m: Member) => ({
-            id: m.membershipId,
-            name: m.fullName,
-            mobile: m.mobile,
-            pending: m.pendingDues > 0 ? m.pendingDues : 10000,
-            dueDate: m.expiryDate,
-            reminder: 'Ready to send',
-          }));
-        setPaymentList(duesMembers);
+        if (res.data?.success && Array.isArray(res.data.data)) {
+          const duesMembers = res.data.data
+            .filter((m: Member) => (m.pendingDues && m.pendingDues > 0) || m.status === 'Renewal Due')
+            .map((m: Member) => ({
+              id: m.membershipId,
+              name: m.fullName,
+              mobile: m.mobile,
+              pending: m.pendingDues > 0 ? m.pendingDues : 10000,
+              dueDate: m.expiryDate,
+              reminder: 'Ready to send',
+            }));
+          setPaymentList(duesMembers);
+        } else {
+          setPaymentList([]);
+        }
       })
       .catch(() => {
-        const duesMembers = DEFAULT_USERS_DATASET
-          .filter((m: Member) => (m.pendingDues && m.pendingDues > 0) || m.status === 'Renewal Due')
-          .map((m: Member) => ({
-            id: m.membershipId,
-            name: m.fullName,
-            mobile: m.mobile,
-            pending: m.pendingDues > 0 ? m.pendingDues : 10000,
-            dueDate: m.expiryDate,
-            reminder: 'Ready to send',
-          }));
-        setPaymentList(duesMembers);
+        setPaymentList([]);
       });
   }, []);
 

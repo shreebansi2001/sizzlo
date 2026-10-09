@@ -20,11 +20,10 @@ import {
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import axios from 'axios';
 import { Member, SubscriptionPlan } from '../types';
-import { fetchPlans, addOfferToPlan, removeOfferFromPlan, resetPlans, updatePlanDetails } from '../api/client';
-import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
+import { fetchPlans, addOfferToPlan, removeOfferFromPlan, updatePlanDetails } from '../api/client';
 
 export const MembershipsPage: React.FC = () => {
-  const [memberList, setMemberList] = useState<Member[]>(DEFAULT_USERS_DATASET);
+  const [memberList, setMemberList] = useState<Member[]>([]);
   const [membershipRev, setMembershipRev] = useState('₹1.10 Lakh');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
@@ -159,20 +158,22 @@ export const MembershipsPage: React.FC = () => {
     }
   };
 
-  const handleResetPlans = async () => {
-    if (!window.confirm('Reset all plans and offers to original defaults?')) return;
-    const defaultPlans = await resetPlans();
-    if (defaultPlans && defaultPlans.length > 0) {
-      setPlans(defaultPlans);
-      setSyncToast('Plans and offers restored to initial baseline!');
-      setTimeout(() => setSyncToast(null), 4000);
-    }
+  const isSubscribedMember = (m: Member): boolean => {
+    const type = (m.membershipType || '').toUpperCase();
+    const tier = (m.subscriptionTier || '').toUpperCase();
+    const plan = (m.planId || '').toLowerCase();
+    return (
+      (type.includes('SUBSCRIBER') || type.includes('CLASSIC') || type.includes('SIGNATURE') || type.includes('ELITE')) &&
+      !type.includes('NON-SUBSCRIBED') &&
+      tier !== 'FREE'
+    );
   };
 
-  const totalSubscribers = memberList.length;
-  const activeCount = memberList.filter(m => m.status === 'Active').length;
-  const renewalDueCount = memberList.filter(m => m.status === 'Renewal Due').length;
-  const expiredCount = memberList.filter(m => m.status === 'Expired').length;
+  const subscribedMembers = memberList.filter(isSubscribedMember);
+  const totalSubscribers = subscribedMembers.length;
+  const activeCount = subscribedMembers.filter(m => m.status === 'Active').length;
+  const renewalDueCount = subscribedMembers.filter(m => m.status === 'Renewal Due').length;
+  const expiredCount = subscribedMembers.filter(m => m.status === 'Expired').length;
 
   const dynamicStats = [
     { k: 'Total Subscribers', v: String(totalSubscribers), icon: Users },
@@ -180,7 +181,7 @@ export const MembershipsPage: React.FC = () => {
     { k: 'Expired', v: String(expiredCount), icon: AlertCircle },
     { k: 'Renewals Due (30d)', v: String(renewalDueCount), icon: RefreshCw },
     { k: 'Subscription Revenue', v: membershipRev, icon: Wallet, delta: '+12.4%' },
-    { k: 'Forecast Run-Rate', v: `₹${(totalSubscribers * 1.2).toFixed(1)} Lakh`, icon: TrendingUp, delta: '+18.0%' },
+    { k: 'Forecast Run-Rate', v: `₹${(totalSubscribers * 1.5).toFixed(1)} Lakh`, icon: TrendingUp, delta: '+18.0%' },
   ];
 
   const forecastData = [
@@ -298,15 +299,6 @@ export const MembershipsPage: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button 
-            className="btn btn-outline btn-sm"
-            onClick={handleResetPlans}
-            title="Reset plans to default values"
-            style={{ fontSize: 12 }}
-          >
-            <RefreshCw size={13} />
-            <span>Reset Baseline</span>
-          </button>
           <button 
             className="btn btn-primary"
             onClick={() => handleOpenAddModal()}
