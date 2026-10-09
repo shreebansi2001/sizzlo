@@ -24,5 +24,7 @@ abstract class AppRoutes {
   static const TERMS = '/terms';
   static const BILLING = '/billing';
   static const OUTLETS = '/outlets';
+  static const BANQUET = '/banquet';
+  static const ODC = '/odc';
   static const BANQUET_ODC = '/banquet-odc';
 }

@@ -17,6 +17,7 @@ class BanquetController extends GetxController {
   final RxList<BanquetInquiryModel> myInquiries = <BanquetInquiryModel>[].obs;
 
   // --- TAB 1: BANQUET HALL FORM STATE ---
+  final TextEditingController banquetEventNameController = TextEditingController();
   final TextEditingController banquetNameController = TextEditingController();
   final TextEditingController banquetPhoneController = TextEditingController();
   final TextEditingController banquetNotesController = TextEditingController();
@@ -37,7 +38,9 @@ class BanquetController extends GetxController {
     'Corporate Seminar',
     'Anniversary Gala',
     'Social Gathering',
+    'Other',
   ];
+  final TextEditingController customOccasionController = TextEditingController();
 
   final Rx<DateTime> banquetDate = DateTime.now().add(const Duration(days: 14)).obs;
   final RxString banquetShift = 'Dinner'.obs;
@@ -45,6 +48,7 @@ class BanquetController extends GetxController {
 
   final RxInt banquetPax = 75.obs;
   final List<int> banquetPaxPresets = [25, 50, 75, 100, 150, 200, 300, 500];
+  final TextEditingController banquetPaxTextController = TextEditingController(text: '75');
 
   final RxString banquetPackage = 'Signature Sizzler & Multi-Cuisine Buffet'.obs;
   final List<String> packageOptions = [
@@ -54,6 +58,7 @@ class BanquetController extends GetxController {
   ];
 
   // --- TAB 2: OUTDOOR CATERING (ODC) FORM STATE ---
+  final TextEditingController odcEventNameController = TextEditingController();
   final TextEditingController odcNameController = TextEditingController();
   final TextEditingController odcPhoneController = TextEditingController();
   final TextEditingController odcVenueLocationController = TextEditingController();
@@ -68,6 +73,7 @@ class BanquetController extends GetxController {
 
   final RxInt odcPax = 150.obs;
   final List<int> odcPaxPresets = [50, 100, 150, 250, 500, 1000];
+  final TextEditingController odcPaxTextController = TextEditingController(text: '150');
 
   final RxList<String> selectedLiveStations = <String>[
     'Live Sizzler Grills',
@@ -83,9 +89,24 @@ class BanquetController extends GetxController {
     'Live Chaat & Street Tapas',
   ];
 
+  final RxString odcOccasion = 'Farmhouse Gathering'.obs;
+  final List<String> odcOccasionOptions = [
+    'Farmhouse Gathering',
+    'Wedding Function',
+    'Cocktail & Sangeet',
+    'Birthday / Anniversary',
+    'Corporate Retreat',
+    'House Party',
+    'Other',
+  ];
+  final TextEditingController odcCustomOccasionController = TextEditingController();
+
   @override
   void onInit() {
     super.onInit();
+    if (Get.arguments != null && Get.arguments is Map && Get.arguments['tab'] != null) {
+      activeTab.value = Get.arguments['tab'] as int;
+    }
     _initPrefilledContact();
     loadMyInquiries();
   }
@@ -176,32 +197,50 @@ class BanquetController extends GetxController {
       final formattedDate = DateFormat('yyyy-MM-dd').format(banquetDate.value);
       final shiftClean = banquetShift.value.split(' ').first;
 
+      final eventName = banquetEventNameController.text.trim();
       final requirements = StringBuffer();
+      if (eventName.isNotEmpty) {
+        requirements.write('Event: $eventName. ');
+      }
       requirements.write('Venue: ${selectedBanquetVenue.value}. ');
       requirements.write('Package: ${banquetPackage.value}. ');
       if (banquetNotesController.text.trim().isNotEmpty) {
         requirements.write('Special Notes: ${banquetNotesController.text.trim()}');
       }
 
+      final customOcc = customOccasionController.text.trim();
+      final occasionName = (selectedOccasion.value == 'Other' && customOcc.isNotEmpty)
+          ? customOcc
+          : selectedOccasion.value;
+
+      final categoryLabel = eventName.isNotEmpty
+          ? 'Banquet: $eventName ($occasionName)'
+          : 'Banquet: $occasionName';
+
+      final parsedPax = int.tryParse(banquetPaxTextController.text.trim());
+      final finalPax = (parsedPax != null && parsedPax > 0) ? parsedPax : banquetPax.value;
+
       final inquiry = BanquetInquiryModel(
         customerName: name,
         customerMobile: phone.startsWith('+91') ? phone : '+91 $phone',
         email: AppConstants.currentUserEmail.isNotEmpty ? AppConstants.currentUserEmail : null,
-        eventCategory: 'Banquet: ${selectedOccasion.value}',
+        eventCategory: categoryLabel,
         eventDate: formattedDate,
         eventShift: shiftClean,
-        estimatedPax: banquetPax.value,
+        estimatedPax: finalPax,
         customRequirements: requirements.toString(),
       );
 
       final success = await _apiService.submitBanquetInquiry(inquiry);
       if (success) {
+        banquetEventNameController.clear();
         banquetNotesController.clear();
+        customOccasionController.clear();
         await loadMyInquiries();
         _showSuccessDialog(
           title: 'Banquet Inquiry Received!',
           message:
-              'Your inquiry for ${banquetPax.value} guests at ${selectedBanquetVenue.value} on ${DateFormat('dd MMM yyyy').format(banquetDate.value)} has been recorded.\n\nOur House of Yanki Event Desk team will reach out to you within 24 hours at $phone to confirm hall availability and discuss custom menu options.',
+              'Your inquiry for $finalPax guests at ${selectedBanquetVenue.value} on ${DateFormat('dd MMM yyyy').format(banquetDate.value)} has been recorded.\n\nOur House of Yanki Event Desk team will reach out to you within 24 hours at $phone to confirm hall availability and discuss custom menu options.',
         );
       } else {
         _showError('Failed to dispatch inquiry. Please check your network and try again.');
@@ -231,37 +270,52 @@ class BanquetController extends GetxController {
     isSubmitting.value = true;
     try {
       final formattedDate = DateFormat('yyyy-MM-dd').format(odcDate.value);
+      final eventName = odcEventNameController.text.trim();
 
       final requirements = StringBuffer();
-      requirements.write('City: ${odcCity.value}. ');
-      if (location.isNotEmpty) {
-        requirements.write('Lawn/Venue: $location. ');
+      if (eventName.isNotEmpty) {
+        requirements.write('Event: $eventName. ');
       }
-      requirements.write('Live Counters: ${selectedLiveStations.join(', ')}. ');
+      final occ = odcOccasion.value == 'Other' && odcCustomOccasionController.text.trim().isNotEmpty
+          ? odcCustomOccasionController.text.trim()
+          : odcOccasion.value;
+      requirements.write('Occasion: $occ. ');
+      if (location.isNotEmpty) {
+        requirements.write('Venue/Lawn: $location. ');
+      }
       if (odcNotesController.text.trim().isNotEmpty) {
         requirements.write('Notes: ${odcNotesController.text.trim()}');
       }
+
+      final parsedPax = int.tryParse(odcPaxTextController.text.trim());
+      final finalPax = (parsedPax != null && parsedPax > 0) ? parsedPax : odcPax.value;
+
+      final categoryLabel = eventName.isNotEmpty
+          ? 'ODC: $eventName ($occ)'
+          : 'ODC - Outdoor Catering ($occ)';
 
       final inquiry = BanquetInquiryModel(
         customerName: name,
         customerMobile: phone.startsWith('+91') ? phone : '+91 $phone',
         email: AppConstants.currentUserEmail.isNotEmpty ? AppConstants.currentUserEmail : null,
-        eventCategory: 'ODC - Outdoor Catering (${odcCity.value})',
+        eventCategory: categoryLabel,
         eventDate: formattedDate,
         eventShift: odcShift.value,
-        estimatedPax: odcPax.value,
+        estimatedPax: finalPax,
         customRequirements: requirements.toString(),
       );
 
       final success = await _apiService.submitBanquetInquiry(inquiry);
       if (success) {
+        odcEventNameController.clear();
         odcVenueLocationController.clear();
         odcNotesController.clear();
+        odcCustomOccasionController.clear();
         await loadMyInquiries();
         _showSuccessDialog(
           title: 'ODC Catering Inquiry Received!',
           message:
-              'Your outdoor catering inquiry for ${odcPax.value} guests in ${odcCity.value} on ${DateFormat('dd MMM yyyy').format(odcDate.value)} has been recorded.\n\nOur Executive Chef & ODC event planner will reach out to you within 24 hours at $phone with live counter setups, menu packages, and tasting details.',
+              'Your outdoor catering inquiry for $finalPax guests in ${odcCity.value} on ${DateFormat('dd MMM yyyy').format(odcDate.value)} has been recorded.\n\nOur Executive Chef & ODC event planner will reach out to you within 24 hours at $phone with live counter setups, menu packages, and tasting details.',
         );
       } else {
         _showError('Failed to dispatch inquiry. Please check your network and try again.');

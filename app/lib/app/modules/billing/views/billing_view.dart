@@ -39,20 +39,23 @@ class BillingView extends GetView<BillingController> {
           ),
         ],
       ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.goldAccent),
-          );
-        }
+      body: SafeArea(
+        top: false,
+        child: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.goldAccent),
+            );
+          }
 
-        final settlement = controller.currentSettlement.value;
-        if (settlement != null) {
-          return _buildSettlementStatusScreen(settlement);
-        }
+          final settlement = controller.currentSettlement.value;
+          if (settlement != null) {
+            return _buildSettlementStatusScreen(settlement);
+          }
 
-        return _buildSettlementForm();
-      }),
+          return _buildSettlementForm();
+        }),
+      ),
     );
   }
 
@@ -361,16 +364,51 @@ class BillingView extends GetView<BillingController> {
           const SizedBox(height: 20),
 
           // 2. Select Coupon
-          Text(
-            '2. SELECT COUPON TO APPLY',
-            style: GoogleFonts.outfit(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.goldAccent,
-              letterSpacing: 1.2,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '2. SELECT COUPON TO APPLY',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.goldAccent,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              Obx(() {
+                final selected = controller.selectedCoupon.value;
+                if (selected != null) {
+                  return GestureDetector(
+                    onTap: () => controller.selectCoupon(null),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        'Remove Coupon',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFFF8A80),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return Text(
+                  '${controller.availableCoupons.length} in Vault',
+                  style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+                );
+              }),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+
+          // Proper Vertical Coupon Cards
           if (controller.availableCoupons.isEmpty)
             Container(
               padding: const EdgeInsets.all(14),
@@ -379,89 +417,246 @@ class BillingView extends GetView<BillingController> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFF262320)),
               ),
-              child: Text(
-                'No unredeemed coupons available in vault. Standard rates apply.',
-                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
-              ),
-            )
-          else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
               child: Row(
                 children: [
-                  // Option: No Coupon
-                  GestureDetector(
-                    onTap: () => controller.selectCoupon(null),
-                    child: Obx(() => Container(
-                      margin: const EdgeInsets.only(right: 10),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: controller.selectedCoupon.value == null ? const Color(0xFF2C241B) : const Color(0xFF141312),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: controller.selectedCoupon.value == null ? AppColors.goldAccent : const Color(0xFF262320),
-                        ),
-                      ),
-                      child: Text(
-                        'None',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: controller.selectedCoupon.value == null ? AppColors.goldAccent : Colors.grey,
-                        ),
-                      ),
-                    )),
+                  const Icon(Icons.confirmation_number_outlined, color: Colors.grey, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'No unredeemed coupons available in vault. Standard dining rates apply.',
+                      style: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
+                    ),
                   ),
-                  ...controller.availableCoupons.map((coupon) {
-                    return Obx(() {
-                      final isSelected = controller.selectedCoupon.value?.code == coupon.code;
-                      return GestureDetector(
-                        onTap: () => controller.selectCoupon(coupon),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ],
+              ),
+            )
+          else ...[
+            // Option: Standard Bill without Coupon
+            GestureDetector(
+              onTap: () => controller.selectCoupon(null),
+              child: Obx(() {
+                final isNone = controller.selectedCoupon.value == null;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isNone ? const Color(0xFF231E18) : const Color(0xFF141312),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isNone ? AppColors.goldAccent : const Color(0xFF262320),
+                      width: isNone ? 1.4 : 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isNone ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                        color: isNone ? AppColors.goldAccent : Colors.grey,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'No Coupon (Standard Dining Bill)',
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isNone ? Colors.white : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+
+            // Vertical list of beautiful coupon cards
+            ...controller.availableCoupons.map((coupon) {
+              return Obx(() {
+                final isSelected = controller.selectedCoupon.value?.code == coupon.code;
+                return GestureDetector(
+                  onTap: () {
+                    if (isSelected) {
+                      controller.selectCoupon(null);
+                    } else {
+                      controller.selectCoupon(coupon);
+                    }
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              colors: [Color(0xFF0D2D23), Color(0xFF081B15)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: isSelected ? null : const Color(0xFF141312),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFF4EE3B8) : const Color(0xFF262320),
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF4EE3B8).withOpacity(0.18),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF0F2E25) : const Color(0xFF141312),
+                            color: isSelected ? const Color(0xFF16483B) : const Color(0xFF1F1D1A),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? const Color(0xFF4EE3B8) : const Color(0xFF262320),
-                              width: isSelected ? 1.5 : 1,
+                              color: isSelected
+                                  ? const Color(0xFF4EE3B8).withOpacity(0.4)
+                                  : AppColors.goldAccent.withOpacity(0.25),
                             ),
                           ),
+                          child: Icon(
+                            Icons.local_offer_rounded,
+                            color: isSelected ? const Color(0xFF4EE3B8) : AppColors.goldAccent,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                coupon.name,
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: isSelected ? const Color(0xFF4EE3B8) : Colors.white,
-                                ),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      coupon.name,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (coupon.isVipExclusive) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.goldAccent.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
+                                      ),
+                                      child: Text(
+                                        'VIP',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.goldAccent,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 3),
                               Text(
                                 coupon.subtitle,
                                 style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: isSelected ? Colors.white70 : Colors.grey,
+                                  fontSize: 11.5,
+                                  color: isSelected ? Colors.white70 : Colors.grey[400],
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
+                              if (coupon.leftCount > 1 || coupon.expiryDate.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${coupon.leftCount} Left in Vault',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: isSelected ? const Color(0xFF4EE3B8) : AppColors.goldAccent,
+                                      ),
+                                    ),
+                                    if (coupon.expiryDate.isNotEmpty) ...[
+                                      Text(' · ', style: GoogleFonts.inter(color: Colors.grey)),
+                                      Text(
+                                        'Exp ${coupon.expiryDate}',
+                                        style: GoogleFonts.inter(fontSize: 10.5, color: Colors.grey[500]),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),
-                      );
-                    });
-                  }),
-                ],
-              ),
-            ),
+                        const SizedBox(width: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF4EE3B8) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFF4EE3B8) : const Color(0xFF4EE3B8).withOpacity(0.6),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isSelected) ...[
+                                const Icon(Icons.check_rounded, color: Colors.black, size: 13),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'APPLIED',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.black,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ] else ...[
+                                Text(
+                                  'APPLY',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF4EE3B8),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              });
+            }),
+          ],
           const SizedBox(height: 20),
 
-          // 3. Enter Bill & POS Invoice #
+          // 3. Enter Bill Amount (Bill # removed as requested)
           Text(
-            '3. POS INVOICE & AMOUNT',
+            '3. ENTER BILL AMOUNT',
             style: GoogleFonts.outfit(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -470,50 +665,31 @@ class BillingView extends GetView<BillingController> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                flex: 5,
-                child: TextField(
-                  controller: controller.invoiceController,
-                  style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w600),
-                  decoration: InputDecoration(
-                    labelText: 'POS Bill #',
-                    labelStyle: GoogleFonts.inter(color: Colors.grey, fontSize: 13),
-                    hintText: 'e.g. POS-94210',
-                    hintStyle: GoogleFonts.inter(color: Colors.grey[700], fontSize: 13),
-                    filled: true,
-                    fillColor: const Color(0xFF141312),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF262320))),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF262320))),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.goldAccent)),
-                  ),
+          TextField(
+            controller: controller.grossAmountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: controller.onGrossAmountChanged,
+            style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
+            decoration: InputDecoration(
+              labelText: 'Gross Bill Amount (₹)',
+              labelStyle: GoogleFonts.inter(color: Colors.grey, fontSize: 13),
+              hintText: 'e.g. 2500',
+              hintStyle: GoogleFonts.inter(color: Colors.grey[700], fontSize: 14),
+              prefixIcon: Container(
+                width: 44,
+                alignment: Alignment.center,
+                child: Text(
+                  '₹',
+                  style: GoogleFonts.outfit(color: AppColors.goldAccent, fontWeight: FontWeight.w800, fontSize: 20),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 5,
-                child: TextField(
-                  controller: controller.grossAmountController,
-                  keyboardType: TextInputType.number,
-                  onChanged: controller.onGrossAmountChanged,
-                  style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16),
-                  decoration: InputDecoration(
-                    labelText: 'Gross Bill (₹)',
-                    labelStyle: GoogleFonts.inter(color: Colors.grey, fontSize: 13),
-                    hintText: '3500',
-                    hintStyle: GoogleFonts.inter(color: Colors.grey[700], fontSize: 13),
-                    prefixText: '₹ ',
-                    prefixStyle: GoogleFonts.outfit(color: AppColors.goldAccent, fontWeight: FontWeight.w700),
-                    filled: true,
-                    fillColor: const Color(0xFF141312),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF262320))),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF262320))),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.goldAccent)),
-                  ),
-                ),
-              ),
-            ],
+              filled: true,
+              fillColor: const Color(0xFF141312),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF262320))),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF262320))),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.goldAccent, width: 1.5)),
+            ),
           ),
           const SizedBox(height: 16),
 

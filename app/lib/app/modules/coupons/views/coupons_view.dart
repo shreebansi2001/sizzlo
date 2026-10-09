@@ -43,7 +43,10 @@ class CouponsView extends GetView<CouponsController> {
                   onPressed: () => Get.back(),
                 ),
         ),
-        body: isSub ? _buildSubscribedView() : _buildNonSubscribedView(),
+        body: SafeArea(
+          top: false,
+          child: isSub ? _buildSubscribedView() : _buildNonSubscribedView(),
+        ),
       );
     });
   }

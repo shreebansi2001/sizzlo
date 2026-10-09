@@ -93,8 +93,10 @@ class AuthController extends GetxController {
 
   void _showNotRegisteredPrompt(String phone) {
     Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
+      SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
         decoration: BoxDecoration(
           color: const Color(0xFF111614),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -306,6 +308,7 @@ class AuthController extends GetxController {
             ),
           ],
         ),
+      ),
       ),
       isScrollControlled: true,
     );

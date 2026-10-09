@@ -82,9 +82,11 @@ class _SupportViewState extends State<SupportView> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Concierge Hero Card
@@ -246,6 +248,7 @@ class _SupportViewState extends State<SupportView> {
             const SizedBox(height: 28),
           ],
         ),
+      ),
       ),
     );
   }

@@ -16,7 +16,7 @@ class BanquetView extends GetView<BanquetController> {
       backgroundColor: const Color(0xFF0A0908),
       appBar: AppBar(
         title: Text(
-          'Banquet & ODC Desk',
+          'Banquet Halls Desk',
           style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
         ),
         centerTitle: true,
@@ -27,124 +27,30 @@ class BanquetView extends GetView<BanquetController> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Tab Selector: Banquet vs ODC
-            _buildTabSelector(),
-            const SizedBox(height: 20),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Dedicated Banquet Content
+              _buildBanquetContent(context),
+              const SizedBox(height: 30),
 
-            // Tab Content
-            Obx(() {
-              if (controller.activeTab.value == 0) {
-                return _buildBanquetTabContent(context);
-              } else {
-                return _buildOdcTabContent(context);
-              }
-            }),
-
-            const SizedBox(height: 30),
-
-            // My Submitted Inquiries Section
-            _buildMyInquiriesSection(),
-            const SizedBox(height: 40),
-          ],
+              // My Submitted Inquiries Section
+              _buildMyInquiriesSection(),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // --- TOP TAB SELECTOR ---
-  Widget _buildTabSelector() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF141312),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF262320)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Obx(() {
-              final isSelected = controller.activeTab.value == 0;
-              return GestureDetector(
-                onTap: () => controller.activeTab.value = 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF2C241B) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: isSelected ? Border.all(color: AppColors.goldAccent, width: 1) : null,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.apartment_rounded,
-                        size: 16,
-                        color: isSelected ? AppColors.goldAccent : Colors.grey,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Banquet Halls',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected ? AppColors.goldAccent : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-          Expanded(
-            child: Obx(() {
-              final isSelected = controller.activeTab.value == 1;
-              return GestureDetector(
-                onTap: () => controller.activeTab.value = 1,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF2C241B) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: isSelected ? Border.all(color: AppColors.goldAccent, width: 1) : null,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.deck_rounded,
-                        size: 16,
-                        color: isSelected ? AppColors.goldAccent : Colors.grey,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Outdoor Catering (ODC)',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected ? AppColors.goldAccent : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- TAB 1: BANQUET HALLS CONTENT ---
-  Widget _buildBanquetTabContent(BuildContext context) {
+  // --- BANQUET HALLS CONTENT ---
+  Widget _buildBanquetContent(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -248,28 +154,30 @@ class BanquetView extends GetView<BanquetController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Contact Details
+              // Contact Details (Vertical for clean display without phone clipping)
               Text('CONTACT DETAILS', style: _fieldSectionStyle()),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: controller.banquetNameController,
-                      hint: 'Your Name',
-                      icon: Icons.person_outline_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: controller.banquetPhoneController,
-                      hint: 'Mobile Number',
-                      icon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                    ),
-                  ),
-                ],
+              _buildTextField(
+                controller: controller.banquetNameController,
+                hint: 'Your Full Name',
+                icon: Icons.person_outline_rounded,
+              ),
+              const SizedBox(height: 10),
+              _buildTextField(
+                controller: controller.banquetPhoneController,
+                hint: 'Mobile Number (+91 ...)',
+                icon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+
+              // Event Name
+              Text('EVENT NAME', style: _fieldSectionStyle()),
+              const SizedBox(height: 8),
+              _buildTextField(
+                controller: controller.banquetEventNameController,
+                hint: 'e.g. Yash Birthday Celebration, Corporate Seminar',
+                icon: Icons.celebration_outlined,
               ),
               const SizedBox(height: 16),
 
@@ -299,7 +207,7 @@ class BanquetView extends GetView<BanquetController> {
               )),
               const SizedBox(height: 16),
 
-              // Occasion Type
+              // Occasion Type with Other Text Field
               Text('OCCASION TYPE', style: _fieldSectionStyle()),
               const SizedBox(height: 8),
               Obx(() => Wrap(
@@ -310,7 +218,7 @@ class BanquetView extends GetView<BanquetController> {
                   return GestureDetector(
                     onTap: () => controller.selectedOccasion.value = occ,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: isSelected ? const Color(0xFF2C241B) : const Color(0xFF1E1A16),
                         borderRadius: BorderRadius.circular(10),
@@ -331,79 +239,57 @@ class BanquetView extends GetView<BanquetController> {
                   );
                 }).toList(),
               )),
+              Obx(() {
+                if (controller.selectedOccasion.value == 'Other') {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: TextField(
+                      controller: controller.customOccasionController,
+                      style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Specify your custom occasion (e.g., Baby Shower, Graduation...)',
+                        hintStyle: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
+                        prefixIcon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.goldAccent),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1A16),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF332B22))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF332B22))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.goldAccent)),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
               const SizedBox(height: 16),
 
-              // Event Date & Session / Shift
-              Row(
-                children: [
-                  // Date Picker
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('TARGET DATE', style: _fieldSectionStyle()),
-                        const SizedBox(height: 8),
-                        Obx(() => GestureDetector(
-                          onTap: () => controller.pickDate(context, false),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            decoration: _fieldBoxDecoration(),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.goldAccent),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    DateFormat('dd MMM yyyy').format(controller.banquetDate.value),
-                                    style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )),
-                      ],
-                    ),
+              // Full-Width Target Event Date (Shift dropdown removed)
+              Text('TARGET EVENT DATE', style: _fieldSectionStyle()),
+              const SizedBox(height: 8),
+              Obx(() => GestureDetector(
+                onTap: () => controller.pickDate(context, false),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  decoration: _fieldBoxDecoration(),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.goldAccent),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          DateFormat('EEEE, dd MMMM yyyy').format(controller.banquetDate.value),
+                          style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                        ),
+                      ),
+                      const Icon(Icons.edit_calendar_rounded, size: 16, color: AppColors.goldAccent),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-
-                  // Shift
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('SESSION / SHIFT', style: _fieldSectionStyle()),
-                        const SizedBox(height: 8),
-                        Obx(() => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: _fieldBoxDecoration(),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: controller.shiftOptions.contains(controller.banquetShift.value)
-                                  ? controller.banquetShift.value
-                                  : controller.shiftOptions.first,
-                              dropdownColor: const Color(0xFF1E1A16),
-                              isExpanded: true,
-                              icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.goldAccent, size: 18),
-                              items: controller.shiftOptions.map((s) => DropdownMenuItem(
-                                value: s,
-                                child: Text(s, style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
-                              )).toList(),
-                              onChanged: (val) {
-                                if (val != null) controller.banquetShift.value = val;
-                              },
-                            ),
-                          ),
-                        )),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              )),
               const SizedBox(height: 16),
 
-              // Estimated Guests (Pax)
+              // Estimated Guests (Pax) with Presets & Custom Text Field
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -415,36 +301,63 @@ class BanquetView extends GetView<BanquetController> {
                 ],
               ),
               const SizedBox(height: 8),
-              Obx(() => SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: controller.banquetPaxPresets.map((pax) {
-                    final isSelected = controller.banquetPax.value == pax;
-                    return GestureDetector(
-                      onTap: () => controller.banquetPax.value = pax,
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF2C241B) : const Color(0xFF1E1A16),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isSelected ? AppColors.goldAccent : const Color(0xFF332B22),
-                          ),
-                        ),
-                        child: Text(
-                          '$pax Pax',
-                          style: GoogleFonts.outfit(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected ? AppColors.goldAccent : Colors.grey[400],
-                          ),
+              Obx(() => Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: controller.banquetPaxPresets.map((pax) {
+                  final isSelected = controller.banquetPax.value == pax;
+                  return GestureDetector(
+                    onTap: () {
+                      controller.banquetPax.value = pax;
+                      controller.banquetPaxTextController.text = '$pax';
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF2C241B) : const Color(0xFF1E1A16),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected ? AppColors.goldAccent : const Color(0xFF332B22),
+                          width: isSelected ? 1.5 : 1,
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
+                      child: Text(
+                        '$pax Pax',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected ? AppColors.goldAccent : Colors.grey[400],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               )),
+              const SizedBox(height: 10),
+              TextField(
+                controller: controller.banquetPaxTextController,
+                keyboardType: TextInputType.number,
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+                onChanged: (val) {
+                  final parsed = int.tryParse(val.trim());
+                  if (parsed != null && parsed > 0) {
+                    controller.banquetPax.value = parsed;
+                  }
+                },
+                decoration: InputDecoration(
+                  hintText: 'Or enter custom guest count (e.g., 85, 250, 400...)',
+                  hintStyle: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
+                  prefixIcon: const Icon(Icons.people_outline_rounded, size: 18, color: AppColors.goldAccent),
+                  suffixText: 'Guests',
+                  suffixStyle: GoogleFonts.outfit(fontSize: 12, color: AppColors.goldAccent, fontWeight: FontWeight.w700),
+                  filled: true,
+                  fillColor: const Color(0xFF1E1A16),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF332B22))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF332B22))),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.goldAccent)),
+                ),
+              ),
               Obx(() {
                 if (controller.banquetPax.value >= 300) {
                   return Padding(
@@ -509,363 +422,6 @@ class BanquetView extends GetView<BanquetController> {
                 text: controller.isSubmitting.value ? 'Dispatching Inquiry...' : 'Submit Banquet Hall Inquiry',
                 isLoading: controller.isSubmitting.value,
                 onPressed: controller.submitBanquetInquiry,
-              )),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // --- TAB 2: OUTDOOR CATERING (ODC) CONTENT ---
-  Widget _buildOdcTabContent(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Hero Header Card for ODC
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1A2B23), Color(0xFF141312)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFF285442)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4EE3B8).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF4EE3B8).withOpacity(0.3)),
-                ),
-                child: const Icon(Icons.deck_rounded, color: Color(0xFF4EE3B8), size: 28),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Outdoor Catering (ODC)',
-                      style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'We bring the live sizzle to your lawn, farmhouse, private terrace, or corporate venue across Gujarat.',
-                      style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400], height: 1.3),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // Guaranteed 24-Hour Callback Badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF13221C),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1E4D3C)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.schedule_rounded, color: Color(0xFF4EE3B8), size: 16),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Guaranteed Callback: Our Outdoor Catering (ODC) team will reach out to you within 24 hours of inquiry submission.',
-                  style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFFB4E7D6), height: 1.3),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-
-        // Main ODC Form Container
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF141312),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF262320)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Contact Details
-              Text('ORGANIZER CONTACT', style: _fieldSectionStyle()),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: controller.odcNameController,
-                      hint: 'Contact Name',
-                      icon: Icons.person_outline_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: controller.odcPhoneController,
-                      hint: 'Phone Number',
-                      icon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // City & Lawn / Farm Venue
-              Row(
-                children: [
-                  // City
-                  Expanded(
-                    flex: 4,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('CITY / REGION', style: _fieldSectionStyle()),
-                        const SizedBox(height: 8),
-                        Obx(() => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: _fieldBoxDecoration(),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: controller.cityOptions.contains(controller.odcCity.value)
-                                  ? controller.odcCity.value
-                                  : controller.cityOptions.first,
-                              dropdownColor: const Color(0xFF1E1A16),
-                              isExpanded: true,
-                              icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.goldAccent, size: 18),
-                              items: controller.cityOptions.map((c) => DropdownMenuItem(
-                                value: c,
-                                child: Text(c, style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
-                              )).toList(),
-                              onChanged: (val) {
-                                if (val != null) controller.odcCity.value = val;
-                              },
-                            ),
-                          ),
-                        )),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-
-                  // Venue Name / Lawn Address
-                  Expanded(
-                    flex: 6,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('VENUE / LAWN ADDRESS', style: _fieldSectionStyle()),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: controller.odcVenueLocationController,
-                          hint: 'e.g. Rancharda Farm, SG Hwy',
-                          icon: Icons.location_on_outlined,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Event Date & Shift
-              Row(
-                children: [
-                  // Date
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('EVENT DATE', style: _fieldSectionStyle()),
-                        const SizedBox(height: 8),
-                        Obx(() => GestureDetector(
-                          onTap: () => controller.pickDate(context, true),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            decoration: _fieldBoxDecoration(),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.calendar_today_rounded, size: 14, color: Color(0xFF4EE3B8)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    DateFormat('dd MMM yyyy').format(controller.odcDate.value),
-                                    style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-
-                  // Shift
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('TIMING / SHIFT', style: _fieldSectionStyle()),
-                        const SizedBox(height: 8),
-                        Obx(() => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: _fieldBoxDecoration(),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: controller.odcShiftOptions.contains(controller.odcShift.value)
-                                  ? controller.odcShift.value
-                                  : controller.odcShiftOptions.first,
-                              dropdownColor: const Color(0xFF1E1A16),
-                              isExpanded: true,
-                              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF4EE3B8), size: 18),
-                              items: controller.odcShiftOptions.map((s) => DropdownMenuItem(
-                                value: s,
-                                child: Text(s, style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
-                              )).toList(),
-                              onChanged: (val) {
-                                if (val != null) controller.odcShift.value = val;
-                              },
-                            ),
-                          ),
-                        )),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Estimated Guests
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('ESTIMATED GUESTS', style: _fieldSectionStyle()),
-                  Obx(() => Text(
-                    '${controller.odcPax.value} Guests',
-                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF4EE3B8)),
-                  )),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Obx(() => SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: controller.odcPaxPresets.map((pax) {
-                    final isSelected = controller.odcPax.value == pax;
-                    return GestureDetector(
-                      onTap: () => controller.odcPax.value = pax,
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF143328) : const Color(0xFF1E1A16),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isSelected ? const Color(0xFF4EE3B8) : const Color(0xFF332B22),
-                          ),
-                        ),
-                        child: Text(
-                          '$pax Guests',
-                          style: GoogleFonts.outfit(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected ? const Color(0xFF4EE3B8) : Colors.grey[400],
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              )),
-              const SizedBox(height: 16),
-
-              // Live Counter Stations
-              Text('LIVE STATIONS & ATTRACTIONS', style: _fieldSectionStyle()),
-              const SizedBox(height: 8),
-              Obx(() => Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: controller.availableLiveStations.map((station) {
-                  final isSelected = controller.selectedLiveStations.contains(station);
-                  return GestureDetector(
-                    onTap: () => controller.toggleLiveStation(station),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF143328) : const Color(0xFF1E1A16),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected ? const Color(0xFF4EE3B8) : const Color(0xFF332B22),
-                          width: isSelected ? 1.5 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isSelected ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
-                            size: 14,
-                            color: isSelected ? const Color(0xFF4EE3B8) : Colors.grey[600],
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            station,
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected ? const Color(0xFF4EE3B8) : Colors.grey[400],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              )),
-              const SizedBox(height: 16),
-
-              // Catering Requirements Notes
-              Text('CUSTOM MENU / LOGISTICS NOTES', style: _fieldSectionStyle()),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller.odcNotesController,
-                maxLines: 2,
-                style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'e.g., Jain sizzler section, live chef team size, crockery & service setup...',
-                  hintStyle: GoogleFonts.inter(fontSize: 12, color: Colors.grey[700]),
-                  filled: true,
-                  fillColor: const Color(0xFF1E1A16),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF332B22))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF332B22))),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4EE3B8))),
-                ),
-              ),
-              const SizedBox(height: 22),
-
-              // Submit Button
-              Obx(() => SizzloButton(
-                text: controller.isSubmitting.value ? 'Dispatching Inquiry...' : 'Submit ODC Catering Inquiry',
-                isLoading: controller.isSubmitting.value,
-                onPressed: controller.submitOdcInquiry,
               )),
             ],
           ),

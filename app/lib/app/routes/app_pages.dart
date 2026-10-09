@@ -20,6 +20,7 @@ import '../modules/reservations/bindings/reservations_binding.dart';
 import '../modules/reservations/views/reservations_view.dart';
 import '../modules/banquet/bindings/banquet_binding.dart';
 import '../modules/banquet/views/banquet_view.dart';
+import '../modules/banquet/views/odc_inquiry_view.dart';
 import '../modules/loyalty/bindings/loyalty_binding.dart';
 import '../modules/loyalty/views/loyalty_view.dart';
 import '../modules/delivery/bindings/delivery_binding.dart';
@@ -92,6 +93,16 @@ class AppPages {
       name: AppRoutes.RESERVATIONS,
       page: () => const ReservationsView(),
       binding: ReservationsBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.BANQUET,
+      page: () => const BanquetView(),
+      binding: BanquetBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.ODC,
+      page: () => const OdcInquiryView(),
+      binding: BanquetBinding(),
     ),
     GetPage(
       name: AppRoutes.BANQUET_ODC,

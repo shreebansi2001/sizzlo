@@ -5,7 +5,7 @@ import {
   Trash2, Edit3, X, QrCode, MessageSquare
 } from 'lucide-react';
 import { 
-  fetchBanquetLeads, assignBanquetLead, BanquetLeadDTO,
+  fetchBanquetLeads, assignBanquetLead, updateBanquetLeadStatus, BanquetLeadDTO,
   fetchDiningEvents, createDiningEvent, updateDiningEvent, deleteDiningEvent,
   fetchDiningEventAttendees, DiningEventAdminDTO, DiningAttendeeDTO
 } from '../api/client';
@@ -80,6 +80,19 @@ export const EventsPage: React.FC<EventsPageProps> = () => {
       }
     } catch (e: any) {
       setNotice(`Assignment error: ${e.message}`);
+    }
+    setTimeout(() => setNotice(null), 3500);
+  };
+
+  const handleStatusChange = async (id: number, newStatus: string) => {
+    try {
+      const res = await updateBanquetLeadStatus(id, newStatus);
+      if (res && res.success) {
+        setNotice(`Lead #${id} status updated to ${newStatus}! WhatsApp update dispatched.`);
+        await loadLeads();
+      }
+    } catch (e: any) {
+      setNotice(`Status update error: ${e.message}`);
     }
     setTimeout(() => setNotice(null), 3500);
   };
@@ -574,16 +587,43 @@ export const EventsPage: React.FC<EventsPageProps> = () => {
                       <span style={{ fontSize: 12 }}>House of Yanki</span>
                     </td>
                     <td>
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: 6,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        background: lead.status === 'NEW' ? 'rgba(255, 138, 0, 0.15)' : 'rgba(78, 227, 184, 0.15)',
-                        color: lead.status === 'NEW' ? 'var(--primary)' : '#4EE3B8'
-                      }}>
-                        {lead.status}
-                      </span>
+                      <select
+                        value={lead.status}
+                        onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          background: lead.status === 'NEW'
+                            ? 'rgba(255, 138, 0, 0.15)'
+                            : lead.status === 'CONTACTED'
+                            ? 'rgba(0, 191, 255, 0.15)'
+                            : lead.status === 'IN_DISCUSSION'
+                            ? 'rgba(232, 184, 74, 0.15)'
+                            : lead.status === 'CONFIRMED'
+                            ? 'rgba(78, 227, 184, 0.15)'
+                            : 'rgba(255, 255, 255, 0.08)',
+                          color: lead.status === 'NEW'
+                            ? 'var(--primary)'
+                            : lead.status === 'CONTACTED'
+                            ? '#00BFFF'
+                            : lead.status === 'IN_DISCUSSION'
+                            ? '#E8B84A'
+                            : lead.status === 'CONFIRMED'
+                            ? '#4EE3B8'
+                            : '#CCC',
+                          border: '1px solid var(--border)',
+                          cursor: 'pointer',
+                          outline: 'none',
+                        }}
+                      >
+                        <option value="NEW" style={{ background: '#1c1917', color: '#ff8a00' }}>NEW (Pending)</option>
+                        <option value="CONTACTED" style={{ background: '#1c1917', color: '#00BFFF' }}>CONTACTED</option>
+                        <option value="IN_DISCUSSION" style={{ background: '#1c1917', color: '#E8B84A' }}>IN DISCUSSION</option>
+                        <option value="CONFIRMED" style={{ background: '#1c1917', color: '#4EE3B8' }}>CONFIRMED</option>
+                        <option value="CLOSED" style={{ background: '#1c1917', color: '#888' }}>CLOSED</option>
+                      </select>
                     </td>
                     <td>
                       <span style={{ fontSize: 12, color: lead.assignedTo ? 'var(--text-main)' : 'var(--text-muted)' }}>

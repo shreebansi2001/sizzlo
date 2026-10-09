@@ -32,7 +32,9 @@ class NotificationsView extends GetView<NotificationsController> {
           ),
         ],
       ),
-      body: Obx(() {
+      body: SafeArea(
+        top: false,
+        child: Obx(() {
         if (controller.isLoading.value && controller.notifications.isEmpty) {
           return const Center(
             child: CircularProgressIndicator(color: AppColors.flame),
@@ -137,8 +139,9 @@ class NotificationsView extends GetView<NotificationsController> {
           ),
         );
       }),
-    );
-  }
+    ),
+  );
+}
 
   IconData _getIcon(String type) {
     switch (type) {

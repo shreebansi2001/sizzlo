@@ -48,7 +48,9 @@ class ProfileView extends GetView<ProfileController> {
                   onPressed: () => Get.back(),
                 ),
         ),
-        body: SingleChildScrollView(
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
@@ -139,9 +141,10 @@ class ProfileView extends GetView<ProfileController> {
             ],
           ),
         ),
-      );
-    });
-  }
+      ),
+    );
+  });
+}
 
   Widget _buildUserHeader(MemberModel m, bool isSub) {
     final displayName = (m.fullName.trim().isNotEmpty && m.fullName.trim() != 'Guest')
