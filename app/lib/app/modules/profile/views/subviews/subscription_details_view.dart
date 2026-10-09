@@ -38,11 +38,13 @@ class SubscriptionDetailsView extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
       ),
-      body: Obx(() {
-        final m = _getMember();
-        final isSub = m.isSubscriber;
+      body: SafeArea(
+        top: false,
+        child: Obx(() {
+          final m = _getMember();
+          final isSub = m.isSubscriber;
 
-        return SingleChildScrollView(
+          return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,6 +220,7 @@ class SubscriptionDetailsView extends StatelessWidget {
           ),
         );
       }),
+      ),
     );
   }
 

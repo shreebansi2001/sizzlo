@@ -301,13 +301,15 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
           ),
         ],
       ),
-      body: Obx(() {
-        final m = _getMember();
-        final effectiveName = m.fullName.isNotEmpty && m.fullName != 'Guest'
-            ? m.fullName
-            : (AppConstants.currentUserName != 'Guest' ? AppConstants.currentUserName : 'Member');
+      body: SafeArea(
+        top: false,
+        child: Obx(() {
+          final m = _getMember();
+          final effectiveName = m.fullName.isNotEmpty && m.fullName != 'Guest'
+              ? m.fullName
+              : (AppConstants.currentUserName != 'Guest' ? AppConstants.currentUserName : 'Member');
 
-        return SingleChildScrollView(
+          return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,6 +528,7 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
           ),
         );
       }),
+      ),
     );
   }
 

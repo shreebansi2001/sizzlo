@@ -86,60 +86,63 @@ class CouponsController extends GetxController {
 
   void _showUpgradePrompt(CouponModel coupon) {
     Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Color(0xFF141312),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: Color(0xFF6B4E22))),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF2C241B),
+      SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF141312),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: Color(0xFF6B4E22))),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF2C241B),
+                ),
+                child: const Icon(Icons.lock_outline_rounded, color: AppColors.goldAccent, size: 28),
               ),
-              child: const Icon(Icons.lock_outline_rounded, color: AppColors.goldAccent, size: 28),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'VIP Member Exclusive',
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Voucher "${coupon.name}" is reserved for Sizzlo VIP Subscribers (${coupon.targetAudience ?? "VIP Plans"}). Upgrade your membership to unlock instant dining discounts, priority bookings & exclusive benefits!',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[400], height: 1.4),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Get.back();
-                Get.toNamed(AppRoutes.PLANS);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.goldAccent,
-                foregroundColor: Colors.black,
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              const SizedBox(height: 14),
+              Text(
+                'VIP Member Exclusive',
+                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
               ),
-              child: Text(
-                'Explore Membership Plans',
-                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800),
+              const SizedBox(height: 6),
+              Text(
+                'Voucher "${coupon.name}" is reserved for Sizzlo VIP Subscribers (${coupon.targetAudience ?? "VIP Plans"}). Upgrade your membership to unlock instant dining discounts, priority bookings & exclusive benefits!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[400], height: 1.4),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () => Get.back(),
-              child: Text('Maybe Later', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Get.back();
+                  Get.toNamed(AppRoutes.PLANS);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.goldAccent,
+                  foregroundColor: Colors.black,
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  'Explore Membership Plans',
+                  style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Get.back(),
+                child: Text('Maybe Later', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
+              ),
+            ],
+          ),
         ),
       ),
     );

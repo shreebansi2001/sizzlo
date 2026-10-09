@@ -32,28 +32,31 @@ class ReservationsView extends GetView<ReservationsController> {
                 onPressed: () => Get.back(),
               ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Hero VIP Dining Header Card
-            _buildHeroHeader(),
-            const SizedBox(height: 18),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Hero VIP Dining Header Card
+              _buildHeroHeader(),
+              const SizedBox(height: 18),
 
-            // Main Dine-In Reservation Form
-            _buildTableBookingForm(context),
-            const SizedBox(height: 20),
+              // Main Dine-In Reservation Form
+              _buildTableBookingForm(context),
+              const SizedBox(height: 20),
 
-            // Large Gathering Banquet & ODC Shortcut Banner
-            _buildBanquetShortcutBanner(),
-            const SizedBox(height: 30),
+              // Large Gathering Banquet & ODC Shortcut Banner
+              _buildBanquetShortcutBanner(),
+              const SizedBox(height: 30),
 
-            // My Active Reservations Section
-            _buildMyReservationsSection(),
-            const SizedBox(height: 40),
-          ],
+              // My Active Reservations Section
+              _buildMyReservationsSection(),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
@@ -303,68 +306,72 @@ class ReservationsView extends GetView<ReservationsController> {
           }),
           const SizedBox(height: 18),
 
-          // Step 4: Seating Area Preference
-          Text('SEATING AREA PREFERENCE', style: _sectionHeaderStyle()),
-          const SizedBox(height: 8),
-          Obx(() => Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: controller.seatingAreas.map((area) {
-              final isSelected = controller.selectedSeatingArea.value == area;
-              return GestureDetector(
-                onTap: () => controller.selectedSeatingArea.value = area,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF2C241B) : const Color(0xFF1E1A16),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSelected ? AppColors.goldAccent : const Color(0xFF332B22),
-                      width: isSelected ? 1.5 : 1.0,
-                    ),
-                  ),
-                  child: Text(
-                    area,
-                    style: GoogleFonts.outfit(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? AppColors.goldAccent : Colors.grey[400],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          )),
-          const SizedBox(height: 18),
-
-          // Step 5: Time Slots (Categorized by Lunch & Dinner)
+          // Time Slots (Categorized by Lunch & Dinner)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('TIME SLOT', style: _sectionHeaderStyle()),
               Text(
-                'Min 1-hr advance for today',
-                style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[500]),
+                'Available Slots',
+                style: GoogleFonts.inter(fontSize: 10, color: AppColors.goldAccent, fontWeight: FontWeight.w600),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Obx(() {
-            final lunchSlots = controller.timeSlots.where((s) => s.contains('AM') || s.startsWith('12:') || s.startsWith('1:') || s.startsWith('2:') || s.startsWith('3:')).toList();
-            final dinnerSlots = controller.timeSlots.where((s) => !lunchSlots.contains(s)).toList();
+            final allAvailableSlots = controller.timeSlots.where((s) => controller.isSlotBookable(s)).toList();
+            final lunchSlots = allAvailableSlots.where((s) => s.contains('AM') || s.startsWith('12:') || s.startsWith('1:') || s.startsWith('2:') || s.startsWith('3:')).toList();
+            final dinnerSlots = allAvailableSlots.where((s) => !lunchSlots.contains(s)).toList();
+
+            // Auto-select valid slot if current selected slot is not available
+            if (!controller.isSlotBookable(controller.selectedTimeSlot.value) && allAvailableSlots.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                controller.selectedTimeSlot.value = allAvailableSlots.first;
+              });
+            }
+
+            if (allAvailableSlots.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1B1612),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF33251A)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded, color: AppColors.goldAccent, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'All table slots for today have closed. Please select Tomorrow or a custom date above.',
+                        style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[300], height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (lunchSlots.isNotEmpty) ...[
-                  Text('LUNCH (12:00 PM – 3:30 PM)', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey[500])),
-                  const SizedBox(height: 6),
+                  Text(
+                    'LUNCH (12:00 PM – 3:30 PM)',
+                    style: GoogleFonts.outfit(fontSize: 10.5, fontWeight: FontWeight.w700, color: Colors.grey[400], letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 8),
                   _buildSlotGrid(lunchSlots),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
                 ],
                 if (dinnerSlots.isNotEmpty) ...[
-                  Text('DINNER (7:00 PM – 10:30 PM)', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey[500])),
-                  const SizedBox(height: 6),
+                  Text(
+                    'DINNER (7:00 PM – 10:30 PM)',
+                    style: GoogleFonts.outfit(fontSize: 10.5, fontWeight: FontWeight.w700, color: Colors.grey[400], letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 8),
                   _buildSlotGrid(dinnerSlots),
                 ],
               ],
@@ -530,7 +537,7 @@ class ReservationsView extends GetView<ReservationsController> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             ),
-            onPressed: () => Get.toNamed(AppRoutes.BANQUET_ODC),
+            onPressed: () => Get.toNamed(AppRoutes.BANQUET),
             child: Text(
               'Banquet & ODC',
               style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.goldAccent),
@@ -680,75 +687,71 @@ class ReservationsView extends GetView<ReservationsController> {
     );
   }
 
-  // --- TIME SLOT GRID ---
+  // --- TIME SLOT GRID (VERTICAL FLOWING GRID) ---
   Widget _buildSlotGrid(List<String> slots) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: slots.map((slot) {
-          final isSelected = controller.selectedTimeSlot.value == slot;
-          final isAvailable = controller.isSlotBookable(slot);
+    if (slots.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          'No available slots for this session today',
+          style: GoogleFonts.inter(fontSize: 11.5, color: Colors.grey[500], fontStyle: FontStyle.italic),
+        ),
+      );
+    }
 
-          return GestureDetector(
-            onTap: () {
-              if (isAvailable) {
-                controller.selectedTimeSlot.value = slot;
-              } else {
-                Get.snackbar(
-                  'Slot Locked',
-                  'Reservations require at least 1 hour advance notice for today.',
-                  backgroundColor: const Color(0xFF261914),
-                  colorText: const Color(0xFFE27C38),
-                  duration: const Duration(seconds: 3),
-                );
-              }
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF2C241B)
-                    : isAvailable
-                        ? const Color(0xFF1E1A16)
-                        : const Color(0xFF141210),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate item width for 3 equal columns with 8px spacing
+        final itemWidth = ((constraints.maxWidth - 16) / 3).floorToDouble();
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: slots.map((slot) {
+            final isSelected = controller.selectedTimeSlot.value == slot;
+
+            return GestureDetector(
+              onTap: () => controller.selectedTimeSlot.value = slot,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: itemWidth,
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.goldAccent
-                      : isAvailable
-                          ? const Color(0xFF332B22)
-                          : const Color(0xFF201B17),
-                  width: isSelected ? 1.5 : 1.0,
+                      ? const Color(0xFF2C241B)
+                      : const Color(0xFF1E1A16),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.goldAccent
+                        : const Color(0xFF332B22),
+                    width: isSelected ? 1.6 : 1.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.goldAccent.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!isAvailable) ...[
-                    const Icon(Icons.lock_clock_outlined, size: 12, color: Color(0xFF6B584E)),
-                    const SizedBox(width: 4),
-                  ],
-                  Text(
+                child: Center(
+                  child: Text(
                     slot,
                     style: GoogleFonts.outfit(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? AppColors.goldAccent
-                          : isAvailable
-                              ? Colors.grey[300]
-                              : const Color(0xFF5A4D45),
-                      decoration: isAvailable ? null : TextDecoration.lineThrough,
-                      decorationColor: const Color(0xFF8D6E63),
+                      fontSize: 12.5,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      color: isSelected ? AppColors.goldAccent : Colors.grey[200],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          );
-        }).toList(),
-      ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 

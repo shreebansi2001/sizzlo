@@ -70,7 +70,9 @@ class _CouponSummaryViewState extends State<CouponSummaryView> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: Obx(() {
+      body: SafeArea(
+        top: false,
+        child: Obx(() {
         final m = _getMember();
         final used = m.couponsUsed;
         final total = m.couponsTotal > 0 ? m.couponsTotal : 12;
@@ -195,7 +197,8 @@ class _CouponSummaryViewState extends State<CouponSummaryView> {
         ),
       );
     }),
-  );
+  ),
+);
 }
 
   Widget _statCounter(String label, String value, Color color) {

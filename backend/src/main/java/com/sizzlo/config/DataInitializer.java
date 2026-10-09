@@ -58,33 +58,27 @@ public class DataInitializer implements CommandLineRunner {
         if (outletRepository.count() == 0) {
             seedOutlets();
         }
-        if (memberProfileRepository.count() == 0) {
-            seedMembers();
-        }
-        if (couponRepository.count() == 0) {
-            seedCoupons();
-        }
-        if (reservationRepository.count() == 0) {
-            seedReservations();
-        }
-        if (salesTargetRepository.count() == 0) {
-            seedSalesTarget();
-        }
-        if (banquetInquiryRepository.count() == 0) {
-            seedBanquets();
-        }
-        if (corporateLeadRepository.count() == 0) {
-            seedCorporateLeads();
-        }
-        if (floorTableRepository.count() == 0) {
-            seedFloorTables();
-        }
         if (outletTimeSlotRepository.count() == 0) {
             seedTimeSlots();
         }
         if (adminRoleRepository.count() == 0 || adminUserRepository.count() == 0) {
             seedRbacData();
         }
+        cleanupDummyData();
+    }
+
+    private void cleanupDummyData() {
+        try {
+            // Remove known dummy seeded accounts while keeping real user registrations
+            memberProfileRepository.findAll().forEach(m -> {
+                if ("rahul.mehta@yanki.in".equalsIgnoreCase(m.getEmail()) 
+                        || "Guest 1122".equalsIgnoreCase(m.getFullName())
+                        || "+91 9822001122".equals(m.getMobile())
+                        || "YSM-2024-04821".equalsIgnoreCase(m.getMembershipId())) {
+                    memberProfileRepository.delete(m);
+                }
+            });
+        } catch (Exception ignored) {}
     }
 
     private void seedTimeSlots() {

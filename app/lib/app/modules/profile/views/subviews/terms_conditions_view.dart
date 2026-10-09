@@ -24,9 +24,11 @@ class TermsConditionsView extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header Intro
@@ -88,6 +90,7 @@ class TermsConditionsView extends StatelessWidget {
             const SizedBox(height: 28),
           ],
         ),
+      ),
       ),
     );
   }

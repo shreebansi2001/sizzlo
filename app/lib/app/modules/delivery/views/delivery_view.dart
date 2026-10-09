@@ -20,7 +20,9 @@ class DeliveryView extends GetView<DeliveryController> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: Stack(
+      body: SafeArea(
+        top: false,
+        child: Stack(
         children: [
           SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -66,8 +68,9 @@ class DeliveryView extends GetView<DeliveryController> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _tabButton(int index, String label) {
     final isSelected = controller.selectedServiceTab.value == index;

@@ -25,10 +25,14 @@ const getStoredMembers = (): Member[] => {
     const raw = localStorage.getItem(USERS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Filter out legacy dummy dataset records if present in browser localStorage
+        const clean = parsed.filter((m: any) => m && !m.email?.includes('gujaratmerchants') && !m.email?.includes('aerovista') && m.fullName !== 'Guest 1122');
+        return clean;
+      }
     }
   } catch (_) {}
-  return DEFAULT_USERS_DATASET;
+  return [];
 };
 
 export const CustomersPage: React.FC<CustomersPageProps> = ({ members: initialMembers, onRefresh }) => {
@@ -391,8 +395,18 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ members: initialMe
           <tbody>
             {paginatedUsers.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
-                  {loading ? 'Fetching users from live backend...' : 'No users matching selected filter criteria.'}
+                <td colSpan={9} style={{ padding: '60px 24px', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                      <User size={24} />
+                    </div>
+                    <p style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 15, margin: 0 }}>
+                      {loading ? 'Fetching users from live database...' : 'No Customers Found'}
+                    </p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0, maxWidth: 360 }}>
+                      {loading ? 'Please wait while records load.' : 'New member profiles will appear here automatically as guests register on the mobile app.'}
+                    </p>
+                  </div>
                 </td>
               </tr>
             ) : (

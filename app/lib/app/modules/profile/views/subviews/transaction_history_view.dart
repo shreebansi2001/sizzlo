@@ -257,8 +257,10 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
           // Filter Tabs
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -426,6 +428,7 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
           ),
         ),
       ],
+    ),
     ),
   );
   }

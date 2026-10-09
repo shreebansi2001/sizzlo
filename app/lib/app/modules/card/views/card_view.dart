@@ -29,7 +29,9 @@ class CardView extends GetView<CardController> {
                 onPressed: () => Get.back(),
               ),
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(20, 10, 20, isTab ? 110 : 24),
         child: Column(
           children: [
@@ -244,8 +246,9 @@ class CardView extends GetView<CardController> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _fieldBox(String label, String value) {
     return Container(

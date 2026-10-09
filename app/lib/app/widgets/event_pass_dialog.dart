@@ -45,7 +45,8 @@ class EventPassDialog extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: Container(
+      child: SafeArea(
+        child: Container(
         width: MediaQuery.of(context).size.width * 0.88,
         constraints: const BoxConstraints(maxWidth: 390),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -327,6 +328,7 @@ class EventPassDialog extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

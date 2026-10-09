@@ -267,10 +267,6 @@ class BillingController extends GetxController {
       Get.snackbar('Error', 'Please select dining outlet', backgroundColor: Colors.redAccent, colorText: Colors.white);
       return;
     }
-    if (invoiceController.text.trim().isEmpty) {
-      Get.snackbar('Missing Invoice', 'Please enter physical POS Bill / Invoice Number', backgroundColor: Colors.redAccent, colorText: Colors.white);
-      return;
-    }
     if (grossAmount.value <= 0) {
       Get.snackbar('Invalid Amount', 'Please enter a valid bill amount', backgroundColor: Colors.redAccent, colorText: Colors.white);
       return;
@@ -377,9 +373,13 @@ class BillingController extends GetxController {
   Future<void> _executeSettlementBackend({required String? razorpayPaymentId}) async {
     isSubmitting.value = true;
     try {
+      final posInvoice = invoiceController.text.trim().isNotEmpty
+          ? invoiceController.text.trim()
+          : 'TBL-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+
       final settlement = await _apiService.settleBill(
         outletName: selectedOutlet.value!.name,
-        posInvoiceNumber: invoiceController.text.trim(),
+        posInvoiceNumber: posInvoice,
         grossAmount: grossAmount.value,
         couponCode: selectedCoupon.value?.code,
         paymentMode: selectedPaymentMode.value,
