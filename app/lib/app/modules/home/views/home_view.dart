@@ -1535,7 +1535,6 @@ class HomeView extends GetView<HomeController> {
       ),
     );
   }
-<<<<<<< HEAD
 
   void _showVipSubscriptionRequiredDialog({required String title, required String description}) {
     Get.dialog(
