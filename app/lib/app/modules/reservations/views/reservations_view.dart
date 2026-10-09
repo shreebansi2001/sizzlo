@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../controllers/reservations_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/sizzlo_button.dart';
@@ -14,51 +15,261 @@ class ReservationsView extends GetView<ReservationsController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0908),
-      appBar: AppBar(
-        title: Text(
-          'Book a Table',
-          style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: !isTab,
-        leading: isTab
-            ? null
-            : IconButton(
+    return WillPopScope(
+      onWillPop: () async {
+        if (controller.currentBookingStep.value == 2) {
+          controller.goToStep1();
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0A0908),
+        appBar: AppBar(
+          title: Obx(() => Text(
+            controller.currentBookingStep.value == 1 ? 'Book a Table' : 'Guests & Table Details',
+            style: GoogleFonts.outfit(fontSize: 19, fontWeight: FontWeight.w700, color: Colors.white),
+          )),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          leading: Obx(() {
+            final isStep2 = controller.currentBookingStep.value == 2;
+            if (isStep2) {
+              return IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: Colors.white),
-                onPressed: () => Get.back(),
-              ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Hero VIP Dining Header Card
-              _buildHeroHeader(),
-              const SizedBox(height: 18),
+                onPressed: () => controller.goToStep1(),
+              );
+            }
+            if (isTab) return const SizedBox.shrink();
+            return IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: Colors.white),
+              onPressed: () => Get.back(),
+            );
+          }),
+          actions: [
+            Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.only(right: 16),
+              child: Obx(() => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF241D15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
+                ),
+                child: Text(
+                  'Step ${controller.currentBookingStep.value} of 2',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.goldAccent,
+                  ),
+                ),
+              )),
+            ),
+          ],
+        ),
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Step Progress Tracker
+                _buildStepProgressIndicator(),
+                const SizedBox(height: 14),
 
-              // Main Dine-In Reservation Form
-              _buildTableBookingForm(context),
-              const SizedBox(height: 20),
+                // Step 1: Calendar & Branch Selection ("shows what is today and which branch")
+                // Step 2: Table & Guests Selection ("on todays tap, open screen defaulting to 2")
+                Obx(() => controller.currentBookingStep.value == 1
+                    ? _buildStep1CalendarAndBranch(context)
+                    : _buildStep2TableAndGuests(context)),
 
-              // Large Gathering Banquet & ODC Shortcut Banner
-              _buildBanquetShortcutBanner(),
-              const SizedBox(height: 30),
-
-              // My Active Reservations Section
-              _buildMyReservationsSection(),
-              const SizedBox(height: 40),
-            ],
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  // --- STEP PROGRESS TRACKER ---
+  Widget _buildStepProgressIndicator() {
+    return Obx(() {
+      final currentStep = controller.currentBookingStep.value;
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF141210),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF262320)),
+        ),
+        child: Row(
+          children: [
+            // Step 1
+            Expanded(
+              child: GestureDetector(
+                onTap: () => controller.goToStep1(),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: currentStep >= 1 ? AppColors.goldAccent : const Color(0xFF2A241C),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '1',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: currentStep >= 1 ? Colors.black : Colors.grey[500],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'STEP 1',
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: currentStep == 1 ? AppColors.goldAccent : Colors.grey[500],
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          Text(
+                            'Date & Branch',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: currentStep == 1 ? FontWeight.w700 : FontWeight.w500,
+                              color: currentStep == 1 ? Colors.white : Colors.grey[400],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Connector line
+            Container(
+              width: 22,
+              height: 2,
+              color: currentStep == 2 ? AppColors.goldAccent : const Color(0xFF332B22),
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+            ),
+            // Step 2
+            Expanded(
+              child: GestureDetector(
+                onTap: () => controller.goToStep2(),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: currentStep == 2 ? AppColors.goldAccent : const Color(0xFF2A241C),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '2',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: currentStep == 2 ? Colors.black : Colors.grey[500],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'STEP 2',
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: currentStep == 2 ? AppColors.goldAccent : Colors.grey[500],
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          Text(
+                            'Table & Guests (2)',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: currentStep == 2 ? FontWeight.w700 : FontWeight.w500,
+                              color: currentStep == 2 ? Colors.white : Colors.grey[400],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  // =========================================================================
+  // STEP 1: CALENDAR & BRANCH SELECTION ("shows what is today and which branch")
+  // =========================================================================
+  Widget _buildStep1CalendarAndBranch(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // VIP Dining Header Card
+        _buildHeroHeader(),
+        const SizedBox(height: 18),
+
+        // Hero "TODAY" Highlight Card (Tap opens Step 2 defaulting to 2 guests)
+        _buildTodayHeroCard(),
+        const SizedBox(height: 22),
+
+        // Interactive 30-Day Calendar Date Strip
+        _buildCalendarDateStrip(context),
+        const SizedBox(height: 22),
+
+        // Branch / Outlet Selection ("Which branch")
+        _buildBranchSelectionSection(),
+        const SizedBox(height: 20),
+
+        // Proceed to Step 2 CTA Button
+        SizzloButton(
+          text: 'Continue to Table & Guests (2 Covers) →',
+          onPressed: controller.goToStep2,
+        ),
+        const SizedBox(height: 26),
+
+        // Shortcut to Banquet Desk for 20+ Guests
+        _buildBanquetShortcutBanner(),
+        const SizedBox(height: 28),
+
+        // My Active Reservations Section
+        _buildMyReservationsSection(),
+      ],
     );
   }
 
@@ -105,41 +316,40 @@ class ReservationsView extends GetView<ReservationsController> {
                 children: [
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          isSub ? 'VIP Priority Table' : 'Table Reservation',
-                          style: GoogleFonts.outfit(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: isSub ? AppColors.goldAccent : Colors.white,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        isSub ? 'VIP PRIORITY DINING' : 'TABLE RESERVATIONS',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: isSub ? AppColors.goldAccent : Colors.white,
+                          letterSpacing: 0.8,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isSub ? const Color(0xFF0F2E25) : const Color(0xFF2E2214),
-                          borderRadius: BorderRadius.circular(6),
-                          border: isSub ? null : Border.all(color: AppColors.goldAccent.withOpacity(0.5)),
-                        ),
-                        child: Text(
-                          isSub ? 'VIP PRIORITY' : 'VIP ONLY',
-                          style: GoogleFonts.outfit(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: isSub ? const Color(0xFF4EE3B8) : AppColors.goldAccent,
+                      if (isSub) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.goldAccent.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'UNLOCKED',
+                            style: GoogleFonts.outfit(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.goldAccent,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 3),
                   Text(
                     isSub
                         ? 'Active subscriber perk: Complimentary priority seating & VIP booth greeting.'
-                        : 'Non-subscribed members can browse venues and slots. Subscribe to unlock instant table reservations.',
+                        : 'Select date & branch to check live table availability across House of Yanki.',
                     style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400], height: 1.3),
                   ),
                 ],
@@ -151,8 +361,422 @@ class ReservationsView extends GetView<ReservationsController> {
     });
   }
 
-  // --- MAIN DINE-IN FORM ---
-  Widget _buildTableBookingForm(BuildContext context) {
+  // --- HERO "TODAY" CARD (WHAT IS TODAY & TAP TO BOOK TODAY FOR 2 GUESTS) ---
+  Widget _buildTodayHeroCard() {
+    final now = DateTime.now();
+    final todayDayName = DateFormat('EEEE').format(now);
+    final todayFullDate = DateFormat('d MMMM yyyy').format(now);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2E2214), Color(0xFF161311)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.goldAccent.withOpacity(0.6), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.goldAccent.withOpacity(0.12),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.goldAccent.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.goldAccent, width: 0.8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4EE3B8),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'TODAY\'S DINING',
+                      style: GoogleFonts.outfit(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.goldAccent,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Obx(() => Text(
+                controller.selectedOutlet.value.split(' ').take(2).join(' '),
+                style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400]),
+              )),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Today: $todayDayName',
+            style: GoogleFonts.outfit(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            todayFullDate,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.goldAccent,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Live dining tables open today for Lunch and Dinner. Tap below to reserve instantly for 2 guests.',
+            style: GoogleFonts.inter(fontSize: 11.5, color: Colors.grey[300], height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          // Interactive Action: Tapping opens Step 2 defaulting to 2 guests
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: controller.selectTodayAndProceed,
+              borderRadius: BorderRadius.circular(14),
+              child: Ink(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE5A65E), Color(0xFFDF9E5B)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.goldAccent.withOpacity(0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.touch_app_rounded, color: Colors.black, size: 19),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Book Today (2 Guests / Couple) →',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- CALENDAR DATE STRIP (30 DAYS) ---
+  Widget _buildCalendarDateStrip(BuildContext context) {
+    final dates = List.generate(30, (index) => DateTime.now().add(Duration(days: index)));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('OR SELECT UPCOMING DATE', style: _sectionHeaderStyle()),
+            GestureDetector(
+              onTap: () => controller.pickCustomDate(context),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_month_rounded, size: 13, color: AppColors.goldAccent),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Calendar Picker',
+                    style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.goldAccent),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 88,
+          child: Obx(() {
+            // Touch observables so Obx registers them reactively
+            final _ = controller.selectedBookingDay.value;
+            final __ = controller.customBookingDate.value;
+
+            return ListView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              children: dates.asMap().entries.map((entry) {
+                final index = entry.key;
+                final date = entry.value;
+                final isSelected = controller.isDateSelected(date);
+                final isToday = index == 0;
+                final isTomorrow = index == 1;
+
+                final dayLabel = isToday
+                    ? 'TODAY'
+                    : isTomorrow
+                        ? 'TOM'
+                        : DateFormat('EEE').format(date).toUpperCase();
+                final dateNum = DateFormat('d').format(date);
+                final monthStr = DateFormat('MMM').format(date).toUpperCase();
+
+                return GestureDetector(
+                  onTap: () {
+                    if (isToday) {
+                      controller.selectTodayAndProceed();
+                    } else {
+                      controller.selectDateAndProceed(date);
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 68,
+                    margin: const EdgeInsets.only(right: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF2C241B)
+                          : const Color(0xFF161412),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.goldAccent
+                            : isToday
+                                ? AppColors.goldAccent.withOpacity(0.5)
+                                : const Color(0xFF2B251E),
+                        width: isSelected ? 1.8 : 1.0,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.goldAccent.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          dayLabel,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: isSelected
+                                ? AppColors.goldAccent
+                                : isToday
+                                    ? const Color(0xFF4EE3B8)
+                                    : Colors.grey[500],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          dateNum,
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isSelected ? Colors.white : Colors.grey[200],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          monthStr,
+                          style: GoogleFonts.inter(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? AppColors.goldAccent : Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  // --- BRANCH / OUTLET SELECTION SECTION ("WHICH BRANCH") ---
+  Widget _buildBranchSelectionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('SELECT BRANCH / OUTLET', style: _sectionHeaderStyle()),
+            Obx(() => Text(
+              '${controller.outlets.length} Branches',
+              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
+            )),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Obx(() {
+          return Column(
+            children: controller.outlets.map((outlet) {
+              final isSelected = controller.selectedOutlet.value == outlet;
+              final meta = _getOutletMeta(outlet);
+
+              return GestureDetector(
+                onTap: () {
+                  controller.selectedOutlet.value = outlet;
+                  controller.loadTimeSlots();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFF261E14) : const Color(0xFF141312),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected ? AppColors.goldAccent : const Color(0xFF28231E),
+                      width: isSelected ? 1.6 : 1.0,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.goldAccent.withOpacity(0.12),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.goldAccent.withOpacity(0.2)
+                              : const Color(0xFF1F1A14),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.goldAccent.withOpacity(0.4)
+                                : const Color(0xFF2E271F),
+                          ),
+                        ),
+                        child: Icon(
+                          meta['icon'] as IconData,
+                          color: isSelected ? AppColors.goldAccent : Colors.grey[400],
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    outlet,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected ? Colors.white : Colors.grey[200],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppColors.goldAccent.withOpacity(0.15)
+                                        : const Color(0xFF1F1C18),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    meta['tag'] as String,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected ? AppColors.goldAccent : Colors.grey[400],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              meta['subtitle'] as String,
+                              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400]),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected ? AppColors.goldAccent : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected ? AppColors.goldAccent : const Color(0xFF4A3E31),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check, size: 14, color: Colors.black)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          );
+        }),
+      ],
+    );
+  }
+
+  // =========================================================================
+  // STEP 2: TABLE & GUESTS SELECTION (DEFAULTING TO 2 GUESTS / COUPLE)
+  // =========================================================================
+  Widget _buildStep2TableAndGuests(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -163,74 +787,79 @@ class ReservationsView extends GetView<ReservationsController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Step 1: Outlet Selection
-          Text('SELECT OUTLET LOCATION', style: _sectionHeaderStyle()),
-          const SizedBox(height: 8),
-          Obx(() => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: _boxStyle(),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: controller.outlets.contains(controller.selectedOutlet.value)
-                    ? controller.selectedOutlet.value
-                    : (controller.outlets.isNotEmpty ? controller.outlets.first : null),
-                dropdownColor: const Color(0xFF1E1A16),
-                isExpanded: true,
-                icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.goldAccent),
-                items: controller.outlets
-                    .map((o) => DropdownMenuItem(
-                          value: o,
-                          child: Text(o, style: GoogleFonts.outfit(fontSize: 13, color: Colors.white)),
-                        ))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    controller.selectedOutlet.value = val;
-                    controller.loadTimeSlots();
-                  }
-                },
-              ),
-            ),
-          )),
-          const SizedBox(height: 18),
+          // Selected Summary Pill with "Change Date / Branch" button
+          _buildSelectionSummaryPill(),
+          const SizedBox(height: 20),
 
-          // Step 2: Guest Count (Covers)
+          // Guest Covers (Defaulting to 2 Covers / Couple)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('GUESTS (1 TO 19 COVERS)', style: _sectionHeaderStyle()),
-              Obx(() => Text(
-                '${controller.guestCount.value} Guests',
-                style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.goldAccent),
+              Obx(() => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.goldAccent.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.goldAccent, width: 0.8),
+                ),
+                child: Text(
+                  controller.guestCount.value == 2
+                      ? '2 Guests (Couple)'
+                      : '${controller.guestCount.value} Guests',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.goldAccent,
+                  ),
+                ),
               )),
             ],
           ),
-          const SizedBox(height: 8),
-          // Quick Chips
+          const SizedBox(height: 10),
+
+          // Quick Guest Chips (with 2 Couple highlighted)
           Obx(() => SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [1, 2, 4, 6, 8, 10, 12].map((cnt) {
                 final isSelected = controller.guestCount.value == cnt;
+                final isCouple = cnt == 2;
                 return GestureDetector(
                   onTap: () => controller.setGuestCount(cnt),
                   child: Container(
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF2C241B) : const Color(0xFF1E1A16),
+                      color: isSelected
+                          ? const Color(0xFF2C241B)
+                          : const Color(0xFF1E1A16),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isSelected ? AppColors.goldAccent : const Color(0xFF332B22),
+                        color: isSelected
+                            ? AppColors.goldAccent
+                            : isCouple
+                                ? AppColors.goldAccent.withOpacity(0.4)
+                                : const Color(0xFF332B22),
+                        width: isSelected ? 1.6 : 1.0,
                       ),
                     ),
-                    child: Text(
-                      cnt == 2 ? '2 (Couple)' : cnt == 4 ? '4 (Family)' : '$cnt Pax',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: isSelected ? AppColors.goldAccent : Colors.grey[400],
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isCouple) ...[
+                          Icon(Icons.favorite_rounded, size: 12, color: isSelected ? AppColors.goldAccent : Colors.grey[400]),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          cnt == 2 ? '2 (Couple)' : cnt == 4 ? '4 (Family)' : '$cnt Pax',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected ? AppColors.goldAccent : Colors.grey[300],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -238,6 +867,7 @@ class ReservationsView extends GetView<ReservationsController> {
             ),
           )),
           const SizedBox(height: 10),
+
           // Slider for fine-tuning
           Obx(() => SliderTheme(
             data: SliderTheme.of(context).copyWith(
@@ -255,55 +885,40 @@ class ReservationsView extends GetView<ReservationsController> {
               onChanged: (val) => controller.setGuestCount(val.toInt()),
             ),
           )),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // Step 3: Booking Day / Date
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('RESERVATION DAY', style: _sectionHeaderStyle()),
-              GestureDetector(
-                onTap: () => controller.pickCustomDate(context),
-                child: Row(
-                  children: [
-                    const Icon(Icons.edit_calendar_rounded, size: 13, color: AppColors.goldAccent),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Custom Date',
-                      style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.goldAccent),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          // Seating Area Preference
+          Text('PREFERRED SEATING AREA', style: _sectionHeaderStyle()),
           const SizedBox(height: 8),
-          Obx(() {
-            final currentDay = controller.selectedBookingDay.value;
-            final isToday = currentDay == 'Today';
-            final isTomorrow = currentDay == 'Tomorrow';
-            final isCustom = !isToday && !isTomorrow;
-
-            return Row(
-              children: [
-                Expanded(
-                  child: _buildDayChip('Today', isToday, () => controller.selectedBookingDay.value = 'Today'),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildDayChip('Tomorrow', isTomorrow, () => controller.selectedBookingDay.value = 'Tomorrow'),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildDayChip(
-                    isCustom ? currentDay : 'Pick Date',
-                    isCustom,
-                    () => controller.pickCustomDate(context),
+          Obx(() => Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: controller.seatingAreas.map((area) {
+              final isSelected = controller.selectedSeatingArea.value == area;
+              return GestureDetector(
+                onTap: () => controller.selectedSeatingArea.value = area,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFF2C241B) : const Color(0xFF1E1A16),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? AppColors.goldAccent : const Color(0xFF332B22),
+                      width: isSelected ? 1.5 : 1.0,
+                    ),
+                  ),
+                  child: Text(
+                    area,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? AppColors.goldAccent : Colors.grey[400],
+                    ),
                   ),
                 ),
-              ],
-            );
-          }),
+              );
+            }).toList(),
+          )),
           const SizedBox(height: 18),
 
           // Time Slots (Categorized by Lunch & Dinner)
@@ -311,16 +926,23 @@ class ReservationsView extends GetView<ReservationsController> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('TIME SLOT', style: _sectionHeaderStyle()),
-              Text(
-                'Available Slots',
+              Obx(() => Text(
+                'Date: ${controller.selectedBookingDay.value}',
                 style: GoogleFonts.inter(fontSize: 10, color: AppColors.goldAccent, fontWeight: FontWeight.w600),
-              ),
+              )),
             ],
           ),
           const SizedBox(height: 8),
           Obx(() {
             final allAvailableSlots = controller.timeSlots.where((s) => controller.isSlotBookable(s)).toList();
-            final lunchSlots = allAvailableSlots.where((s) => s.contains('AM') || s.startsWith('12:') || s.startsWith('1:') || s.startsWith('2:') || s.startsWith('3:')).toList();
+            final lunchSlots = allAvailableSlots.where((s) {
+              return s.contains('AM') ||
+                  s.startsWith('12:') ||
+                  s.startsWith('1:') || s.startsWith('01:') ||
+                  s.startsWith('2:') || s.startsWith('02:') ||
+                  s.startsWith('3:') || s.startsWith('03:') ||
+                  s.startsWith('4:') || s.startsWith('04:');
+            }).toList();
             final dinnerSlots = allAvailableSlots.where((s) => !lunchSlots.contains(s)).toList();
 
             // Auto-select valid slot if current selected slot is not available
@@ -345,7 +967,7 @@ class ReservationsView extends GetView<ReservationsController> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'All table slots for today have closed. Please select Tomorrow or a custom date above.',
+                        'All table slots for today have closed. Please select Tomorrow or another date.',
                         style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[300], height: 1.4),
                       ),
                     ),
@@ -379,7 +1001,7 @@ class ReservationsView extends GetView<ReservationsController> {
           }),
           const SizedBox(height: 18),
 
-          // Step 6: Dining Occasion
+          // Dining Occasion
           Text('DINING OCCASION', style: _sectionHeaderStyle()),
           const SizedBox(height: 8),
           Obx(() => Wrap(
@@ -413,7 +1035,7 @@ class ReservationsView extends GetView<ReservationsController> {
           )),
           const SizedBox(height: 18),
 
-          // Step 7: Special Table Requests
+          // Special Table Requests
           Text('SPECIAL TABLE REQUESTS', style: _sectionHeaderStyle()),
           const SizedBox(height: 8),
           TextField(
@@ -487,8 +1109,152 @@ class ReservationsView extends GetView<ReservationsController> {
             isLoading: controller.isSubmitting.value,
             onPressed: controller.confirmAndBookTable,
           )),
+          const SizedBox(height: 12),
+
+          // Secondary Back Button
+          Center(
+            child: TextButton.icon(
+              onPressed: () => controller.goToStep1(),
+              icon: const Icon(Icons.arrow_back_rounded, size: 14, color: Colors.grey),
+              label: Text(
+                'Change Date or Branch',
+                style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[400], fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  // --- SELECTION SUMMARY PILL (STEP 2 HEADER) ---
+  Widget _buildSelectionSummaryPill() {
+    return Obx(() {
+      final dateText = controller.formattedSelectedDateText;
+      final outletName = controller.selectedOutlet.value;
+
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1A16),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.goldAccent.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.event_available_rounded, color: AppColors.goldAccent, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dateText,
+                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    outletName,
+                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.goldAccent),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => controller.goToStep1(),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Change',
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.goldAccent,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  // --- TIME SLOT GRID ---
+  Widget _buildSlotGrid(List<String> slots) {
+    if (slots.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          'No available slots for this session today',
+          style: GoogleFonts.inter(fontSize: 11.5, color: Colors.grey[500], fontStyle: FontStyle.italic),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = ((constraints.maxWidth - 16) / 3).floorToDouble();
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: slots.map((slot) {
+            final isSelected = controller.selectedTimeSlot.value == slot;
+
+            return GestureDetector(
+              onTap: () => controller.selectedTimeSlot.value = slot,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: itemWidth,
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF2C241B)
+                      : const Color(0xFF1E1A16),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.goldAccent
+                        : const Color(0xFF332B22),
+                    width: isSelected ? 1.6 : 1.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.goldAccent.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    slot,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12.5,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      color: isSelected ? AppColors.goldAccent : Colors.grey[200],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
@@ -687,99 +1453,38 @@ class ReservationsView extends GetView<ReservationsController> {
     );
   }
 
-  // --- TIME SLOT GRID (VERTICAL FLOWING GRID) ---
-  Widget _buildSlotGrid(List<String> slots) {
-    if (slots.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Text(
-          'No available slots for this session today',
-          style: GoogleFonts.inter(fontSize: 11.5, color: Colors.grey[500], fontStyle: FontStyle.italic),
-        ),
-      );
+  // --- OUTLET METADATA HELPER ---
+  Map<String, dynamic> _getOutletMeta(String name) {
+    if (name.contains('Bodakdev')) {
+      return {
+        'subtitle': 'Bodakdev, Ahmedabad • Open 12:00 PM – 11:00 PM',
+        'tag': 'Flagship Sizzlers',
+        'icon': Icons.restaurant_rounded,
+      };
+    } else if (name.contains('SG Highway')) {
+      return {
+        'subtitle': 'SG Highway, Ahmedabad • Open 12:00 PM – 11:00 PM',
+        'tag': 'Fine Dine & Sizzlers',
+        'icon': Icons.outdoor_grill_rounded,
+      };
+    } else if (name.contains('Dough')) {
+      return {
+        'subtitle': 'CG Road, Ahmedabad • Open 10:00 AM – 11:30 PM',
+        'tag': 'Bakery, Cafe & Bistro',
+        'icon': Icons.bakery_dining_rounded,
+      };
+    } else if (name.contains('Banquet')) {
+      return {
+        'subtitle': 'Bopal, Ahmedabad • Open 11:00 AM – 11:00 PM',
+        'tag': 'Grand Banquets & Lawns',
+        'icon': Icons.celebration_rounded,
+      };
     }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calculate item width for 3 equal columns with 8px spacing
-        final itemWidth = ((constraints.maxWidth - 16) / 3).floorToDouble();
-
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: slots.map((slot) {
-            final isSelected = controller.selectedTimeSlot.value == slot;
-
-            return GestureDetector(
-              onTap: () => controller.selectedTimeSlot.value = slot,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: itemWidth,
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF2C241B)
-                      : const Color(0xFF1E1A16),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.goldAccent
-                        : const Color(0xFF332B22),
-                    width: isSelected ? 1.6 : 1.0,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppColors.goldAccent.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    slot,
-                    style: GoogleFonts.outfit(
-                      fontSize: 12.5,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                      color: isSelected ? AppColors.goldAccent : Colors.grey[200],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildDayChip(String label, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2C241B) : const Color(0xFF1E1A16),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? AppColors.goldAccent : const Color(0xFF332B22),
-            width: isSelected ? 1.5 : 1.0,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.outfit(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isSelected ? AppColors.goldAccent : Colors.grey[400],
-            ),
-          ),
-        ),
-      ),
-    );
+    return {
+      'subtitle': 'Ahmedabad • Open 12:00 PM – 11:00 PM',
+      'tag': 'Dining Outlet',
+      'icon': Icons.storefront_rounded,
+    };
   }
 
   TextStyle _sectionHeaderStyle() {
@@ -788,14 +1493,6 @@ class ReservationsView extends GetView<ReservationsController> {
       fontWeight: FontWeight.w700,
       color: Colors.grey[400],
       letterSpacing: 0.8,
-    );
-  }
-
-  BoxDecoration _boxStyle() {
-    return BoxDecoration(
-      color: const Color(0xFF1E1A16),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFF332B22)),
     );
   }
 }

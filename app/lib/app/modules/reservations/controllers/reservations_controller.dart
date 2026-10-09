@@ -24,14 +24,84 @@ class ReservationsController extends GetxController {
   // 0 = Regular Dine-in (1-19 guests), 1 = Banquet & ODC Inquiry (20+ guests)
   final RxInt bookingMode = 0.obs;
 
+  // Multi-step Flow: Step 1 = Date & Branch Calendar, Step 2 = Table & Guests
+  final RxInt currentBookingStep = 1.obs;
+
   // Regular Dine-in Form State (Chapter 06)
   final RxString selectedOutlet = 'Yanki Sizzlerr Bodakdev'.obs;
   final RxString selectedBookingDay = 'Today'.obs; // Today, Tomorrow
   final RxString selectedTimeSlot = '8:00 PM'.obs;
-  final RxInt guestCount = 4.obs;
+  final RxInt guestCount = 2.obs; // Defaults cleanly to 2 covers (Couple)
   final RxString selectedOccasion = 'Regular'.obs; // Birthday, Anniversary, Business, Regular
   final RxBool isVipTable = true.obs;
   final specialNotesController = TextEditingController();
+
+  void goToStep1() {
+    currentBookingStep.value = 1;
+  }
+
+  void goToStep2() {
+    currentBookingStep.value = 2;
+  }
+
+  void selectTodayAndProceed() {
+    selectedBookingDay.value = 'Today';
+    customBookingDate.value = DateTime.now();
+    guestCount.value = 2;
+    _initDefaultSlot();
+    currentBookingStep.value = 2;
+  }
+
+  void selectDateAndProceed(DateTime date) {
+    final now = DateTime.now();
+    final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+    final isTomorrow = date.year == now.year && date.month == now.month && date.day == now.day + 1;
+
+    if (isToday) {
+      selectedBookingDay.value = 'Today';
+    } else if (isTomorrow) {
+      selectedBookingDay.value = 'Tomorrow';
+    } else {
+      selectedBookingDay.value = DateFormat('EEE, dd MMM').format(date);
+    }
+    customBookingDate.value = date;
+    guestCount.value = 2;
+    _initDefaultSlot();
+    currentBookingStep.value = 2;
+  }
+
+  bool isDateSelected(DateTime date) {
+    final cur = customBookingDate.value ?? DateTime.now();
+    return cur.year == date.year && cur.month == date.month && cur.day == date.day;
+  }
+
+  void selectDate(DateTime date) {
+    final now = DateTime.now();
+    final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+    final isTomorrow = date.year == now.year && date.month == now.month && (date.day - now.day == 1);
+
+    if (isToday) {
+      selectedBookingDay.value = 'Today';
+    } else if (isTomorrow) {
+      selectedBookingDay.value = 'Tomorrow';
+    } else {
+      selectedBookingDay.value = DateFormat('EEE, dd MMM').format(date);
+    }
+    customBookingDate.value = date;
+    _initDefaultSlot();
+  }
+
+  String get formattedSelectedDateText {
+    final date = customBookingDate.value ?? DateTime.now();
+    final now = DateTime.now();
+    if (date.year == now.year && date.month == now.month && date.day == now.day) {
+      return 'Today, ${DateFormat('d MMM yyyy').format(date)}';
+    } else if (date.year == now.year && date.month == now.month && date.day == now.day + 1) {
+      return 'Tomorrow, ${DateFormat('d MMM yyyy').format(date)}';
+    } else {
+      return DateFormat('EEE, d MMM yyyy').format(date);
+    }
+  }
 
   // Banquet & ODC Form State (Chapter 07 - Zero Points Engine)
   final RxString banquetCategory = 'Wedding'.obs;
