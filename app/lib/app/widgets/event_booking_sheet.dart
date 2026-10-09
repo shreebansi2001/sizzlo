@@ -179,7 +179,7 @@ class _EventBookingSheetState extends State<EventBookingSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final maxAllowed = widget.event.remainingSeats.clamp(1, 6);
+    final maxAllowed = widget.event.remainingSeats > 0 ? widget.event.remainingSeats : 1;
     final totalCost = (widget.event.pricePerGuest * _guestCount).toInt();
 
     return Container(
@@ -194,8 +194,10 @@ class _EventBookingSheetState extends State<EventBookingSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         border: Border(top: BorderSide(color: Color(0xFF2E3832), width: 1.5)),
       ),
-      child: SingleChildScrollView(
-        child: Column(
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -361,20 +363,34 @@ class _EventBookingSheetState extends State<EventBookingSheet> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Guests / Covers',
-                    style: GoogleFonts.inter(fontSize: 13, color: Colors.white70),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Guests / Covers',
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Up to $maxAllowed spots eligible',
+                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.gold.withOpacity(0.85), fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.remove_circle_outline_rounded, color: AppColors.gold, size: 26),
+                        icon: Icon(
+                          Icons.remove_circle_outline_rounded,
+                          color: _guestCount > 1 ? AppColors.gold : Colors.grey[700],
+                          size: 26,
+                        ),
                         onPressed: _guestCount > 1
                             ? () => setState(() => _guestCount--)
                             : null,
                       ),
                       Container(
-                        constraints: const BoxConstraints(minWidth: 32),
+                        constraints: const BoxConstraints(minWidth: 36),
                         alignment: Alignment.center,
                         child: Text(
                           '$_guestCount',
@@ -386,7 +402,11 @@ class _EventBookingSheetState extends State<EventBookingSheet> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.gold, size: 26),
+                        icon: Icon(
+                          Icons.add_circle_outline_rounded,
+                          color: _guestCount < maxAllowed ? AppColors.gold : Colors.grey[700],
+                          size: 26,
+                        ),
                         onPressed: _guestCount < maxAllowed
                             ? () => setState(() => _guestCount++)
                             : null,
@@ -498,6 +518,7 @@ class _EventBookingSheetState extends State<EventBookingSheet> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

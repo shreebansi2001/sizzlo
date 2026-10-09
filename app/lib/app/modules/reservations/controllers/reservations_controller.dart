@@ -216,7 +216,7 @@ class ReservationsController extends GetxController {
         colorText: const Color(0xFFD4AF37),
         duration: const Duration(seconds: 4),
         mainButton: TextButton(
-          onPressed: () => Get.toNamed(AppRoutes.BANQUET_ODC),
+          onPressed: () => Get.toNamed(AppRoutes.BANQUET),
           child: const Text('Go to Banquet', style: TextStyle(color: Color(0xFF4EE3B8), fontWeight: FontWeight.bold)),
         ),
       );
@@ -261,7 +261,7 @@ class ReservationsController extends GetxController {
     }
 
     if (guestCount.value >= 20) {
-      Get.toNamed(AppRoutes.BANQUET_ODC);
+      Get.toNamed(AppRoutes.BANQUET);
       return;
     }
 

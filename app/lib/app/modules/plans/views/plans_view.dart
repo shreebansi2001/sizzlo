@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,6 +20,7 @@ class PlansView extends GetView<PlansController> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
+          bottom: false,
           child: Column(
             children: [
               // Top App Bar
@@ -187,11 +189,13 @@ class PlansView extends GetView<PlansController> {
                             accentColor = const Color(0xFF4EE3B8);
                           }
 
+                          final isAlreadySubscribed = controller.isPlanCurrentlySubscribed(id);
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 18),
                             child: _buildPlanCard(
                               planId: id,
                               isSelected: controller.selectedPlan.value == id,
+                              isAlreadySubscribed: isAlreadySubscribed,
                               title: '$name Subscription',
                               subtitle: desc,
                               price: priceStr,
@@ -200,7 +204,7 @@ class PlansView extends GetView<PlansController> {
                               gradientColors: gradientColors,
                               borderColor: borderColor,
                               accentColor: accentColor,
-                              onSelect: () => controller.selectPlan(id),
+                              onSelect: () => controller.selectPlan(id, '$name Subscription'),
                               onDetails: () => _showBenefitsModal(
                                 context,
                                 '$name Subscription',
@@ -220,20 +224,22 @@ class PlansView extends GetView<PlansController> {
           ),
 
             // Bottom Sticky Bar: Skip For Now
-            Container(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
-              decoration: const BoxDecoration(
-                color: Color(0xFF070A09),
-                border: Border(
-                  top: BorderSide(
-                    color: Color(0x22C9A24D),
-                    width: 1,
+            SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF070A09),
+                  border: Border(
+                    top: BorderSide(
+                      color: Color(0x22C9A24D),
+                      width: 1,
+                    ),
                   ),
                 ),
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 54,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 54,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: AppColors.champagneGradient,
@@ -267,9 +273,10 @@ class PlansView extends GetView<PlansController> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    ),
     ),
   );
 }
@@ -277,6 +284,7 @@ class PlansView extends GetView<PlansController> {
   Widget _buildPlanCard({
     required String planId,
     required bool isSelected,
+    required bool isAlreadySubscribed,
     required String title,
     required String subtitle,
     required String price,
@@ -288,7 +296,7 @@ class PlansView extends GetView<PlansController> {
     required VoidCallback onSelect,
     required VoidCallback onDetails,
   }) {
-    return Container(
+    final cardContent = Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: gradientColors,
@@ -297,8 +305,10 @@ class PlansView extends GetView<PlansController> {
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isSelected ? AppColors.gold : borderColor,
-          width: isSelected ? 1.8 : 1.0,
+          color: isAlreadySubscribed
+              ? const Color(0xFF4EE3B8).withOpacity(0.6)
+              : (isSelected ? AppColors.gold : borderColor),
+          width: (isAlreadySubscribed || isSelected) ? 1.8 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
@@ -354,13 +364,17 @@ class PlansView extends GetView<PlansController> {
                 height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: accentColor.withOpacity(0.6)),
+                  border: Border.all(
+                    color: isAlreadySubscribed
+                        ? const Color(0xFF4EE3B8).withOpacity(0.8)
+                        : accentColor.withOpacity(0.6),
+                  ),
                   color: Colors.black.withOpacity(0.2),
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.workspace_premium_outlined,
-                    color: accentColor,
+                    isAlreadySubscribed ? Icons.check_circle_rounded : Icons.workspace_premium_outlined,
+                    color: isAlreadySubscribed ? const Color(0xFF4EE3B8) : accentColor,
                     size: 22,
                   ),
                 ),
@@ -484,43 +498,142 @@ class PlansView extends GetView<PlansController> {
               Expanded(
                 child: SizedBox(
                   height: 48,
-                  child: DecoratedBox(
+                  child: isAlreadySubscribed
+                      ? Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF163E33),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: const Color(0xFF4EE3B8).withOpacity(0.6)),
+                          ),
+                          child: Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.check_circle_rounded, color: Color(0xFF4EE3B8), size: 16),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Subscribed',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF4EE3B8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.champagneGradient,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.gold.withOpacity(0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed: onSelect,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                isSelected ? 'Selected' : 'Select',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF070A09),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (!isAlreadySubscribed) {
+      return cardContent;
+    }
+
+    // Blurred & disabled overlay layer for currently active subscription
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Stack(
+        children: [
+          cardContent,
+          // Frosted glass blur overlay
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
+              child: Container(
+                color: Colors.black.withOpacity(0.55),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                     decoration: BoxDecoration(
-                      gradient: AppColors.champagneGradient,
-                      borderRadius: BorderRadius.circular(24),
+                      color: const Color(0xFF0D251E).withOpacity(0.94),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: const Color(0xFF4EE3B8),
+                        width: 1.5,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.gold.withOpacity(0.35),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
+                          color: const Color(0xFF4EE3B8).withOpacity(0.35),
+                          blurRadius: 18,
+                          spreadRadius: 2,
                         ),
                       ],
                     ),
-                    child: ElevatedButton(
-                      onPressed: onSelect,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.verified_rounded,
+                          color: Color(0xFF4EE3B8),
+                          size: 20,
                         ),
-                      ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          isSelected ? 'Selected' : 'Select',
+                        const SizedBox(width: 8),
+                        Text(
+                          'ALREADY SUBSCRIBED',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF070A09),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                            color: const Color(0xFF4EE3B8),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
+          ),
+          // Touch interceptor: alerts user that they are already subscribed and prevents opening payment
+          Positioned.fill(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: onSelect,
+              ),
+            ),
           ),
         ],
       ),
@@ -541,9 +654,11 @@ class PlansView extends GetView<PlansController> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
-          child: Column(
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -635,6 +750,7 @@ class PlansView extends GetView<PlansController> {
               ),
             ],
           ),
+        ),
         );
       },
     );

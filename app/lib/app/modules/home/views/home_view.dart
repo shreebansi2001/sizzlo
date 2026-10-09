@@ -22,6 +22,7 @@ import '../../../core/values/app_constants.dart';
 import '../../../widgets/profile_avatar_widget.dart';
 import '../../../widgets/event_booking_sheet.dart';
 import '../../../widgets/event_pass_dialog.dart';
+import '../../../widgets/blinking_unsubscribed_badge.dart';
 import '../../../data/models/dining_event_model.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -92,13 +93,16 @@ class HomeView extends GetView<HomeController> {
     return Obx(() {
       final m = controller.member.value;
       final isSub = m.isSubscriber;
-      return Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: m.headerGradient,
-        ),
-        padding: EdgeInsets.fromLTRB(20, 56, 20, isSub ? 72 : 24),
-        child: Column(
+      return Builder(
+        builder: (context) {
+          final topPadding = MediaQuery.of(context).padding.top;
+          return Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: m.headerGradient,
+            ),
+            padding: EdgeInsets.fromLTRB(20, topPadding > 0 ? (topPadding + 12) : 52, 20, isSub ? 72 : 24),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -159,12 +163,18 @@ class HomeView extends GetView<HomeController> {
                             ),
                           ),
                         ),
+                      ] else ...[
+                        const SizedBox(height: 8),
+                        BlinkingUnsubscribedBadge(
+                          onTap: () => Get.toNamed(AppRoutes.PLANS),
+                        ),
                       ],
                     ],
                   ),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Avatar Button navigating to Personal Information screen
                     GestureDetector(
@@ -220,8 +230,10 @@ class HomeView extends GetView<HomeController> {
           ],
         ),
       );
-    });
-  }
+    },
+  );
+});
+}
 
   Widget _buildBody(BuildContext context) {
     return Obx(() {
@@ -298,12 +310,13 @@ class HomeView extends GetView<HomeController> {
                 const SizedBox(height: 20),
               ],
 
-              // Dedicated Subscription Card
-              _buildSubscriptionCard(context, isSub),
-              const SizedBox(height: 20),
+
 
               // Active Booked Offers / Events Notification Card on Home Screen
               _buildBookedOffersBanner(context),
+
+              // Active Banquet / ODC Inquiry Tracking Card
+              _buildActiveInquiryTrackerCard(context),
 
               // Quick Actions Grid
               SectionHeader(title: 'Quick Actions'),
@@ -442,7 +455,7 @@ class HomeView extends GetView<HomeController> {
           ),
         ),
 
-        // 6 High-Contrast Operations (Chapter 01.4 & 04.1 SRS)
+        // 9 High-Contrast Operations with Separate Banquet and ODC
         GridView.count(
           padding: EdgeInsets.zero,
           shrinkWrap: true,
@@ -458,10 +471,16 @@ class HomeView extends GetView<HomeController> {
               onTap: () => Get.toNamed(AppRoutes.RESERVATIONS),
             ),
             _buildOpButton(
-              icon: Icons.celebration_rounded,
-              label: 'Banquet & ODC',
+              icon: Icons.apartment_rounded,
+              label: 'Banquet Halls',
               badge: '20+',
-              onTap: () => Get.toNamed(AppRoutes.BANQUET_ODC),
+              onTap: () => Get.toNamed(AppRoutes.BANQUET),
+            ),
+            _buildOpButton(
+              icon: Icons.outdoor_grill_rounded,
+              label: 'ODC Catering',
+              badge: 'Lawn',
+              onTap: () => Get.toNamed(AppRoutes.ODC),
             ),
             _buildOpButton(
               icon: Icons.storefront_rounded,
@@ -572,172 +591,6 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildSubscriptionCard(BuildContext context, bool isSub) {
-    final member = controller.member.value;
-    return GestureDetector(
-      onTap: () {
-        if (isSub) {
-          Get.toNamed(AppRoutes.SUBSCRIPTION_DETAILS);
-        } else {
-          Get.toNamed(AppRoutes.PLANS);
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFF2B1D12),
-              Color(0xFF1B120B),
-              Color(0xFF100B07),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: isSub ? const Color(0xFFD4AF37).withOpacity(0.5) : const Color(0xFF6B4423),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.35),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF282421),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.badge_outlined,
-                        color: AppColors.flame,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isSub ? 'ACTIVE VIP SUBSCRIPTION' : 'YANKI VIP SUBSCRIPTION',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            letterSpacing: 1.2,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.gold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          isSub
-                              ? '${member.subscriptionTier.toUpperCase()} MEMBER'
-                              : 'Exclusive Dining Privileges',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontFamily: 'Playfair Display',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isSub
-                        ? const Color(0xFF00E676).withOpacity(0.15)
-                        : AppColors.flame.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSub ? const Color(0xFF00E676) : AppColors.flame,
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    isSub ? 'ACTIVE' : 'EXPLORE',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      color: isSub ? const Color(0xFF00E676) : AppColors.flame,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(
-              isSub
-                  ? 'Enjoy flat 10% dining discounts, birthday celebrations, and priority tables all year round.'
-                  : 'Join Classic, Signature, or Elite plan to enjoy flat 10% off entire bills, complimentary couple dinners & welcome vouchers.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withOpacity(0.8),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.stars_rounded, color: AppColors.gold, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      isSub
-                          ? 'Valid till ${member.expiryDate.isNotEmpty ? member.expiryDate : "365 days"}'
-                          : 'Starting from ₹1 test / ₹5,000/yr',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      isSub ? 'Manage Plan' : 'View Plans',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.gold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 11,
-                      color: AppColors.gold,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildFeaturedCoupons() {
     return Obx(() {
@@ -1321,8 +1174,10 @@ class HomeView extends GetView<HomeController> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) {
-        return Container(
-          padding: const EdgeInsets.all(22),
+        return SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.all(22),
           decoration: const BoxDecoration(
             color: Color(0xFF131715),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -1426,6 +1281,7 @@ class HomeView extends GetView<HomeController> {
               }),
             ],
           ),
+        ),
         );
       },
     );
@@ -1741,6 +1597,153 @@ class HomeView extends GetView<HomeController> {
                 label: const Text(
                   'View Digital Entry Pass & QR Code',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildActiveInquiryTrackerCard(BuildContext context) {
+    return Obx(() {
+      final inq = controller.latestInquiry.value;
+      if (inq == null) return const SizedBox.shrink();
+
+      final isOdc = inq.eventCategory.contains('ODC') || inq.eventCategory.contains('Outdoor');
+      final status = inq.status.toUpperCase();
+
+      Color accentColor = const Color(0xFFFFB800);
+      String statusTitle = 'Inquiry Submitted • Under Review';
+      String statusSubtitle = 'Our event desk will call your number within 24 hours to review menus & availability.';
+      IconData statusIcon = Icons.hourglass_top_rounded;
+
+      if (status == 'CONTACTED') {
+        accentColor = const Color(0xFF00BFFF);
+        statusTitle = 'Team Contacted • In Touch';
+        statusSubtitle = 'Our executive event coordinator has initiated contact with you. Check WhatsApp for updates!';
+        statusIcon = Icons.phone_in_talk_rounded;
+      } else if (status == 'IN_DISCUSSION') {
+        accentColor = const Color(0xFFE8B84A);
+        statusTitle = 'Menu & Setup In Discussion';
+        statusSubtitle = 'We are curating custom sizzler stations, hall decoration, and tasting sessions for your event.';
+        statusIcon = Icons.forum_rounded;
+      } else if (status == 'CONFIRMED') {
+        accentColor = const Color(0xFF4EE3B8);
+        statusTitle = 'Event Booking Confirmed! 🎉';
+        statusSubtitle = 'Your event date and setup are reserved. House of Yanki is ready to host your memorable gathering!';
+        statusIcon = Icons.check_circle_rounded;
+      } else if (status == 'CLOSED') {
+        accentColor = Colors.grey;
+        statusTitle = 'Inquiry Closed';
+        statusSubtitle = 'This inquiry has been completed or archived.';
+        statusIcon = Icons.archive_rounded;
+      }
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isOdc
+                ? [const Color(0xFF142921), const Color(0xFF1B382D), const Color(0xFF0F1E19)]
+                : [const Color(0xFF281E12), const Color(0xFF382917), const Color(0xFF1A130B)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accentColor.withOpacity(0.55), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withOpacity(0.18),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: accentColor.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, size: 13, color: accentColor),
+                      const SizedBox(width: 5),
+                      Text(
+                        statusTitle,
+                        style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w800, color: accentColor),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Ref #${inq.id ?? ''}',
+                  style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400], fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              inq.eventCategory,
+              style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
+            ),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today_rounded, size: 12, color: Colors.grey),
+                const SizedBox(width: 5),
+                Text(
+                  '${inq.eventDate} (${inq.eventShift})',
+                  style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[300]),
+                ),
+                const SizedBox(width: 14),
+                const Icon(Icons.people_alt_rounded, size: 12, color: Colors.grey),
+                const SizedBox(width: 5),
+                Text(
+                  '${inq.estimatedPax} Guests',
+                  style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[300]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              statusSubtitle,
+              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400], height: 1.3),
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () => Get.toNamed(isOdc ? AppRoutes.ODC : AppRoutes.BANQUET),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white.withOpacity(0.12)),
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'View ${isOdc ? "ODC" : "Banquet"} Inquiries',
+                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_rounded, size: 13, color: Colors.white),
+                  ],
                 ),
               ),
             ),

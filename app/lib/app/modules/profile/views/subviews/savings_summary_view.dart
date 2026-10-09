@@ -37,11 +37,13 @@ class SavingsSummaryView extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
       ),
-      body: Obx(() {
-        final m = _getMember();
-        final savings = m.totalSavings;
+      body: SafeArea(
+        top: false,
+        child: Obx(() {
+          final m = _getMember();
+          final savings = m.totalSavings;
 
-        return SingleChildScrollView(
+          return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,6 +134,7 @@ class SavingsSummaryView extends StatelessWidget {
           ),
         );
       }),
+      ),
     );
   }
 

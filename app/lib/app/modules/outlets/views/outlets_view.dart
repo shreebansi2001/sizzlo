@@ -30,7 +30,9 @@ class OutletsView extends GetView<OutletsController> {
         ),
         centerTitle: true,
       ),
-      body: Column(
+      body: SafeArea(
+        top: false,
+        child: Column(
         children: [
           // Top Navigation Bar: Active vs Upcoming
           Container(
@@ -176,8 +178,9 @@ class OutletsView extends GetView<OutletsController> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildActiveOutletsList() {
     if (controller.activeOutlets.isEmpty) {

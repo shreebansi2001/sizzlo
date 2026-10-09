@@ -221,9 +221,7 @@ export const fallbackOutlets: Outlet[] = [];
 
 export const fallbackInsights: AIInsight[] = [];
 
-import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
-
-export const fallbackCustomers: Member[] = DEFAULT_USERS_DATASET;
+export const fallbackCustomers: Member[] = [];
 
 export const fallbackReservations: Reservation[] = [];
 
@@ -247,11 +245,11 @@ export async function fetchDashboardData() {
 export async function fetchMembers(): Promise<Member[]> {
   try {
     const res = await apiClient.get('/members');
-    if (res.data?.success && res.data.data?.length) {
+    if (res.data?.success && Array.isArray(res.data.data)) {
       return res.data.data;
     }
   } catch (_) {}
-  return fallbackCustomers;
+  return [];
 }
 
 export async function fetchCoupons(): Promise<Coupon[]> {
@@ -530,6 +528,11 @@ export async function fetchBanquetLeads(): Promise<BanquetLeadDTO[]> {
 
 export async function assignBanquetLead(id: number, assignedTo: string) {
   const res = await apiClient.put(`/banquets/leads/${id}/assign?assignedTo=${encodeURIComponent(assignedTo)}`);
+  return res.data;
+}
+
+export async function updateBanquetLeadStatus(id: number, status: string) {
+  const res = await apiClient.put(`/banquets/leads/${id}/status?status=${encodeURIComponent(status)}`);
   return res.data;
 }
 

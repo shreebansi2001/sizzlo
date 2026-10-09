@@ -55,23 +55,63 @@ class PlansController extends GetxController {
     }
   }
 
+  String get activeSubscribedPlanId {
+    if (Get.isRegistered<HomeController>()) {
+      final m = Get.find<HomeController>().member.value;
+      if (m.isSubscriber) {
+        return m.planId.toLowerCase().trim();
+      }
+    }
+    return '';
+  }
+
+  bool isPlanCurrentlySubscribed(String planId) {
+    final active = activeSubscribedPlanId;
+    return active.isNotEmpty && active == planId.toLowerCase().trim();
+  }
+
+  void notifyAlreadySubscribed([String? planName]) {
+    final name = (planName != null && planName.isNotEmpty) ? planName : 'this';
+    Get.snackbar(
+      'Already Subscribed',
+      'You are already subscribed to $name plan. Enjoy your VIP dining privileges!',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color(0xFF163E33),
+      colorText: const Color(0xFF4EE3B8),
+      margin: const EdgeInsets.all(16),
+      borderRadius: 14,
+      icon: const Icon(Icons.verified_rounded, color: Color(0xFF4EE3B8), size: 24),
+      duration: const Duration(seconds: 3),
+    );
+  }
+
   void choosePlan(String planId) {
     selectedPlan.value = planId;
   }
 
-  void selectPlan(String planId) {
+  void selectPlan(String planId, [String? planName]) {
+    if (isPlanCurrentlySubscribed(planId)) {
+      notifyAlreadySubscribed(planName);
+      return;
+    }
     initiateRazorpayCheckout(planId);
   }
 
   /// Initiates live Razorpay checkout dialog (Chapter 04.2 & 08.1 SRS)
   Future<void> initiateRazorpayCheckout(String planId) async {
+    if (isPlanCurrentlySubscribed(planId)) {
+      notifyAlreadySubscribed();
+      return;
+    }
     final fee = planId == 'classic' ? '₹1' : planId == 'signature' ? '₹2' : '₹3';
     final tierName = planId.toUpperCase();
 
     // Show Razorpay Luxury Modal
     Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(24),
+      SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
           color: Color(0xFF141312),
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -206,6 +246,7 @@ class PlansController extends GetxController {
             ),
           ],
         ),
+      ),
       ),
       isScrollControlled: true,
     );

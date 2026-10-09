@@ -70,7 +70,9 @@ class LoyaltyView extends GetView<LoyaltyController> {
                 onPressed: () => Get.back(),
               ),
       ),
-      body: Obx(() {
+      body: SafeArea(
+        top: false,
+        child: Obx(() {
         if (controller.isLoading.value && controller.transactions.isEmpty) {
           return const Center(
             child: CircularProgressIndicator(color: AppColors.gold),
@@ -143,8 +145,9 @@ class LoyaltyView extends GetView<LoyaltyController> {
           ),
         );
       }),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildBalanceHeroCard() {
     final m = controller.member.value;
@@ -245,68 +248,185 @@ class LoyaltyView extends GetView<LoyaltyController> {
 
           const SizedBox(height: 18),
 
-          // Dynamic Circular Progress Box
+          // Dynamic Target, Progress Bar & Points Left to Free Subscription Box
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.black.withOpacity(0.35),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: Colors.white.withOpacity(0.08),
+                color: const Color(0xFFD4AF37).withOpacity(0.28),
+                width: 1.1,
               ),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Dynamic percentage circular indicator
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.gold, width: 2.5),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$progressPercent%',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'NEXT REWARD AT ${_formatNumber(goalPoints)} PTS',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.0,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: const [
-                          Icon(Icons.card_giftcard, size: 13, color: AppColors.gold),
-                          SizedBox(width: 4),
-                          Text(
-                            'Free Subscription Renewal',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.gold,
+                // Top Row: Reward Title & Target Points + Percentage Badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.gold.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(
+                                  Icons.card_giftcard_rounded,
+                                  size: 13,
+                                  color: AppColors.gold,
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              Text(
+                                'FREE VIP SUBSCRIPTION REWARD',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.1,
+                                  color: AppColors.gold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Target: ',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: '${_formatNumber(goalPoints)} Points',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    // Progress percentage badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.gold.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.bolt_rounded, size: 13, color: AppColors.gold),
+                          const SizedBox(width: 2),
+                          Text(
+                            '$progressPercent%',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.goldChampagne,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Linear Gradient Progress Bar
+                Stack(
+                  children: [
+                    Container(
+                      height: 8,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: ((currentPoints / goalPoints).clamp(0.0, 1.0)),
+                      child: Container(
+                        height: 8,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppColors.flame, AppColors.gold, Color(0xFFFFF275)],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.gold.withOpacity(0.4),
+                              blurRadius: 6,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                // Bottom Row: Current Points vs Points Left
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_formatNumber(currentPoints)} pts collected',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.white60,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4A2515).withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.flame.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.hourglass_top_rounded, size: 11, color: AppColors.flame),
+                          const SizedBox(width: 4),
+                          Text(
+                            (goalPoints - currentPoints) > 0
+                                ? '${_formatNumber(goalPoints - currentPoints)} pts left to reach target'
+                                : 'Target Reached! Ready for Renewal',
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: (goalPoints - currentPoints) > 0
+                                  ? const Color(0xFFFFB74D)
+                                  : const Color(0xFF00E676),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
