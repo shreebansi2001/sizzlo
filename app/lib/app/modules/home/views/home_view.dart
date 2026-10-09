@@ -22,6 +22,7 @@ import '../../../core/values/app_constants.dart';
 import '../../../widgets/profile_avatar_widget.dart';
 import '../../../widgets/event_booking_sheet.dart';
 import '../../../widgets/event_pass_dialog.dart';
+import '../../../data/models/dining_event_model.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({Key? key}) : super(key: key);
@@ -299,7 +300,10 @@ class HomeView extends GetView<HomeController> {
 
               // Dedicated Subscription Card
               _buildSubscriptionCard(context, isSub),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
+
+              // Active Booked Offers / Events Notification Card on Home Screen
+              _buildBookedOffersBanner(context),
 
               // Quick Actions Grid
               SectionHeader(title: 'Quick Actions'),
@@ -412,7 +416,7 @@ class HomeView extends GetView<HomeController> {
                         runSpacing: 4,
                         children: [
                           const Text(
-                            'Settle Table Bill',
+                            'Booking Information',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -420,12 +424,23 @@ class HomeView extends GetView<HomeController> {
                               fontFamily: 'Playfair Display',
                             ),
                           ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00E676),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'VIP TABLE SETTLEMENT',
+                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 2),
                       const Text(
-                        'Apply coupon, enter POS bill # & earn points instantly',
-                        style: TextStyle(fontSize: 11, color: Colors.white70),
+                        'Settle your bill',
+                        style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -1062,6 +1077,11 @@ class HomeView extends GetView<HomeController> {
                 onTap: () {
                   if (isRegistered) {
                     EventPassDialog.show(context, booking: booking, event: event);
+                  } else if (!controller.member.value.isSubscriber) {
+                    _showVipSubscriptionRequiredDialog(
+                      title: 'VIP Exclusive Experience',
+                      description: 'Sunday Brunch & Exclusive Chef Experiences are reserved strictly for Sizzlo VIP subscribers.\n\nSubscribe now to unlock exclusive brunch invitations, 12 dining coupons, and VIP priority reservations!',
+                    );
                   } else {
                     EventBookingSheet.show(context, event);
                   }
@@ -1264,6 +1284,11 @@ class HomeView extends GetView<HomeController> {
                             onPressed: () {
                               if (isRegistered) {
                                 EventPassDialog.show(context, booking: booking, event: event);
+                              } else if (!controller.member.value.isSubscriber) {
+                                _showVipSubscriptionRequiredDialog(
+                                  title: 'VIP Exclusive Experience',
+                                  description: 'Sunday Brunch & Exclusive Chef Experiences are reserved strictly for Sizzlo VIP subscribers.\n\nSubscribe now to unlock exclusive brunch invitations, 12 dining coupons, and VIP priority reservations!',
+                                );
                               } else if (!isSoldOut) {
                                 EventBookingSheet.show(context, event);
                               }
@@ -1589,5 +1614,148 @@ class HomeView extends GetView<HomeController> {
         ),
       ),
     );
+  }
+
+  Widget _buildBookedOffersBanner(BuildContext context) {
+    return Obx(() {
+      final bookings = controller.myEventBookings;
+      if (bookings.isEmpty) return const SizedBox.shrink();
+
+      final latest = bookings.first;
+      DiningEventModel? matchedEvent;
+      try {
+        matchedEvent = controller.diningEvents.firstWhere((e) => e.id == latest.eventId);
+      } catch (_) {}
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0F2E25), Color(0xFF133B30), Color(0xFF0D241D)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF249673), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF249673).withOpacity(0.25),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E676),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, size: 12, color: Colors.black),
+                      SizedBox(width: 4),
+                      Text(
+                        'EXCLUSIVE OFFER BOOKED',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Pass #${latest.bookingReference}',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF4EE3B8)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'You have booked ${latest.eventTitle}!',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'Playfair Display',
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.people_outline_rounded, size: 14, color: Colors.white.withOpacity(0.7)),
+                const SizedBox(width: 5),
+                Text(
+                  '${latest.guestCount} Guests Confirmed',
+                  style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 14),
+                const Icon(Icons.payments_outlined, size: 14, color: AppColors.gold),
+                const SizedBox(width: 4),
+                Text(
+                  '₹${latest.totalAmount.toInt()} Paid',
+                  style: const TextStyle(fontSize: 12, color: AppColors.gold, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            if (matchedEvent != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.access_time_rounded, size: 13, color: Colors.white.withOpacity(0.6)),
+                  const SizedBox(width: 5),
+                  Text(
+                    '${matchedEvent.eventDay} • ${matchedEvent.timings}',
+                    style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6)),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF249673),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                onPressed: () {
+                  if (matchedEvent != null) {
+                    EventPassDialog.show(context, booking: latest, event: matchedEvent);
+                  } else {
+                    _showMyPassesModal(context);
+                  }
+                },
+                icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
+                label: const Text(
+                  'View Digital Entry Pass & QR Code',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 }

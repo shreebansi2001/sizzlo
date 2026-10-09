@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -141,25 +142,45 @@ public class NotificationController {
             isSubscriber = tier != null && !"REGISTERED".equalsIgnoreCase(tier) && !"NONE".equalsIgnoreCase(tier);
         }
 
-        // 2. Fetch persistent database notifications (Broadcast + VIP + Free + User specific)
+        // 2. Fetch persistent database notifications (User-specific + relevant broadcasts)
         List<NotificationEntity> dbNotifs = notificationRepository.findAllByOrderByCreatedAtDesc();
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("dd MMM, hh:mm a");
+        LocalDateTime userJoinTime = (profile != null && profile.getCreatedAt() != null) 
+                ? profile.getCreatedAt() 
+                : null;
+        LocalDateTime cutoffTime = userJoinTime != null 
+                ? userJoinTime.minusHours(2) 
+                : LocalDateTime.now().minusHours(24);
+
         for (NotificationEntity n : dbNotifs) {
             boolean matches = false;
             String tType = n.getTargetType() != null ? n.getTargetType().toUpperCase() : "ALL";
-            if ("ALL".equals(tType)) {
-                matches = true;
-            } else if ("VIP".equals(tType) && isSubscriber) {
-                matches = true;
-            } else if ("FREE".equals(tType) && !isSubscriber) {
-                matches = true;
-            } else if ("SPECIFIC".equals(tType)) {
+
+            if ("SPECIFIC".equals(tType)) {
+                // Targeted notifications directly sent to this user
                 if (searchMemId != null && searchMemId.equalsIgnoreCase(n.getTargetMembershipId())) {
                     matches = true;
-                } else if (cleanPhone != null && n.getTargetMobile() != null && n.getTargetMobile().replaceAll("\\D", "").contains(cleanPhone)) {
-                    matches = true;
+                } else if (cleanPhone != null && !cleanPhone.isEmpty() && n.getTargetMobile() != null) {
+                    String targetDigits = n.getTargetMobile().replaceAll("\\D", "");
+                    if (!targetDigits.isEmpty() && (targetDigits.contains(cleanPhone) || cleanPhone.contains(targetDigits))) {
+                        matches = true;
+                    }
+                }
+            } else {
+                // Broadcast notifications (ALL, VIP, FREE):
+                // A new user only sees broadcasts that arrived AFTER they registered, or within the last 24h
+                boolean isRecentForUser = n.getCreatedAt() == null || !n.getCreatedAt().isBefore(cutoffTime);
+                if (isRecentForUser) {
+                    if ("ALL".equals(tType)) {
+                        matches = true;
+                    } else if ("VIP".equals(tType) && isSubscriber) {
+                        matches = true;
+                    } else if ("FREE".equals(tType) && !isSubscriber) {
+                        matches = true;
+                    }
                 }
             }
+
             if (matches) {
                 String timeStr = n.getCreatedAt() != null ? n.getCreatedAt().format(timeFmt) : "Recent";
                 list.add(new NotificationDto(
@@ -169,60 +190,7 @@ public class NotificationController {
                         n.getDescription(),
                         timeStr
                 ));
-            }
-        }
-
-        // 3. User account dynamic alerts (if profile exists and is subscriber)
-        if (profile != null) {
-            String tier = profile.getSubscriptionTier();
-            if (isSubscriber) {
-                list.add(new NotificationDto(
-                        idCounter++,
-                        "gift",
-                        tier + " VIP Subscription Active",
-                        "Welcome " + profile.getFullName() + "! Your " + tier + " privileges and 12-coupon vault are active.",
-                        "Active"
-                ));
-
-                if (profile.getLoyaltyPoints() != null && profile.getLoyaltyPoints() > 0) {
-                    list.add(new NotificationDto(
-                            idCounter++,
-                            "sparkle",
-                            "Loyalty Points Available",
-                            profile.getLoyaltyPoints() + " loyalty points available in your Sizzlo wallet.",
-                            "Wallet"
-                    ));
-                }
-
-                // User's available coupons
-                List<Coupon> userCoupons = couponRepository.findByMembershipIdAndStatus(profile.getMembershipId(), "available");
-                for (Coupon c : userCoupons) {
-                    if (list.size() >= 15) break;
-                    list.add(new NotificationDto(
-                            idCounter++,
-                            "tag",
-                            c.getName(),
-                            c.getSubtitle() + " · Valid at " + c.getOutlet(),
-                            "Expires " + c.getExpiryDate()
-                    ));
-                }
-            }
-
-            // User's reservations
-            if (cleanPhone != null && !cleanPhone.isEmpty()) {
-                for (Reservation r : reservationRepository.findAllByOrderByCreatedAtDesc()) {
-                    String rPhone = r.getCustomerMobile() != null ? r.getCustomerMobile().replaceAll("\\D", "") : "";
-                    if (!rPhone.isEmpty() && (rPhone.equals(cleanPhone) || (rPhone.length() >= 10 && rPhone.endsWith(cleanPhone)))) {
-                        list.add(new NotificationDto(
-                                idCounter++,
-                                "calendar",
-                                "Reservation " + r.getStatus(),
-                                "Table for " + r.getGuests() + " at " + r.getOutlet() + " (" + r.getReservationTime() + ")",
-                                r.getCreatedAt() != null ? "Confirmed" : "Recent"
-                        ));
-                        if (list.size() >= 15) break;
-                    }
-                }
+                if (list.size() >= 25) break;
             }
         }
 
