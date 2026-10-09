@@ -16,4 +16,5 @@ public interface MemberService {
     List<MemberProfile> getAllMembers();
     boolean deleteAccount(String mobile);
     MemberProfile renewWithPoints(String membershipId);
+    void updateGlobalLoyaltyGoal(int newGoal);
 }

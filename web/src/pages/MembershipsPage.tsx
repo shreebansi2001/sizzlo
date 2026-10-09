@@ -20,11 +20,10 @@ import {
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import axios from 'axios';
 import { Member, SubscriptionPlan } from '../types';
-import { fetchPlans, addOfferToPlan, removeOfferFromPlan, resetPlans, updatePlanDetails } from '../api/client';
-import { DEFAULT_USERS_DATASET } from '../data/defaultUsers';
+import { fetchPlans, addOfferToPlan, removeOfferFromPlan, updatePlanDetails } from '../api/client';
 
 export const MembershipsPage: React.FC = () => {
-  const [memberList, setMemberList] = useState<Member[]>(DEFAULT_USERS_DATASET);
+  const [memberList, setMemberList] = useState<Member[]>([]);
   const [membershipRev, setMembershipRev] = useState('₹1.10 Lakh');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
@@ -159,20 +158,22 @@ export const MembershipsPage: React.FC = () => {
     }
   };
 
-  const handleResetPlans = async () => {
-    if (!window.confirm('Reset all plans and offers to original defaults?')) return;
-    const defaultPlans = await resetPlans();
-    if (defaultPlans && defaultPlans.length > 0) {
-      setPlans(defaultPlans);
-      setSyncToast('Plans and offers restored to initial baseline!');
-      setTimeout(() => setSyncToast(null), 4000);
-    }
+  const isSubscribedMember = (m: Member): boolean => {
+    const type = (m.membershipType || '').toUpperCase();
+    const tier = (m.subscriptionTier || '').toUpperCase();
+    const plan = (m.planId || '').toLowerCase();
+    return (
+      (type.includes('SUBSCRIBER') || type.includes('CLASSIC') || type.includes('SIGNATURE') || type.includes('ELITE')) &&
+      !type.includes('NON-SUBSCRIBED') &&
+      tier !== 'FREE'
+    );
   };
 
-  const totalSubscribers = memberList.length;
-  const activeCount = memberList.filter(m => m.status === 'Active').length;
-  const renewalDueCount = memberList.filter(m => m.status === 'Renewal Due').length;
-  const expiredCount = memberList.filter(m => m.status === 'Expired').length;
+  const subscribedMembers = memberList.filter(isSubscribedMember);
+  const totalSubscribers = subscribedMembers.length;
+  const activeCount = subscribedMembers.filter(m => m.status === 'Active').length;
+  const renewalDueCount = subscribedMembers.filter(m => m.status === 'Renewal Due').length;
+  const expiredCount = subscribedMembers.filter(m => m.status === 'Expired').length;
 
   const dynamicStats = [
     { k: 'Total Subscribers', v: String(totalSubscribers), icon: Users },
@@ -180,7 +181,7 @@ export const MembershipsPage: React.FC = () => {
     { k: 'Expired', v: String(expiredCount), icon: AlertCircle },
     { k: 'Renewals Due (30d)', v: String(renewalDueCount), icon: RefreshCw },
     { k: 'Subscription Revenue', v: membershipRev, icon: Wallet, delta: '+12.4%' },
-    { k: 'Forecast Run-Rate', v: `₹${(totalSubscribers * 1.2).toFixed(1)} Lakh`, icon: TrendingUp, delta: '+18.0%' },
+    { k: 'Forecast Run-Rate', v: `₹${(totalSubscribers * 1.5).toFixed(1)} Lakh`, icon: TrendingUp, delta: '+18.0%' },
   ];
 
   const forecastData = [
@@ -195,14 +196,6 @@ export const MembershipsPage: React.FC = () => {
   // Helper colors for plan cards
   const getPlanStyling = (planId: string) => {
     switch (planId) {
-      case 'free':
-        return {
-          badgeClass: 'badge-silver',
-          accentColor: '#94A3B8',
-          border: '1px solid rgba(148, 163, 184, 0.4)',
-          background: 'linear-gradient(145deg, #1E293B 0%, #0F172A 100%)',
-          glow: 'rgba(148, 163, 184, 0.15)',
-        };
       case 'classic':
         return {
           badgeClass: 'badge-gold',
@@ -307,15 +300,6 @@ export const MembershipsPage: React.FC = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button 
-            className="btn btn-outline btn-sm"
-            onClick={handleResetPlans}
-            title="Reset plans to default values"
-            style={{ fontSize: 12 }}
-          >
-            <RefreshCw size={13} />
-            <span>Reset Baseline</span>
-          </button>
-          <button 
             className="btn btn-primary"
             onClick={() => handleOpenAddModal()}
             style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', fontSize: 13 }}
@@ -333,7 +317,7 @@ export const MembershipsPage: React.FC = () => {
         gap: 20,
         marginBottom: 32,
       }}>
-        {plans.map((p) => {
+        {plans.filter(p => p.id !== 'free').map((p) => {
           const style = getPlanStyling(p.id);
           return (
             <div
@@ -617,9 +601,8 @@ export const MembershipsPage: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[
                 { name: 'Elite VIP Connoisseur', price: '₹15,000/yr', count: `${plans.find(p=>p.id==='elite')?.highlights.length || 3} Offers`, pct: 35, color: 'var(--gold)' },
-                { name: 'Signature Gourmet', price: '₹10,000/yr', count: `${plans.find(p=>p.id==='signature')?.highlights.length || 3} Offers`, pct: 40, color: 'var(--primary)' },
-                { name: 'Classic Privileges', price: '₹5,000/yr', count: `${plans.find(p=>p.id==='classic')?.highlights.length || 3} Offers`, pct: 15, color: '#60A5FA' },
-                { name: 'Non-Subscribed (Free)', price: '₹0 / Free', count: `${plans.find(p=>p.id==='free')?.highlights.length || 3} Perks`, pct: 10, color: '#94A3B8' },
+                { name: 'Signature Gourmet', price: '₹10,000/yr', count: `${plans.find(p=>p.id==='signature')?.highlights.length || 3} Offers`, pct: 45, color: 'var(--primary)' },
+                { name: 'Classic Privileges', price: '₹5,000/yr', count: `${plans.find(p=>p.id==='classic')?.highlights.length || 3} Offers`, pct: 20, color: '#60A5FA' },
               ].map((tier) => (
                 <div key={tier.name} style={{ padding: '12px 14px', borderRadius: 14, background: 'var(--surface-alt)', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -701,7 +684,6 @@ export const MembershipsPage: React.FC = () => {
                     outline: 'none',
                   }}
                 >
-                  <option value="free">Non-Subscribed (Free Registered Users)</option>
                   <option value="classic">Classic Subscription (₹5,000 / yr)</option>
                   <option value="signature">Signature Subscription (₹10,000 / yr)</option>
                   <option value="elite">Elite Subscription (₹15,000 / yr)</option>
@@ -906,9 +888,7 @@ export const MembershipsPage: React.FC = () => {
                       }}
                     />
                   </div>
-                  <span style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4, display: 'block' }}>
-                    Set to 0 for Free / Non-Subscribed users
-                  </span>
+
                 </div>
 
                 <div>

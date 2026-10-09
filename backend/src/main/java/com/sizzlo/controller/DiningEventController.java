@@ -21,15 +21,21 @@ public class DiningEventController {
     private final DiningEventRepository eventRepository;
     private final DiningEventBookingRepository bookingRepository;
     private final CommonService commonService;
+    private final com.sizzlo.repository.MemberProfileRepository memberProfileRepository;
+    private final com.sizzlo.repository.NotificationRepository notificationRepository;
 
     @Autowired
     public DiningEventController(
             DiningEventRepository eventRepository,
             DiningEventBookingRepository bookingRepository,
-            CommonService commonService) {
+            CommonService commonService,
+            com.sizzlo.repository.MemberProfileRepository memberProfileRepository,
+            com.sizzlo.repository.NotificationRepository notificationRepository) {
         this.eventRepository = eventRepository;
         this.bookingRepository = bookingRepository;
         this.commonService = commonService;
+        this.memberProfileRepository = memberProfileRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     /**
@@ -80,6 +86,27 @@ public class DiningEventController {
         String customerName = req.get("customerName") != null ? req.get("customerName").toString().trim() : "Patron";
         String customerMobile = req.get("customerMobile") != null ? req.get("customerMobile").toString().trim() : "";
         String customerEmail = req.get("customerEmail") != null ? req.get("customerEmail").toString().trim() : "";
+
+        // Verify customer is an active VIP subscriber
+        boolean isSubscriber = false;
+        if (!customerMobile.isEmpty()) {
+            String digits = customerMobile.replaceAll("\\D", "");
+            if (digits.length() > 10) digits = digits.substring(digits.length() - 10);
+            for (com.sizzlo.entity.MemberProfile m : memberProfileRepository.findAll()) {
+                String mDigits = m.getMobile() != null ? m.getMobile().replaceAll("\\D", "") : "";
+                if (!digits.isEmpty() && (mDigits.equals(digits) || mDigits.endsWith(digits))) {
+                    String tier = m.getSubscriptionTier();
+                    if (tier != null && !tier.equalsIgnoreCase("REGISTERED") && !tier.equalsIgnoreCase("NONE")) {
+                        isSubscriber = true;
+                    }
+                    break;
+                }
+            }
+        }
+        if (!isSubscriber) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Exclusive Offer: Sunday Brunch & Special Dining Events are reserved strictly for Sizzlo VIP Subscribers. Please upgrade to a VIP plan to book."));
+        }
+
         String paymentId = req.get("razorpayPaymentId") != null ? req.get("razorpayPaymentId").toString() : "pay_sim_" + System.currentTimeMillis();
         String orderId = req.get("razorpayOrderId") != null ? req.get("razorpayOrderId").toString() : "ord_evt_" + System.currentTimeMillis();
 
@@ -111,7 +138,7 @@ public class DiningEventController {
         }
         eventRepository.save(event);
 
-        // Send WhatsApp notification
+        // 1. Send WhatsApp notification
         try {
             if (!customerMobile.isEmpty()) {
                 String title = "Event Pass Confirmed: " + event.getTitle();
@@ -122,6 +149,20 @@ public class DiningEventController {
         } catch (Exception e) {
             System.err.println("Could not dispatch WhatsApp message: " + e.getMessage());
         }
+
+        // 2. Save In-App Notification
+        try {
+            com.sizzlo.entity.NotificationEntity notif = new com.sizzlo.entity.NotificationEntity(
+                    "calendar",
+                    "Event Pass Confirmed: " + event.getTitle(),
+                    "Your pass for " + event.getTitle() + " (" + guestCount + " Guests) at " + event.getOutletName() + " is confirmed. Booking ID: #" + ref + ". Paid ₹" + (int)totalAmount + ".",
+                    "SPECIFIC",
+                    null,
+                    customerMobile,
+                    true
+            );
+            notificationRepository.save(notif);
+        } catch (Exception ignored) {}
 
         DiningEventBooking saved = bookingRepository.save(booking);
         return ResponseEntity.ok(ApiResponse.success("Event booking confirmed! Your digital pass has been generated.", saved));

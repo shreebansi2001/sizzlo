@@ -6,6 +6,7 @@ export interface Member {
   mobile: string;
   email: string;
   membershipType: string;
+  subscriptionTier?: string;
   planId?: string;
   status: 'Active' | 'Renewal Due' | 'Expired';
   issuedDate: string;
@@ -55,6 +56,7 @@ export interface Reservation {
   advancePaid?: boolean;
   advanceDeducted?: boolean;
   posSettlementId?: number;
+  tableAssigned?: string;
 }
 
 export interface OutletTimeSlot {

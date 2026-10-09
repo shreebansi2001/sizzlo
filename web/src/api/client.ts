@@ -31,28 +31,6 @@ export const apiClient = axios.create({
 
 export const DEFAULT_PLANS: SubscriptionPlan[] = [
   {
-    id: 'free',
-    name: 'Non-Subscribed Users',
-    memberLabel: 'FREE REGISTERED USER',
-    price: 0,
-    couponLimit: 0,
-    giftVoucherLimit: 0,
-    offerLabel: 'FREE TIER PERKS',
-    description: 'Standard registered accounts & welcome benefits',
-    personality: 'Welcoming & Accessible',
-    highlights: [
-      'Welcome digital dining pass',
-      'Instant table booking at all outlets',
-      '1 Loyalty Point per ₹1 net spend'
-    ],
-    benefits: [
-      'Table reservations across all House of Yanki outlets',
-      '1 Loyalty Point earned for every ₹1 net dining spend',
-      'Exclusive access to special festival event tickets',
-      'Upgrade to VIP at any time for unlimited dining vouchers'
-    ]
-  },
-  {
     id: 'classic',
     name: 'Classic',
     memberLabel: 'CLASSIC SUBSCRIBER',
@@ -132,7 +110,10 @@ const getStoredPlans = (): SubscriptionPlan[] => {
     const raw = localStorage.getItem(PLANS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const filtered = parsed.filter((p: any) => p && p.id !== 'free');
+        if (filtered.length > 0) return filtered;
+      }
     }
   } catch (_) {}
   return DEFAULT_PLANS;
@@ -142,8 +123,9 @@ export async function fetchPlans(): Promise<SubscriptionPlan[]> {
   try {
     const res = await apiClient.get('/plans', { timeout: 2500 });
     if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(res.data.data));
-      return res.data.data;
+      const filtered = res.data.data.filter((p: any) => p && p.id !== 'free');
+      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(filtered));
+      return filtered;
     }
   } catch (_) {}
   return getStoredPlans();

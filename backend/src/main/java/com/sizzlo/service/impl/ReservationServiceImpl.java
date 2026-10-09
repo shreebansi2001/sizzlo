@@ -12,6 +12,12 @@ import com.sizzlo.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.sizzlo.entity.NotificationEntity;
+import com.sizzlo.repository.NotificationRepository;
+import com.sizzlo.service.CommonService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,14 +28,20 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationRepository reservationRepository;
     private final ActivityLogRepository activityLogRepository;
     private final MemberProfileRepository memberProfileRepository;
+    private final NotificationRepository notificationRepository;
+    private final CommonService commonService;
 
     @Autowired
     public ReservationServiceImpl(ReservationRepository reservationRepository,
                                   ActivityLogRepository activityLogRepository,
-                                  MemberProfileRepository memberProfileRepository) {
+                                  MemberProfileRepository memberProfileRepository,
+                                  NotificationRepository notificationRepository,
+                                  CommonService commonService) {
         this.reservationRepository = reservationRepository;
         this.activityLogRepository = activityLogRepository;
         this.memberProfileRepository = memberProfileRepository;
+        this.notificationRepository = notificationRepository;
+        this.commonService = commonService;
     }
 
     @Override
@@ -108,6 +120,29 @@ public class ReservationServiceImpl implements ReservationService {
         log.setTimeAgo("Just now");
         log.setTimestamp(LocalDateTime.now());
         activityLogRepository.save(log);
+
+        // 1. Save In-App Notification for user
+        try {
+            NotificationEntity notif = new NotificationEntity(
+                    "calendar",
+                    "Table Reservation Confirmed!",
+                    "Table for " + saved.getGuests() + " at " + saved.getOutlet() + " (" + saved.getReservationTime() + ") confirmed. Ref: " + saved.getBookingReference() + ". Advance: ₹" + String.format("%.0f", saved.getBookingAdvance()) + " (deductible on bill).",
+                    "SPECIFIC",
+                    null,
+                    saved.getCustomerMobile(),
+                    true
+            );
+            notificationRepository.save(notif);
+        } catch (Exception ignored) {}
+
+        // 2. Dispatch WhatsApp Notification to customer
+        try {
+            if (saved.getCustomerMobile() != null && !saved.getCustomerMobile().trim().isEmpty()) {
+                String title = "Table Reservation Confirmed - Sizzlo";
+                String body = "Dear " + saved.getCustomerName() + ", your table for " + saved.getGuests() + " at " + saved.getOutlet() + " (" + saved.getReservationTime() + ") is confirmed! Booking Ref: " + saved.getBookingReference() + ". Advance paid ₹" + String.format("%.0f", saved.getBookingAdvance()) + " will be deducted from your final bill. See you soon!";
+                commonService.sendNotificationWhatsApp(saved.getCustomerMobile(), title, body);
+            }
+        } catch (Exception ignored) {}
 
         return saved;
     }

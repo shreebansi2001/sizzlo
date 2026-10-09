@@ -20,6 +20,12 @@ public class ReservationController {
     private final com.sizzlo.repository.OutletTimeSlotRepository outletTimeSlotRepository;
     private final com.sizzlo.repository.ReservationRepository reservationRepository;
 
+    @Autowired(required = false)
+    private com.sizzlo.repository.FloorTableRepository floorTableRepository;
+
+    @Autowired(required = false)
+    private com.sizzlo.repository.WaitlistEntryRepository waitlistEntryRepository;
+
     @Autowired
     public ReservationController(ReservationService reservationService,
                                  com.sizzlo.repository.OutletTimeSlotRepository outletTimeSlotRepository,
@@ -52,6 +58,57 @@ public class ReservationController {
             @RequestParam String status) {
         Reservation updated = reservationService.updateStatus(id, status);
         return ResponseEntity.ok(ApiResponse.success("Reservation status updated", updated));
+    }
+
+    @PostMapping("/{id}/assign-table")
+    public ResponseEntity<ApiResponse<Reservation>> assignTable(
+            @PathVariable Long id,
+            @RequestParam String tableNumber,
+            @RequestParam(required = false, defaultValue = "Occupied") String state) {
+        Reservation res = reservationRepository.findById(id).orElse(null);
+        if (res == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Reservation not found"));
+        }
+        String cleanTable = tableNumber.replaceAll("[^0-9]", "");
+        res.setTableAssigned("T" + cleanTable);
+        res.setStatus("Occupied".equalsIgnoreCase(state) ? "Seated" : "Confirmed");
+        Reservation saved = reservationRepository.save(res);
+
+        if (floorTableRepository != null && !cleanTable.isEmpty()) {
+            try {
+                int tblNum = Integer.parseInt(cleanTable);
+                floorTableRepository.findByTableNumber(tblNum).ifPresent(tbl -> {
+                    tbl.setState(state);
+                    tbl.setGuest(saved.getCustomerName() + " (" + saved.getGuests() + " guests)");
+                    tbl.setReservationRef(saved.getBookingReference());
+                    floorTableRepository.save(tbl);
+                });
+            } catch (Exception ignored) {}
+        }
+        return ResponseEntity.ok(ApiResponse.success("Table T" + cleanTable + " settled successfully", saved));
+    }
+
+    @PostMapping("/{id}/send-to-queue")
+    public ResponseEntity<ApiResponse<Reservation>> sendToQueue(
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "15") Integer waitMinutes) {
+        Reservation res = reservationRepository.findById(id).orElse(null);
+        if (res == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Reservation not found"));
+        }
+        res.setStatus("Waitlisted");
+        Reservation saved = reservationRepository.save(res);
+
+        if (waitlistEntryRepository != null) {
+            com.sizzlo.entity.WaitlistEntry entry = new com.sizzlo.entity.WaitlistEntry(
+                    saved.getCustomerName() + " (" + saved.getBookingReference() + ")",
+                    saved.getGuests() != null ? saved.getGuests() : 2,
+                    waitMinutes != null ? waitMinutes : 15
+            );
+            entry.setStatus("WAITING");
+            waitlistEntryRepository.save(entry);
+        }
+        return ResponseEntity.ok(ApiResponse.success("Party added to live dining queue", saved));
     }
 
     /**

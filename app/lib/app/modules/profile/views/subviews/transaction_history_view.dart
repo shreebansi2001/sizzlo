@@ -137,10 +137,10 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
             'date': _formatDynamicDate(rawDate),
             'rawDate': _parseDateTime(rawDate),
             'amount': r.bookingAdvance > 0
-                ? '₹${r.bookingAdvance.toStringAsFixed(0)} Cover'
+                ? '₹${r.bookingAdvance.toStringAsFixed(0)} Paid'
                 : (r.status.isNotEmpty ? r.status : 'Confirmed'),
-            'saved': r.vip ? '👑 VIP Priority Seat' : 'Reserved Table',
-            'points': '+99 pts',
+            'saved': r.vip ? '👑 VIP Priority' : 'Table Booking',
+            'points': r.bookingAdvance > 0 ? '₹${r.bookingAdvance.toInt()} Deductible' : r.status,
             'type': 'dining',
             'status': r.status,
           });
@@ -155,13 +155,13 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
             final rawDate = eb.createdAt;
             list.add({
               'title': '${eb.eventTitle} (${eb.guestCount} Guests)',
-              'location': 'Yanki Signature Venue',
+              'location': 'Exclusive Event Pass',
               'date': _formatDynamicDate(rawDate),
               'rawDate': _parseDateTime(rawDate),
               'amount': '₹${eb.totalAmount.toStringAsFixed(0)}',
-              'saved': 'Ref: ${eb.bookingReference}',
-              'points': '+${eb.totalAmount.round()} pts',
-              'type': 'dining',
+              'saved': 'Pass #${eb.bookingReference}',
+              'points': eb.paymentStatus.isNotEmpty ? eb.paymentStatus : 'CONFIRMED',
+              'type': 'event',
               'status': eb.status,
             });
           }
@@ -182,9 +182,9 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
               'date': _formatDynamicDate(rawDate),
               'rawDate': _parseDateTime(rawDate),
               'amount': bi.status,
-              'saved': 'Event: ${bi.eventDate}',
-              'points': 'ODC Lead',
-              'type': 'delivery',
+              'saved': 'Date: ${bi.eventDate}',
+              'points': 'ODC Inquiry',
+              'type': 'dining',
               'status': bi.status,
             });
           }
@@ -205,29 +205,11 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
             'amount': isRedeem ? 'Redeemed' : 'Earned',
             'saved': l.description,
             'points': '${l.points >= 0 ? '+' : ''}${l.points} pts',
-            'type': isRedeem ? 'voucher' : 'dining',
+            'type': 'loyalty',
             'status': isRedeem ? 'Redeemed' : 'Completed',
           });
         }
       } catch (_) {}
-
-      // 6. Active VIP Membership Subscription Record
-      if (member != null && member.isSubscriber) {
-        final rawDate = member.issuedDate.isNotEmpty ? member.issuedDate : null;
-        list.add({
-          'title': '${member.subscriptionTier} VIP Membership',
-          'location': 'House of Yanki Privilege',
-          'date': rawDate != null && rawDate != 'Today'
-              ? _formatDynamicDate(rawDate)
-              : (member.expiryDate.isNotEmpty ? 'Expires ${member.expiryDate}' : 'Active Plan'),
-          'rawDate': _parseDateTime(rawDate),
-          'amount': 'Active',
-          'saved': '12 Dining Vouchers + VIP Table Access',
-          'points': '+5,000 pts',
-          'type': 'voucher',
-          'status': 'Active',
-        });
-      }
 
       // Sort dynamically: newest activities first
       list.sort((a, b) {
@@ -254,8 +236,8 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
   Widget build(BuildContext context) {
     final filtered = _transactions.where((t) {
       if (_selectedFilter == 1) return t['type'] == 'dining';
-      if (_selectedFilter == 2) return t['type'] == 'delivery';
-      if (_selectedFilter == 3) return t['type'] == 'voucher';
+      if (_selectedFilter == 2) return t['type'] == 'event';
+      if (_selectedFilter == 3) return t['type'] == 'loyalty';
       return true;
     }).toList();
 
@@ -286,8 +268,8 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
                 children: [
                   _filterChip(0, 'All Activity'),
                   _filterChip(1, 'Dine-In'),
-                  _filterChip(2, 'Delivery'),
-                  _filterChip(3, 'Vouchers'),
+                  _filterChip(2, 'Exclusive Events'),
+                  _filterChip(3, 'Loyalty Points'),
                 ],
               ),
             ),
@@ -322,7 +304,7 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
                                   color: Colors.white.withOpacity(0.55),
                                   fontSize: 12,
                                   height: 1.4,
-                                ),
+                                 ),
                               ),
                             ),
                             const SizedBox(height: 18),
@@ -350,8 +332,8 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {
                             final t = filtered[index];
-                            final isVoucher = t['type'] == 'voucher';
-                            final isDelivery = t['type'] == 'delivery';
+                            final isEvent = t['type'] == 'event';
+                            final isLoyalty = t['type'] == 'loyalty';
 
                             return Container(
                               margin: const EdgeInsets.only(bottom: 10),
@@ -371,9 +353,9 @@ class _TransactionHistoryViewState extends State<TransactionHistoryView> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          isVoucher
-                              ? Icons.confirmation_number_outlined
-                              : (isDelivery ? Icons.moped_outlined : Icons.restaurant_outlined),
+                          isEvent
+                              ? Icons.celebration_rounded
+                              : (isLoyalty ? Icons.stars_rounded : Icons.restaurant_outlined),
                           size: 20,
                           color: const Color(0xFFDF9E5B),
                         ),

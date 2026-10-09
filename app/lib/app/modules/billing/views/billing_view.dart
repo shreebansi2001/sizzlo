@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../controllers/billing_controller.dart';
+import '../../home/controllers/home_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/sizzlo_button.dart';
 import '../../../routes/app_routes.dart';
@@ -114,7 +115,9 @@ class BillingView extends GetView<BillingController> {
 
           // VIP Lock Banner if user is not subscribed
           Obx(() {
-            if (!controller.isSubscriber.value) {
+            final hasActiveSub = controller.isSubscriber.value ||
+                (Get.isRegistered<HomeController>() && Get.find<HomeController>().member.value.isSubscriber);
+            if (!hasActiveSub) {
               return Container(
                 margin: const EdgeInsets.only(bottom: 20),
                 padding: const EdgeInsets.all(16),
@@ -177,6 +180,135 @@ class BillingView extends GetView<BillingController> {
               );
             }
             return const SizedBox.shrink();
+          }),
+
+          // Pre-filled Table Booking Card (if booked by user)
+          Obx(() {
+            final hasBooking = controller.bookedOutletName.value.isNotEmpty ||
+                controller.linkedBookingReference.value.isNotEmpty;
+            if (!hasBooking) return const SizedBox.shrink();
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E2822), Color(0xFF111714)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF4EE3B8).withOpacity(0.4), width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4EE3B8).withOpacity(0.18),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.bookmark_added_rounded, color: Color(0xFF4EE3B8), size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'BOOKING INFORMATION PRE-FILLED',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF4EE3B8),
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                            Text(
+                              'Details linked from your table reservation',
+                              style: GoogleFonts.inter(fontSize: 11, color: Colors.white60),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.goldAccent.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
+                        ),
+                        child: Text(
+                          '₹${controller.tableAdvanceDeduction.value.toStringAsFixed(0)} DEDUCTION',
+                          style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.goldAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(color: Colors.white12, height: 1),
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.storefront_rounded, color: AppColors.goldAccent, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Branch: ${controller.selectedOutlet.value?.name ?? controller.bookedOutletName.value}',
+                          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (controller.bookedTimeSlot.value.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time_rounded, color: Colors.white70, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Reserved Slot: ${controller.bookedTimeSlot.value}',
+                          style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 12),
+                        ),
+                        if (controller.bookedGuests.value > 0) ...[
+                          const SizedBox(width: 12),
+                          const Icon(Icons.people_outline_rounded, color: Colors.white70, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${controller.bookedGuests.value} Guests',
+                            style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 12),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                  if (controller.linkedBookingReference.value.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.qr_code_rounded, color: AppColors.goldAccent, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Ref: ${controller.linkedBookingReference.value}',
+                          style: GoogleFonts.plusJakartaSans(color: AppColors.goldAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            );
           }),
 
           const SizedBox(height: 4),
@@ -457,77 +589,6 @@ class BillingView extends GetView<BillingController> {
                       ),
                     ],
                   ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 16),
-
-          // Upload Physical POS Receipt Photo (Optional sync to Admin)
-          Obx(() {
-            final hasPhoto = controller.receiptImageUrl.value.isNotEmpty;
-            return Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFF141312),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: hasPhoto ? const Color(0xFF10B981) : const Color(0xFF262320)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: hasPhoto ? const Color(0xFF0E3B32) : const Color(0xFF201B17),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      hasPhoto ? Icons.receipt_long : Icons.camera_alt_outlined,
-                      color: hasPhoto ? const Color(0xFF4EE3B8) : Colors.grey,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          hasPhoto ? 'Bill Receipt Photo Attached' : 'Attach Physical Bill Photo',
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          hasPhoto ? 'Syncs directly to Admin Cashier Desk' : 'Upload photo of paper bill for instant verification',
-                          style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (hasPhoto)
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
-                      onPressed: controller.removeReceiptPhoto,
-                    )
-                  else
-                    ElevatedButton(
-                      onPressed: controller.attachSampleReceiptPhoto,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2C241B),
-                        foregroundColor: AppColors.goldAccent,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: const BorderSide(color: Color(0xFF6B4E22)),
-                        ),
-                      ),
-                      child: Text('Attach', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700)),
-                    ),
                 ],
               ),
             );

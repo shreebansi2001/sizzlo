@@ -74,6 +74,20 @@ class _EventBookingSheetState extends State<EventBookingSheet> {
   }
 
   Future<void> _startCheckout() async {
+    final homeController = Get.find<HomeController>();
+    if (!homeController.member.value.isSubscriber) {
+      if (mounted) Navigator.pop(context);
+      Get.toNamed('/plans');
+      Get.snackbar(
+        'VIP Subscription Required',
+        'Sunday Brunch & Special Dining Experiences are strictly reserved for Sizzlo VIP subscribers. Please upgrade to a VIP plan.',
+        backgroundColor: const Color(0xFF141917),
+        colorText: const Color(0xFFE8B84A),
+        duration: const Duration(seconds: 4),
+      );
+      return;
+    }
+
     final remaining = widget.event.remainingSeats;
     if (remaining < _guestCount) {
       Get.snackbar(

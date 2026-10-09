@@ -239,17 +239,27 @@ class ApiService {
 
     try {
       String url;
-      if (id.isNotEmpty) {
+      final cleanPhone = phone.replaceAll(RegExp(r'\D'), '');
+      if (id.isNotEmpty && cleanPhone.isNotEmpty) {
+        url = '${AppConstants.baseUrl}/members/me?membershipId=${Uri.encodeComponent(id)}&mobile=${Uri.encodeComponent(cleanPhone)}';
+      } else if (id.isNotEmpty) {
         url = '${AppConstants.baseUrl}/members/me?membershipId=${Uri.encodeComponent(id)}';
-      } else if (phone.isNotEmpty) {
-        final clean = phone.replaceAll(RegExp(r'\D'), '');
-        url = '${AppConstants.baseUrl}/members/me?mobile=${Uri.encodeComponent(clean)}';
+      } else if (cleanPhone.isNotEmpty) {
+        url = '${AppConstants.baseUrl}/members/me?mobile=${Uri.encodeComponent(cleanPhone)}';
       } else {
         return MemberModel.defaultProfile();
       }
 
-      final res = await _client.get(Uri.parse(url), headers: _headers)
+      var res = await _client.get(Uri.parse(url), headers: _headers)
           .timeout(const Duration(seconds: 4));
+
+      // Fallback: if membershipId query didn't match but we have phone, retry by phone
+      if (res.statusCode != 200 && cleanPhone.isNotEmpty && id.isNotEmpty) {
+        final phoneUrl = '${AppConstants.baseUrl}/members/me?mobile=${Uri.encodeComponent(cleanPhone)}';
+        res = await _client.get(Uri.parse(phoneUrl), headers: _headers)
+            .timeout(const Duration(seconds: 4));
+      }
+
       if (res.statusCode == 200) {
         final body = json.decode(res.body);
         if (body['success'] == true && body['data'] != null && body['data'] is Map) {

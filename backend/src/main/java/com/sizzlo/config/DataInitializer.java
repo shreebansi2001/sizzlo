@@ -18,6 +18,7 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private LoyaltyTransactionRepository loyaltyTransactionRepository;
     @Autowired private OutletRepository outletRepository;
     @Autowired private FloorTableRepository floorTableRepository;
+    @Autowired private FloorSectionRepository floorSectionRepository;
     @Autowired private WaitlistEntryRepository waitlistEntryRepository;
     @Autowired private ActivityLogRepository activityLogRepository;
     @Autowired private BillSettlementRepository billSettlementRepository;
@@ -68,9 +69,6 @@ public class DataInitializer implements CommandLineRunner {
         }
         if (salesTargetRepository.count() == 0) {
             seedSalesTarget();
-        }
-        if (billSettlementRepository.count() == 0) {
-            seedBillSettlements();
         }
         if (banquetInquiryRepository.count() == 0) {
             seedBanquets();
@@ -350,25 +348,28 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedFloorTables() {
-        int[] seats = {2, 4, 4, 6};
-        String[] states = {"Available", "Reserved", "Occupied", "Cleaning"};
-        String[] guests = {"Rahul Mehta", "Priya Shah", "Kabir Joshi"};
+        if (floorSectionRepository.count() == 0) {
+            floorSectionRepository.save(new FloorSection("Main Dining Floor", "Navrangpura", "Ground level primary dining hall"));
+            floorSectionRepository.save(new FloorSection("Rooftop Terrace", "Navrangpura", "Open-air scenic dining terrace"));
+            floorSectionRepository.save(new FloorSection("VIP Private Dining", "Navrangpura", "Exclusive suite for connoisseurs"));
+        }
 
-        for (int i = 1; i <= 16; i++) {
+        int[] seats = {2, 4, 4, 6};
+        for (int i = 1; i <= 14; i++) {
             FloorTable t = new FloorTable();
             t.setTableNumber(i);
             t.setSeats(seats[(i - 1) % 4]);
-            String state = states[(i - 1) % 4];
-            t.setState(state);
-            if ("Occupied".equals(state) || "Reserved".equals(state)) {
-                t.setGuest(guests[(i - 1) % 3]);
-            }
-            t.setPremium(i == 3 || i == 11);
+            t.setState("Available");
+            t.setOutletName("Navrangpura");
+            t.setFloorSection(i <= 8 ? "Main Dining Floor" : "Rooftop Terrace");
+            t.setPremium(i == 3 || i == 7 || i == 11);
             floorTableRepository.save(t);
         }
 
-        waitlistEntryRepository.save(new WaitlistEntry("Mehta family", 4, 12));
-        waitlistEntryRepository.save(new WaitlistEntry("Aarav Shah", 2, 7));
+        if (waitlistEntryRepository.count() == 0) {
+            waitlistEntryRepository.save(new WaitlistEntry("Mehta family", 4, 12));
+            waitlistEntryRepository.save(new WaitlistEntry("Aarav Shah", 2, 7));
+        }
     }
 
     private void seedRbacData() {
