@@ -474,7 +474,7 @@ public class DataInitializer implements CommandLineRunner {
             adminRoleRepository.save(salesTlRole);
         }
 
-        if (adminUserRepository.findByUsername("salestl@sizzlo.com").isEmpty()) {
+        if (!adminUserRepository.findByUsername("salestl@sizzlo.com").isPresent()) {
             adminUserRepository.save(new AdminUser(
                     "salestl@sizzlo.com",
                     "salestl@sizzlo.com",
