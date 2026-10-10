@@ -18,7 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
-import axios from 'axios';
+import { apiClient as axios } from '../api/client';
 import { Member, SubscriptionPlan } from '../types';
 import { fetchPlans, addOfferToPlan, removeOfferFromPlan, updatePlanDetails } from '../api/client';
 

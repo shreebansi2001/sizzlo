@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient as axios } from '../api/client';
 import { 
   Crown, 
   Calendar, 

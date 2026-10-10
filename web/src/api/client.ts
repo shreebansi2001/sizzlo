@@ -30,6 +30,15 @@ export const apiClient = axios.create({
   timeout: 10000,
 });
 
+apiClient.interceptors.request.use((config) => {
+  if (config.url?.startsWith('/api/')) {
+    config.url = config.url.replace(/^\/api/, '');
+  }
+  return config;
+});
+
+export default apiClient;
+
 export const DEFAULT_PLANS: SubscriptionPlan[] = [
   {
     id: 'classic',

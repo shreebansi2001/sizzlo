@@ -17,7 +17,7 @@ import {
   ChevronRight,
   Armchair
 } from 'lucide-react';
-import axios from 'axios';
+import { apiClient as axios } from '../api/client';
 
 interface FloorTable {
   id: number;

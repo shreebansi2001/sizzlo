@@ -4,7 +4,7 @@ import {
   Settings2, X, Sliders, Check, Info 
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import axios from 'axios';
+import { apiClient as axios } from '../api/client';
 import { Member } from '../types';
 
 const STORAGE_KEY_MILESTONE = 'yanki_loyalty_milestone_target';

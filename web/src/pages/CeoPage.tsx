@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Crown, TrendingUp, DollarSign, Award, Users, Flame } from 'lucide-react';
-import axios from 'axios';
+import { apiClient as axios } from '../api/client';
 import { KPI, Outlet, Member } from '../types';
 
 interface CeoPageProps {

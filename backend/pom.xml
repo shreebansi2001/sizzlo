@@ -89,6 +89,20 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.3.2</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Build-Jdk-Spec>1.8</Build-Jdk-Spec>
+                            <Build-Jdk>1.8.0_501 (Oracle Corporation)</Build-Jdk>
+                            <Created-By>Apache Maven 3.8.8 (Java 1.8.0_501)</Created-By>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

@@ -18,7 +18,7 @@ import {
   Pie, 
   Cell 
 } from 'recharts';
-import axios from 'axios';
+import { apiClient as axios } from '../api/client';
 import { KPI, RevenuePoint, Outlet, Reservation } from '../types';
 import { 
   fallbackKPIs, 

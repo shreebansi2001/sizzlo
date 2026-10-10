@@ -4,7 +4,7 @@ import {
   ChevronLeft, ChevronRight, Award, MessageCircle, Phone, Gift, Plus,
   Download, LayoutGrid, Table as TableIcon
 } from 'lucide-react';
-import axios from 'axios';
+import { apiClient as axios } from '../api/client';
 import { Member, Coupon } from '../types';
 
 interface CustomersPageProps {

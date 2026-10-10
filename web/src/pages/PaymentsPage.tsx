@@ -6,7 +6,7 @@ import {
   ArrowUpRight, Clock, User, Phone, Mail, Award, Crown, Sparkles, CheckCircle2,
   DollarSign, Wallet, Printer, ExternalLink, ArrowDownLeft
 } from 'lucide-react';
-import axios from 'axios';
+import { apiClient as axios } from '../api/client';
 import { 
   fetchPendingBills, 
   approveBill, 
