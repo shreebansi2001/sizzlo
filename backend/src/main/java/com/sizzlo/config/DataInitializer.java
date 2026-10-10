@@ -25,6 +25,10 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private BanquetInquiryRepository banquetInquiryRepository;
     @Autowired private CorporateLeadRepository corporateLeadRepository;
     @Autowired private SalesTargetRepository salesTargetRepository;
+    @Autowired private SalesStaffQuotaRepository salesStaffQuotaRepository;
+    @Autowired private SalesTrainingModuleRepository salesTrainingModuleRepository;
+    @Autowired private SalesRewardContestRepository salesRewardContestRepository;
+    @Autowired private SalesCommissionRecordRepository salesCommissionRecordRepository;
     @Autowired private FeedbackTicketRepository feedbackTicketRepository;
     @Autowired private OutletTimeSlotRepository outletTimeSlotRepository;
     @Autowired private AdminRoleRepository adminRoleRepository;
@@ -64,6 +68,9 @@ public class DataInitializer implements CommandLineRunner {
         if (adminRoleRepository.count() == 0 || adminUserRepository.count() == 0) {
             seedRbacData();
         }
+        if (salesStaffQuotaRepository.count() == 0) {
+            seedSalesEcosystem();
+        }
         cleanupDummyData();
     }
 
@@ -96,15 +103,15 @@ public class DataInitializer implements CommandLineRunner {
 
     private void seedOutlets() {
         // Active Operational Outlets (Chapter 05.1)
-        createOutlet("Yanki Sizzlerr Bodakdev", "Yanki Sizzlerr", "Bodakdev, Ahmedabad", "Ahmedabad", "+91 79 4001 0001", 86.0, 1842, 2840, 412, 4.9, false, "Heritage Sizzler Dining", null, "12:00 PM - 11:30 PM", 23.0373, 72.5120, "https://images.unsplash.com/photo-1544025162-d76694265947?w=800");
-        createOutlet("Yanki Sizzlerr SG Highway", "Yanki Sizzlerr", "SG Highway, Ahmedabad", "Ahmedabad", "+91 79 4001 0002", 64.0, 1124, 2210, 298, 4.8, false, "Signature Dine-in Lounge", null, "12:00 PM - 11:30 PM", 23.0525, 72.5028, "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800");
-        createOutlet("Dough by Yanki CG Road", "Dough by Yanki", "CG Road, Ahmedabad", "Ahmedabad", "+91 79 4001 0003", 49.0, 942, 1180, 524, 4.7, false, "Bakery & Artisanal Café", null, "10:00 AM - 11:00 PM", 23.0298, 72.5567, "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800");
-        createOutlet("House of Yanki Banquets Bopal", "House of Yanki", "South Bopal, Ahmedabad", "Ahmedabad", "+91 79 4001 0004", 95.0, 520, 18400, 140, 4.9, false, "Grand Banquets & Lawns", null, "10:00 AM - 12:00 AM", 23.0135, 72.4645, "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800");
-        createOutlet("Yanki Sizzlerr Vastrapur Lake", "Yanki Sizzlerr", "Opp. Vastrapur Lake, AlphaOne Mall, Vastrapur, Ahmedabad", "Ahmedabad", "+91 98250 12345", 52.0, 820, 2400, 210, 4.9, false, "Lakeview Sizzler & Grill Bar", null, "11:30 AM - 11:30 PM", 23.0402, 72.5309, "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800");
+        createOutlet("Yanki Sizzlerr Bodakdev", "Yanki Sizzlerr", "Bodakdev, Ahmedabad", "Ahmedabad", "+91 79 4001 0001", 0.0, 0, 0, 0, 4.9, false, "Heritage Sizzler Dining", null, "12:00 PM - 11:30 PM", 23.0373, 72.5120, "");
+        createOutlet("Yanki Sizzlerr SG Highway", "Yanki Sizzlerr", "SG Highway, Ahmedabad", "Ahmedabad", "+91 79 4001 0002", 0.0, 0, 0, 0, 4.8, false, "Signature Dine-in Lounge", null, "12:00 PM - 11:30 PM", 23.0525, 72.5028, "");
+        createOutlet("Dough by Yanki CG Road", "Dough by Yanki", "CG Road, Ahmedabad", "Ahmedabad", "+91 79 4001 0003", 0.0, 0, 0, 0, 4.7, false, "Bakery & Artisanal Café", null, "10:00 AM - 11:00 PM", 23.0298, 72.5567, "");
+        createOutlet("House of Yanki Banquets Bopal", "House of Yanki", "South Bopal, Ahmedabad", "Ahmedabad", "+91 79 4001 0004", 0.0, 0, 0, 0, 4.9, false, "Grand Banquets & Lawns", null, "10:00 AM - 12:00 AM", 23.0135, 72.4645, "");
+        createOutlet("Yanki Sizzlerr Vastrapur Lake", "Yanki Sizzlerr", "Opp. Vastrapur Lake, AlphaOne Mall, Vastrapur, Ahmedabad", "Ahmedabad", "+91 98250 12345", 0.0, 0, 0, 0, 4.9, false, "Lakeview Sizzler & Grill Bar", null, "11:30 AM - 11:30 PM", 23.0402, 72.5309, "");
 
         // Upcoming Outlets ("Coming Soon" Pipeline, Chapter 05.2)
-        createOutlet("Yanki Sizzlerr Sindhu Bhavan Road", "Yanki Sizzlerr", "Sindhu Bhavan Road, Ahmedabad", "Ahmedabad", "+91 79 4001 0005", 0.0, 0, 0, 0, 4.9, true, "Rooftop Sizzler Lounge", "Opening December 2026", "Opening Soon", 23.0450, 72.5050, "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800");
-        createOutlet("Dough by Yanki Infocity", "Dough by Yanki", "Infocity, Gandhinagar", "Gandhinagar", "+91 79 4001 0006", 0.0, 0, 0, 0, 4.8, true, "Express Café & Bakery", "Opening January 2027", "Opening Soon", 23.1890, 72.6280, "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800");
+        createOutlet("Yanki Sizzlerr Sindhu Bhavan Road", "Yanki Sizzlerr", "Sindhu Bhavan Road, Ahmedabad", "Ahmedabad", "+91 79 4001 0005", 0.0, 0, 0, 0, 4.9, true, "Rooftop Sizzler Lounge", "Opening December 2026", "Opening Soon", 23.0450, 72.5050, "");
+        createOutlet("Dough by Yanki Infocity", "Dough by Yanki", "Infocity, Gandhinagar", "Gandhinagar", "+91 79 4001 0006", 0.0, 0, 0, 0, 4.8, true, "Express Café & Bakery", "Opening January 2027", "Opening Soon", 23.1890, 72.6280, "");
     }
 
     private void createOutlet(String name, String brand, String address, String city, String phone, Double rev, Integer members, Integer abv, Integer coupons, Double rating, Boolean upcoming, String concept, String launchDate, String hours, Double lat, Double lng, String img) {
@@ -411,9 +418,35 @@ public class DataInitializer implements CommandLineRunner {
                     true
             );
             adminRoleRepository.save(floorCaptain);
+
+            // Level 2B: Sales Team Lead (Sales Head)
+            AdminRole salesTlRole = new AdminRole(
+                    "SALES_TL",
+                    "Sales Team Lead (Head of Sales)",
+                    "Target distribution, multi-branch sales operations, B2B deal approvals and training",
+                    2,
+                    "DASHBOARD_VIEW,SALES_MANAGE,CUSTOMERS_MANAGE,MEMBERSHIPS_MANAGE,EVENTS_MANAGE",
+                    true
+            );
+            adminRoleRepository.save(salesTlRole);
         }
 
-        if (adminUserRepository.count() == 0) {
+        if (adminUserRepository.findByUsername("salestl@sizzlo.com").isEmpty()) {
+            adminUserRepository.save(new AdminUser(
+                    "salestl@sizzlo.com",
+                    "salestl@sizzlo.com",
+                    "Pooja Sharma (Sales Head / TL)",
+                    "+91 98250 99000",
+                    "admin123",
+                    "SALES_TL",
+                    "Sales Team Lead (Head of Sales)",
+                    "All Branches",
+                    null,
+                    "SYSTEM"
+            ));
+        }
+
+        if (adminUserRepository.count() <= 1) {
             // 1. Super Admin (Owner)
             adminUserRepository.save(new AdminUser(
                     "owner@sizzlo.com",
@@ -498,5 +531,215 @@ public class DataInitializer implements CommandLineRunner {
                     "manager.bodakdev@sizzlo.com"
             ));
         }
+    }
+
+    private void seedSalesEcosystem() {
+        // 1. Master Sales Target
+        SalesTarget target = salesTargetRepository.findByTargetMonth("OCT-2026").orElseGet(SalesTarget::new);
+        target.setTargetMonth("OCT-2026");
+        target.setMasterTargetRevenue(2000000.0);
+        target.setFloorTargetRevenue(1000000.0);
+        target.setCorporateTargetRevenue(1000000.0);
+        target.setFloorAchievedRevenue(640000.0);
+        target.setCorporateAchievedRevenue(600000.0);
+        target.setFloorPlansSold(64);
+        target.setCorporatePlansSold(50);
+        target.setPayrollApproved(false);
+        salesTargetRepository.save(target);
+
+        // 2. Staff Quotas
+        // Floor Captain 1 - Bodakdev
+        SalesStaffQuota q1 = new SalesStaffQuota();
+        q1.setStaffId("CAPT-01");
+        q1.setStaffName("Rajesh Sharma");
+        q1.setRoleType("FLOOR");
+        q1.setBranchName("Yanki Sizzlerr Bodakdev");
+        q1.setTargetMonth("OCT-2026");
+        q1.setTargetRevenue(350000.0);
+        q1.setTargetCount(35);
+        q1.setAchievedRevenue(280000.0);
+        q1.setAchievedCount(28);
+        q1.setCalculatedCommission(11200.0);
+        q1.setBonusEarned(1500.0);
+        salesStaffQuotaRepository.save(q1);
+
+        // Floor Captain 2 - Dough SBR
+        SalesStaffQuota q2 = new SalesStaffQuota();
+        q2.setStaffId("CAPT-02");
+        q2.setStaffName("Deepak Joshi");
+        q2.setRoleType("FLOOR");
+        q2.setBranchName("Dough by Yanki SBR");
+        q2.setTargetMonth("OCT-2026");
+        q2.setTargetRevenue(350000.0);
+        q2.setTargetCount(35);
+        q2.setAchievedRevenue(240000.0);
+        q2.setAchievedCount(24);
+        q2.setCalculatedCommission(9600.0);
+        q2.setBonusEarned(0.0);
+        salesStaffQuotaRepository.save(q2);
+
+        // Floor Captain 3 - Prahladnagar (Lagging Rep)
+        SalesStaffQuota q3 = new SalesStaffQuota();
+        q3.setStaffId("CAPT-03");
+        q3.setStaffName("Amit Shah");
+        q3.setRoleType("FLOOR");
+        q3.setBranchName("Yanki Sizzlerr Prahladnagar");
+        q3.setTargetMonth("OCT-2026");
+        q3.setTargetRevenue(300000.0);
+        q3.setTargetCount(30);
+        q3.setAchievedRevenue(120000.0);
+        q3.setAchievedCount(12);
+        q3.setCalculatedCommission(4800.0);
+        q3.setBonusEarned(0.0);
+        salesStaffQuotaRepository.save(q3);
+
+        // Corporate BDE 1 - Senior BDE
+        SalesStaffQuota q4 = new SalesStaffQuota();
+        q4.setStaffId("BDE-01");
+        q4.setStaffName("Priya Patel");
+        q4.setRoleType("CORPORATE");
+        q4.setBranchName("Corporate HQ");
+        q4.setTargetMonth("OCT-2026");
+        q4.setTargetRevenue(600000.0);
+        q4.setTargetCount(4);
+        q4.setAchievedRevenue(450000.0);
+        q4.setAchievedCount(3);
+        q4.setCalculatedCommission(22500.0);
+        q4.setBonusEarned(2500.0);
+        salesStaffQuotaRepository.save(q4);
+
+        // Corporate BDE 2 - Junior BDE (Lagging Rep)
+        SalesStaffQuota q5 = new SalesStaffQuota();
+        q5.setStaffId("BDE-02");
+        q5.setStaffName("Vikram Singhania");
+        q5.setRoleType("CORPORATE");
+        q5.setBranchName("Corporate HQ");
+        q5.setTargetMonth("OCT-2026");
+        q5.setTargetRevenue(400000.0);
+        q5.setTargetCount(3);
+        q5.setAchievedRevenue(150000.0);
+        q5.setAchievedCount(1);
+        q5.setCalculatedCommission(4500.0);
+        q5.setBonusEarned(0.0);
+        salesStaffQuotaRepository.save(q5);
+
+        // 3. Corporate Leads Pipeline
+        if (corporateLeadRepository.count() == 0) {
+            CorporateLead l1 = new CorporateLead();
+            l1.setCompanyName("Zydus Lifesciences Ltd");
+            l1.setGstNumber("24AAACZ1234F1Z8");
+            l1.setContactPerson("Ramesh Varma (HR VP)");
+            l1.setContactMobile("+91 98250 11223");
+            l1.setEmail("ramesh.v@zyduslife.com");
+            l1.setEmployeeCount(30);
+            l1.setPlanTier("SIGNATURE");
+            l1.setDealValue(300000.0);
+            l1.setStage("CLOSED_WON");
+            l1.setAssignedBdeId("BDE-01");
+            l1.setAssignedBdeName("Priya Patel");
+            l1.setTlApproved(true);
+            corporateLeadRepository.save(l1);
+
+            CorporateLead l2 = new CorporateLead();
+            l2.setCompanyName("Adani Enterprise Group");
+            l2.setGstNumber("24AAACA5678B1Z2");
+            l2.setContactPerson("Sneha Roy (Admin Lead)");
+            l2.setContactMobile("+91 98251 44556");
+            l2.setEmail("sneha.roy@adani.com");
+            l2.setEmployeeCount(30);
+            l2.setPlanTier("ELITE");
+            l2.setDealValue(450000.0);
+            l2.setStage("NEGOTIATION");
+            l2.setAssignedBdeId("BDE-01");
+            l2.setAssignedBdeName("Priya Patel");
+            corporateLeadRepository.save(l2);
+
+            CorporateLead l3 = new CorporateLead();
+            l3.setCompanyName("Torrent Pharmaceuticals");
+            l3.setGstNumber("24AAACT9988C1Z4");
+            l3.setContactPerson("Kunal Parekh (Procurement)");
+            l3.setContactMobile("+91 98252 77889");
+            l3.setEmail("kunal.p@torrentpharma.com");
+            l3.setEmployeeCount(20);
+            l3.setPlanTier("SIGNATURE");
+            l3.setDealValue(200000.0);
+            l3.setStage("PROPOSAL_SENT");
+            l3.setAssignedBdeId("BDE-02");
+            l3.setAssignedBdeName("Vikram Singhania");
+            corporateLeadRepository.save(l3);
+        }
+
+        // 4. Contests & Rewards
+        if (salesRewardContestRepository.count() == 0) {
+            SalesRewardContest c1 = new SalesRewardContest();
+            c1.setContestTitle("Diwali Gold Rush 2026: Elite Tier Sellers");
+            c1.setDescription("Highest total volume of Elite ₹15,000 passes sold before Oct 31 receives ₹15,000 cash bonus + Trophy.");
+            c1.setChannel("ALL");
+            c1.setPrizeReward("₹15,000 Cash Bonus & Yanki Gold Trophy");
+            c1.setTargetCriteria("Sell min 15 Elite VIP memberships in October");
+            c1.setStartDate(LocalDate.of(2026, 10, 1));
+            c1.setEndDate(LocalDate.of(2026, 10, 31));
+            c1.setStatus("ACTIVE");
+            salesRewardContestRepository.save(c1);
+
+            SalesRewardContest c2 = new SalesRewardContest();
+            c2.setContestTitle("Floor Captain Weekend Blitzkrieg");
+            c2.setDescription("Top converting Captain on dining tables on Friday-Sunday wins instant ₹7,500 bonus.");
+            c2.setChannel("FLOOR");
+            c2.setPrizeReward("₹7,500 Cash Payout + Sizzlo Badge");
+            c2.setTargetCriteria("Max table signups across Bodakdev & SBR");
+            c2.setStartDate(LocalDate.of(2026, 10, 9));
+            c2.setEndDate(LocalDate.of(2026, 10, 12));
+            c2.setStatus("ACTIVE");
+            salesRewardContestRepository.save(c2);
+        }
+
+        // 5. Training Modules
+        if (salesTrainingModuleRepository.count() == 0) {
+            SalesTrainingModule t1 = new SalesTrainingModule();
+            t1.setTitle("30-Second Table Pitch for Diners: Overcoming 'Let me think'");
+            t1.setCategory("FLOOR_PITCH");
+            t1.setTargetAudience("FLOOR_CAPTAINS");
+            t1.setDescription("Proven restaurant table opening and closing scripts to enroll patrons before the bill arrives.");
+            t1.setContentHtml("<h4>The 3-Step Table Enrollment Formula</h4><p>1. <strong>The Savings Hook:</strong> 'Sir, on your bill of ₹3,400 today, our Signature Membership instantly saves you ₹340 today + gives you 1 Free 50% Couple Dinner coupon worth ₹1,500!'</p><p>2. <strong>Address Hesitation:</strong> 'You don't need any credit card lock-in. We settle it right on your table POS in 30 seconds.'</p><p>3. <strong>The 250k Points Renewal Rule:</strong> 'Dine regularly and your next year membership is 100% free!'</p>");
+            t1.setDurationMinutes(15);
+            salesTrainingModuleRepository.save(t1);
+
+            SalesTrainingModule t2 = new SalesTrainingModule();
+            t2.setTitle("Corporate Wellness Dining Package: B2B Pitch & GST Offset");
+            t2.setCategory("CORPORATE_PITCH");
+            t2.setTargetAudience("CORPORATE_BDES");
+            t2.setDescription("Guide for BDEs pitching HR directors and Procurement teams on employee dining perks with GST input tax credit.");
+            t2.setContentHtml("<h4>Executive Corporate Pitch Script</h4><p>Highlight 100% business expense claimability with 18% GST input credit, employee retention benefits, and direct VIP reservation routing at Yanki Sizzlerr and House of Yanki Banquets.</p>");
+            t2.setDurationMinutes(20);
+            salesTrainingModuleRepository.save(t2);
+        }
+
+        // 6. Commission Records
+        if (salesCommissionRecordRepository.count() == 0) {
+            createCommRecord("TXN-OCT-001", "CAPT-01", "Rajesh Sharma", "FLOOR", "Yanki Sizzlerr Bodakdev", "+91 98250 11001", "Kavita Shah", "SIGNATURE", 10000.0, 400.0);
+            createCommRecord("TXN-OCT-002", "CAPT-01", "Rajesh Sharma", "FLOOR", "Yanki Sizzlerr Bodakdev", "+91 98250 11002", "Harshil Patel", "ELITE", 15000.0, 700.0);
+            createCommRecord("TXN-OCT-003", "CAPT-02", "Deepak Joshi", "FLOOR", "Dough by Yanki SBR", "+91 98250 11003", "Siddharth Joshi", "SIGNATURE", 10000.0, 400.0);
+            createCommRecord("TXN-OCT-004", "CAPT-03", "Amit Shah", "FLOOR", "Yanki Sizzlerr Prahladnagar", "+91 98250 11004", "Mayur Desai", "CLASSIC", 5000.0, 200.0);
+            createCommRecord("TXN-OCT-CORP-01", "BDE-01", "Priya Patel", "CORPORATE", "Corporate HQ", "+91 98250 11223", "Zydus Lifesciences", "SIGNATURE", 300000.0, 15000.0);
+        }
+    }
+
+    private void createCommRecord(String txnId, String staffId, String staffName, String channel, String branch, String mobile, String customer, String tier, Double fee, Double comm) {
+        SalesCommissionRecord r = new SalesCommissionRecord();
+        r.setTransactionId(txnId);
+        r.setStaffId(staffId);
+        r.setStaffName(staffName);
+        r.setChannel(channel);
+        r.setBranchName(branch);
+        r.setCustomerMobile(mobile);
+        r.setCustomerName(customer);
+        r.setPlanTier(tier);
+        r.setPlanFee(fee);
+        r.setCommissionAmount(comm);
+        r.setTargetMonth("OCT-2026");
+        r.setPayoutStatus("APPROVED");
+        r.setCreatedAt(LocalDateTime.now().minusDays(2));
+        salesCommissionRecordRepository.save(r);
     }
 }

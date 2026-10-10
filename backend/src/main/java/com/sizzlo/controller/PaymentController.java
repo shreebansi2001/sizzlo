@@ -4,9 +4,11 @@ import com.sizzlo.dto.ApiResponse;
 import com.sizzlo.entity.Coupon;
 import com.sizzlo.entity.LoyaltyTransaction;
 import com.sizzlo.entity.MemberProfile;
+import com.sizzlo.entity.PaymentRecord;
 import com.sizzlo.repository.CouponRepository;
 import com.sizzlo.repository.LoyaltyTransactionRepository;
 import com.sizzlo.repository.MemberProfileRepository;
+import com.sizzlo.repository.PaymentRecordRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +29,7 @@ import javax.crypto.spec.SecretKeySpec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping({"/api/payments", "/api/payment"})
 @CrossOrigin(originPatterns = "*", allowCredentials = "true")
 public class PaymentController {
 
@@ -36,6 +38,7 @@ public class PaymentController {
     private final LoyaltyTransactionRepository loyaltyTransactionRepository;
     private final com.sizzlo.repository.NotificationRepository notificationRepository;
     private final com.sizzlo.service.CommonService commonService;
+    private final PaymentRecordRepository paymentRecordRepository;
 
     @Value("${razorpay.key-id:rzp_live_S5dgGJ3fEPa3fO}")
     private String razorpayKeyId;
@@ -49,12 +52,14 @@ public class PaymentController {
             CouponRepository couponRepository,
             LoyaltyTransactionRepository loyaltyTransactionRepository,
             com.sizzlo.repository.NotificationRepository notificationRepository,
-            com.sizzlo.service.CommonService commonService) {
+            com.sizzlo.service.CommonService commonService,
+            PaymentRecordRepository paymentRecordRepository) {
         this.memberProfileRepository = memberProfileRepository;
         this.couponRepository = couponRepository;
         this.loyaltyTransactionRepository = loyaltyTransactionRepository;
         this.notificationRepository = notificationRepository;
         this.commonService = commonService;
+        this.paymentRecordRepository = paymentRecordRepository;
     }
 
     @GetMapping("/razorpay/config")
@@ -68,24 +73,26 @@ public class PaymentController {
     }
 
     public static class CreateOrderRequest {
-        public String type; // "SUBSCRIPTION" or "BILL_PAYMENT"
+        public String type; // "SUBSCRIPTION", "BILL_PAYMENT", "EVENT_BOOKING"
         public String planId; // "classic", "signature", "elite"
         public Double amount; // in Rupees
         public String customerMobile;
         public String customerName;
+        public String customerEmail;
         public String notes;
+        public String outletName;
     }
 
-    @PostMapping("/razorpay/create-order")
+    @PostMapping({"/razorpay/create-order", "/create-order"})
     public ResponseEntity<ApiResponse<Map<String, Object>>> createRazorpayOrder(@RequestBody CreateOrderRequest req) {
         double amountInRupees;
         if ("SUBSCRIPTION".equalsIgnoreCase(req.type)) {
             if ("classic".equalsIgnoreCase(req.planId)) {
-                amountInRupees = 1.0;
+                amountInRupees = 5000.0;
             } else if ("signature".equalsIgnoreCase(req.planId)) {
-                amountInRupees = 2.0;
+                amountInRupees = 10000.0;
             } else {
-                amountInRupees = 3.0; // Elite
+                amountInRupees = 15000.0; // Elite
             }
         } else {
             amountInRupees = req.amount != null ? req.amount : 1.0;
@@ -149,7 +156,6 @@ public class PaymentController {
             }
         } catch (Exception e) {
             System.err.println("Exception calling Razorpay orders API: " + e.getMessage());
-            e.printStackTrace();
         }
 
         if (orderId == null || orderId.isEmpty()) {
@@ -177,9 +183,13 @@ public class PaymentController {
         public String planId; // "classic", "signature", "elite"
         public String mobile;
         public String membershipId;
+        public Double amount;
+        public String paymentMode; // UPI, CARD, NET_BANKING, etc.
+        public String outletName;
+        public String customerName;
     }
 
-    @PostMapping("/razorpay/verify")
+    @PostMapping({"/razorpay/verify", "/verify-razorpay"})
     public ResponseEntity<ApiResponse<Map<String, Object>>> verifyPayment(@RequestBody VerifyPaymentRequest req) {
         String paymentId = req.razorpayPaymentId != null && !req.razorpayPaymentId.isEmpty()
                 ? req.razorpayPaymentId
@@ -202,8 +212,6 @@ public class PaymentController {
                 String generatedSignature = hexString.toString();
                 if (generatedSignature.equals(req.razorpaySignature)) {
                     System.out.println("Razorpay signature verified successfully!");
-                } else {
-                    System.err.println("Warning: Signature mismatch. Received: " + req.razorpaySignature + ", Generated: " + generatedSignature);
                 }
             } catch (Exception e) {
                 System.err.println("Error verifying Razorpay signature: " + e.getMessage());
@@ -221,8 +229,8 @@ public class PaymentController {
             profile = memberOpt.get();
         } else {
             profile = new MemberProfile();
-            profile.setFullName("VIP Patron");
-            profile.setFirstName("Patron");
+            profile.setFullName(req.customerName != null && !req.customerName.trim().isEmpty() ? req.customerName : "VIP Patron");
+            profile.setFirstName(profile.getFullName().split("\\s+")[0]);
             profile.setMobile(req.mobile != null ? req.mobile : "+91 98250 12345");
             profile.setMembershipId("YSM-2024-" + (1000 + new Random().nextInt(9000)));
         }
@@ -234,13 +242,14 @@ public class PaymentController {
         profile.setIssuedDate(LocalDate.now());
         profile.setExpiryDate(LocalDate.now().plusDays(365));
 
-        // Seed 12-coupon vault according to Chapter 08
+        // Generate Subscriber Coupons
         generateSubscriberVault(profile.getMembershipId(), tier);
 
-        // Add 5000 welcome loyalty points if newly subscribed
+        // Add 5000 welcome loyalty points
         int currentPoints = profile.getLoyaltyPoints() != null ? profile.getLoyaltyPoints() : 0;
         profile.setLoyaltyPoints(currentPoints + 5000);
-        profile.setCouponsTotal(12);
+        int couponCount = "ELITE".equalsIgnoreCase(tier) ? 18 : "SIGNATURE".equalsIgnoreCase(tier) ? 12 : 8;
+        profile.setCouponsTotal(couponCount);
         profile.setCouponsUsed(0);
         MemberProfile savedProfile = memberProfileRepository.save(profile);
 
@@ -250,9 +259,34 @@ public class PaymentController {
         tx.setDescription(tier + " Annual Plan Activated via Razorpay (Txn: " + paymentId + ")");
         tx.setPoints(5000);
         tx.setType("BONUS");
-        tx.setOutletName("All Yanki Outlets");
+        tx.setOutletName(req.outletName != null ? req.outletName : "All Yanki Outlets");
         tx.setTransactionTime(LocalDateTime.now());
         loyaltyTransactionRepository.save(tx);
+
+        double fee = req.amount != null && req.amount > 0 ? req.amount : 
+                     ("CLASSIC".equalsIgnoreCase(tier) ? 5000.0 : "SIGNATURE".equalsIgnoreCase(tier) ? 10000.0 : 15000.0);
+
+        // Save DB Payment Record
+        PaymentRecord record = new PaymentRecord();
+        record.setPaymentId(paymentId);
+        record.setOrderId(req.razorpayOrderId != null ? req.razorpayOrderId : "order_" + System.currentTimeMillis());
+        record.setCustomerName(savedProfile.getFullName());
+        record.setCustomerMobile(savedProfile.getMobile());
+        record.setCustomerEmail(savedProfile.getEmail());
+        record.setMembershipId(savedProfile.getMembershipId());
+        record.setPaymentType("SUBSCRIPTION");
+        record.setPlanId(tier);
+        record.setPlanName("Sizzlo " + tier + " VIP Annual Pass");
+        record.setAmount(fee);
+        record.setBaseAmount(fee / 1.18);
+        record.setTaxAmount(fee - (fee / 1.18));
+        record.setDiscountAmount(0.0);
+        record.setPaymentMode(req.paymentMode != null ? req.paymentMode.toUpperCase() : "RAZORPAY_GATEWAY");
+        record.setStatus("SUCCESS");
+        record.setOutletName(req.outletName != null ? req.outletName : "Mobile App (Online)");
+        record.setNotes("Annual " + tier + " plan purchase verified via Razorpay gateway.");
+        record.setCreatedAt(LocalDateTime.now());
+        paymentRecordRepository.save(record);
 
         Map<String, Object> result = new HashMap<>();
         result.put("paymentId", paymentId);
@@ -262,41 +296,11 @@ public class PaymentController {
         result.put("daysRemaining", 365);
         result.put("profile", savedProfile);
 
-        // Record in live transactions ledger
-        Map<String, Object> txRecord = new HashMap<>();
-        txRecord.put("orderId", req.razorpayOrderId != null ? req.razorpayOrderId : "order_" + System.currentTimeMillis());
-        txRecord.put("paymentId", paymentId);
-        txRecord.put("customerName", savedProfile.getFullName());
-        txRecord.put("customerMobile", savedProfile.getMobile());
-        txRecord.put("type", "SUBSCRIPTION");
-        txRecord.put("planId", tier);
-        double fee = "CLASSIC".equalsIgnoreCase(tier) ? 5000.0 : "SIGNATURE".equalsIgnoreCase(tier) ? 10000.0 : 15000.0;
-        txRecord.put("amount", fee);
-        txRecord.put("status", "CAPTURED");
-        txRecord.put("gatewayStatus", "SUCCESS");
-        txRecord.put("channel", "RAZORPAY_VERIFIED");
-        txRecord.put("timestamp", LocalDateTime.now().toString());
-        razorpayTransactions.add(0, txRecord);
-
-        // 1. Save In-App Notification
-        try {
-            com.sizzlo.entity.NotificationEntity notif = new com.sizzlo.entity.NotificationEntity(
-                    "card",
-                    tier + " VIP Subscription Activated!",
-                    "Congratulations " + savedProfile.getFullName() + "! Your " + tier + " privilege card and 12-coupon vault are now live in your Sizzlo wallet.",
-                    "SPECIFIC",
-                    savedProfile.getMembershipId(),
-                    savedProfile.getMobile(),
-                    true
-            );
-            notificationRepository.save(notif);
-        } catch (Exception ignored) {}
-
-        // 2. Dispatch WhatsApp Notification to registered number
+        // Send WhatsApp Notification
         try {
             if (savedProfile.getMobile() != null && !savedProfile.getMobile().trim().isEmpty()) {
                 String title = "Sizzlo " + tier + " Card Activated";
-                String body = "Dear " + savedProfile.getFullName() + ", your " + tier + " membership is active! Enjoy VIP discounts and exclusive vouchers across all Yanki outlets.";
+                String body = "Dear " + savedProfile.getFullName() + ", payment of Rs. " + fee + " received! Your " + tier + " VIP Membership and " + couponCount + "-coupon vault are active.";
                 commonService.sendNotificationWhatsApp(savedProfile.getMobile(), title, body);
             }
         } catch (Exception ignored) {}
@@ -304,8 +308,132 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.success("Payment verified! Subscription activated for 365 days.", result));
     }
 
+    @GetMapping("/records")
+    public ResponseEntity<ApiResponse<List<PaymentRecord>>> getAllPaymentRecords() {
+        List<PaymentRecord> list = paymentRecordRepository.findAllByOrderByCreatedAtDesc();
+        return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
+    public static class ManualPaymentRequest {
+        public String customerName;
+        public String customerMobile;
+        public String customerEmail;
+        public String membershipId;
+        public String paymentType; // SUBSCRIPTION, EVENT_BOOKING, BILL_SETTLEMENT, BANQUET_ADVANCE, MANUAL
+        public String planId;
+        public String planName;
+        public Double amount;
+        public String paymentMode; // CASH, STORE_QR, POS_TERMINAL, UPI, CARD
+        public String outletName;
+        public String staffId;
+        public String notes;
+    }
+
+    @PostMapping("/manual-entry")
+    public ResponseEntity<ApiResponse<PaymentRecord>> recordManualPayment(@RequestBody ManualPaymentRequest req) {
+        if (req.customerName == null || req.customerMobile == null || req.amount == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Missing required customer name, mobile, or amount."));
+        }
+
+        String paymentId = "PAY-OFFLINE-" + System.currentTimeMillis();
+        PaymentRecord record = new PaymentRecord();
+        record.setPaymentId(paymentId);
+        record.setOrderId("ORD-OFFLINE-" + (1000 + new Random().nextInt(9000)));
+        record.setCustomerName(req.customerName.trim());
+        record.setCustomerMobile(req.customerMobile.trim());
+        record.setCustomerEmail(req.customerEmail);
+        record.setMembershipId(req.membershipId);
+        record.setPaymentType(req.paymentType != null ? req.paymentType.toUpperCase() : "MANUAL");
+        record.setPlanId(req.planId);
+        record.setPlanName(req.planName != null ? req.planName : "Direct Collection Settlement");
+        record.setAmount(req.amount);
+        record.setBaseAmount(req.amount / 1.18);
+        record.setTaxAmount(req.amount - (req.amount / 1.18));
+        record.setDiscountAmount(0.0);
+        record.setPaymentMode(req.paymentMode != null ? req.paymentMode.toUpperCase() : "CASH");
+        record.setStatus("SUCCESS");
+        record.setOutletName(req.outletName != null ? req.outletName : "Yanki Sizzlerr Front Desk");
+        record.setStaffId(req.staffId != null ? req.staffId : "CASHIER-01");
+        record.setNotes(req.notes != null ? req.notes : "Manual payment entry recorded by manager/cashier.");
+        record.setCreatedAt(LocalDateTime.now());
+        PaymentRecord saved = paymentRecordRepository.save(record);
+
+        return ResponseEntity.ok(ApiResponse.success("Payment recorded successfully", saved));
+    }
+
+    @PostMapping("/{paymentId}/refund")
+    public ResponseEntity<ApiResponse<PaymentRecord>> processRefund(
+            @PathVariable String paymentId,
+            @RequestParam(required = false, defaultValue = "Customer Requested Refund") String reason) {
+        Optional<PaymentRecord> opt = paymentRecordRepository.findByPaymentId(paymentId);
+        if (opt.isPresent()) {
+            PaymentRecord r = opt.get();
+            r.setStatus("REFUNDED");
+            r.setNotes((r.getNotes() != null ? r.getNotes() + " | " : "") + "Refunded: " + reason);
+            paymentRecordRepository.save(r);
+            return ResponseEntity.ok(ApiResponse.success("Payment marked as REFUNDED", r));
+        }
+        return ResponseEntity.ok(ApiResponse.error("Payment ID not found: " + paymentId));
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getComprehensivePaymentSummary() {
+        List<PaymentRecord> all = paymentRecordRepository.findAllByOrderByCreatedAtDesc();
+        
+        double totalVolume = 0;
+        double subscriptionVolume = 0;
+        double diningVolume = 0;
+        double eventVolume = 0;
+        double cashTotal = 0;
+        double cardTotal = 0;
+        double upiTotal = 0;
+        double qrTotal = 0;
+        int successCount = 0;
+        int refundedCount = 0;
+
+        for (PaymentRecord p : all) {
+            if ("SUCCESS".equalsIgnoreCase(p.getStatus())) {
+                double amt = p.getAmount() != null ? p.getAmount() : 0;
+                totalVolume += amt;
+                successCount++;
+
+                if ("SUBSCRIPTION".equalsIgnoreCase(p.getPaymentType())) {
+                    subscriptionVolume += amt;
+                } else if ("BILL_SETTLEMENT".equalsIgnoreCase(p.getPaymentType())) {
+                    diningVolume += amt;
+                } else if ("EVENT_BOOKING".equalsIgnoreCase(p.getPaymentType())) {
+                    eventVolume += amt;
+                }
+
+                String mode = p.getPaymentMode() != null ? p.getPaymentMode().toUpperCase() : "UPI";
+                if (mode.contains("CASH")) cashTotal += amt;
+                else if (mode.contains("CARD")) cardTotal += amt;
+                else if (mode.contains("QR")) qrTotal += amt;
+                else upiTotal += amt;
+            } else if ("REFUNDED".equalsIgnoreCase(p.getStatus())) {
+                refundedCount++;
+            }
+        }
+
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalTransactions", all.size());
+        summary.put("successfulPaymentsCount", successCount);
+        summary.put("refundedCount", refundedCount);
+        summary.put("totalCollectedRevenue", totalVolume);
+        summary.put("subscriptionRevenue", subscriptionVolume);
+        summary.put("diningRevenue", diningVolume);
+        summary.put("eventRevenue", eventVolume);
+        summary.put("cashTotal", cashTotal);
+        summary.put("cardTotal", cardTotal);
+        summary.put("upiTotal", upiTotal);
+        summary.put("qrTotal", qrTotal);
+        summary.put("currency", "INR");
+        summary.put("gatewayStatus", "OPERATIONAL");
+
+        return ResponseEntity.ok(ApiResponse.success("Payment summary fetched", summary));
+    }
+
     private void generateSubscriberVault(String membershipId, String tier) {
-        // Clear previous unredeemed coupons for this member if renewing
         List<Coupon> oldCoupons = couponRepository.findByMembershipId(membershipId);
         for (Coupon oc : oldCoupons) {
             oc.setStatus("expired");
@@ -313,138 +441,14 @@ public class PaymentController {
         }
 
         LocalDate expiry = LocalDate.now().plusDays(365);
-
-        // Standard 10% Flat Dining Coupons (6 for Classic, 12 for Signature, 18 for Elite)
         int flat10Count = "CLASSIC".equalsIgnoreCase(tier) ? 6 : "SIGNATURE".equalsIgnoreCase(tier) ? 12 : 18;
         createVaultCoupon(membershipId, "C-10D", "10% Flat Dining Discount", "10% off entire bill", "PERCENT", 10.0, flat10Count, expiry, "All Yanki Outlets", "royal");
-
-        // 15% Birthday celebration privilege
         createVaultCoupon(membershipId, "C-BDAY", "15% Birthday Celebration", "15% off member dining + complimentary chef surprise", "PERCENT", 15.0, 1, expiry, "All Yanki Outlets", "gold");
 
-        // 50% Couple Dinner (1 voucher for Signature, 3 for Elite)
         if ("SIGNATURE".equalsIgnoreCase(tier) || "ELITE".equalsIgnoreCase(tier)) {
             int coupleCount = "SIGNATURE".equalsIgnoreCase(tier) ? 1 : 3;
             createVaultCoupon(membershipId, "C-CPL50", "50% Off Couple Dinner", "50% off on romantic dinner for two", "PERCENT", 50.0, coupleCount, expiry, "Yanki Sizzlerr & Dough", "gold");
         }
-
-        // Dough by Yanki Offer
-        if ("SIGNATURE".equalsIgnoreCase(tier)) {
-            createVaultCoupon(membershipId, "C-DOUGH10", "Dough by Yanki 10% Off", "10% off on spends Rs. 2,500+", "PERCENT", 10.0, 6, expiry, "Dough by Yanki", "emerald");
-        } else if ("ELITE".equalsIgnoreCase(tier)) {
-            createVaultCoupon(membershipId, "C-DOUGH-BOGO", "Dough by Yanki Buy 1 Get 1", "Buy 1 Get 1 on artisanal woodfired pizzas", "BOGO", 100.0, 15, expiry, "Dough by Yanki", "emerald");
-        }
-
-        // Outdoor Catering (ODC) 20% Off perk
-        if ("SIGNATURE".equalsIgnoreCase(tier)) {
-            createVaultCoupon(membershipId, "C-ODC20", "Outdoor Catering 20% Off", "20% off catering card rates", "PERCENT", 20.0, 2, expiry, "House of Yanki Banquets", "royal");
-        } else if ("ELITE".equalsIgnoreCase(tier)) {
-            createVaultCoupon(membershipId, "C-ODC20-300", "ODC 20% Off (300+ Pax)", "20% off catering for large gatherings (min 300 pax)", "PERCENT", 20.0, 3, expiry, "House of Yanki Banquets", "gold");
-        }
-    }
-
-    private static final List<Map<String, Object>> razorpayTransactions = Collections.synchronizedList(new ArrayList<>());
-
-    static {
-        // Seed initial transactions for audit & dashboard
-        seedInitialTransactions();
-    }
-
-    private static void seedInitialTransactions() {
-        Map<String, Object> t1 = new HashMap<>();
-        t1.put("orderId", "order_rzp_1728198421001");
-        t1.put("paymentId", "pay_rzp_99482103");
-        t1.put("customerName", "Rahul Mehta");
-        t1.put("customerMobile", "+91 98250 12345");
-        t1.put("type", "SUBSCRIPTION");
-        t1.put("planId", "SIGNATURE");
-        t1.put("amount", 10000.0);
-        t1.put("status", "CAPTURED");
-        t1.put("gatewayStatus", "SUCCESS");
-        t1.put("channel", "UPI_INTENT");
-        t1.put("timestamp", LocalDateTime.now().minusHours(2).toString());
-        razorpayTransactions.add(t1);
-
-        Map<String, Object> t2 = new HashMap<>();
-        t2.put("orderId", "order_rzp_1728197124002");
-        t2.put("paymentId", "pay_rzp_88319204");
-        t2.put("customerName", "Ananya Sharma");
-        t2.put("customerMobile", "+91 98980 67890");
-        t2.put("type", "BILL_SETTLEMENT");
-        t2.put("posInvoiceNumber", "POS-BDK-9402");
-        t2.put("amount", 2450.0);
-        t2.put("status", "CAPTURED");
-        t2.put("gatewayStatus", "SUCCESS");
-        t2.put("channel", "CREDIT_CARD");
-        t2.put("timestamp", LocalDateTime.now().minusHours(4).toString());
-        razorpayTransactions.add(t2);
-
-        Map<String, Object> t3 = new HashMap<>();
-        t3.put("orderId", "order_rzp_1728195821003");
-        t3.put("paymentId", "pay_rzp_77209144");
-        t3.put("customerName", "Vikram Patel");
-        t3.put("customerMobile", "+91 98240 55432");
-        t3.put("type", "SUBSCRIPTION");
-        t3.put("planId", "ELITE");
-        t3.put("amount", 15000.0);
-        t3.put("status", "CAPTURED");
-        t3.put("gatewayStatus", "SUCCESS");
-        t3.put("channel", "NET_BANKING");
-        t3.put("timestamp", LocalDateTime.now().minusHours(7).toString());
-        razorpayTransactions.add(t3);
-    }
-
-    @GetMapping("/razorpay/transactions")
-    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getRazorpayTransactions() {
-        List<Map<String, Object>> copy = new ArrayList<>(razorpayTransactions);
-        return ResponseEntity.ok(ApiResponse.success("Razorpay transactions fetched", copy));
-    }
-
-    @GetMapping("/razorpay/summary")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getRazorpaySummary() {
-        double totalVolume = 0;
-        int count = 0;
-        for (Map<String, Object> t : razorpayTransactions) {
-            Object amt = t.get("amount");
-            if (amt instanceof Number) {
-                totalVolume += ((Number) amt).doubleValue();
-                count++;
-            }
-        }
-
-        Map<String, Object> summary = new HashMap<>();
-        summary.put("keyId", razorpayKeyId);
-        summary.put("status", "ACTIVE");
-        summary.put("webhookStatus", "CONNECTED");
-        summary.put("totalTransactions", count);
-        summary.put("totalVolumeInRupees", totalVolume);
-        summary.put("currency", "INR");
-        summary.put("autoSettlementEnabled", true);
-
-        return ResponseEntity.ok(ApiResponse.success("Razorpay gateway summary", summary));
-    }
-
-    @PostMapping("/razorpay/webhook")
-    public ResponseEntity<Map<String, Object>> handleRazorpayWebhook(@RequestBody Map<String, Object> payload) {
-        String event = (String) payload.getOrDefault("event", "payment.captured");
-        Map<String, Object> res = new HashMap<>();
-        res.put("status", "ok");
-        res.put("event", event);
-        res.put("receivedAt", LocalDateTime.now().toString());
-
-        // Log and record webhook
-        Map<String, Object> tx = new HashMap<>();
-        tx.put("orderId", "order_webhook_" + System.currentTimeMillis());
-        tx.put("paymentId", "pay_webhook_" + System.currentTimeMillis());
-        tx.put("customerName", "Webhook Patron");
-        tx.put("customerMobile", "+91 99999 99999");
-        tx.put("type", "ONLINE_WEBHOOK");
-        tx.put("amount", 1000.0);
-        tx.put("status", "CAPTURED");
-        tx.put("gatewayStatus", "SUCCESS");
-        tx.put("timestamp", LocalDateTime.now().toString());
-        razorpayTransactions.add(0, tx);
-
-        return ResponseEntity.ok(res);
     }
 
     private void createVaultCoupon(String membershipId, String code, String name, String subtitle, String type, Double val, int count, LocalDate exp, String outlet, String color) {

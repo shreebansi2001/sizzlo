@@ -41,16 +41,6 @@ interface ReservationsPageProps {
   onRefresh?: () => void;
 }
 
-const peakHoursData = [
-  { h: '12 PM', v: 34 },
-  { h: '1 PM', v: 52 },
-  { h: '2 PM', v: 28 },
-  { h: '7 PM', v: 76 },
-  { h: '8 PM', v: 118 },
-  { h: '9 PM', v: 94 },
-  { h: '10 PM', v: 42 }
-];
-
 interface UpcomingItem {
   dbId: string | number;
   id: string;
@@ -261,6 +251,23 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
       playZomatoAlertSound();
     }
   };
+
+  const peakHoursData = React.useMemo(() => {
+    const hours = ['12 PM', '1 PM', '2 PM', '7 PM', '8 PM', '9 PM', '10 PM'];
+    const map = new Map<string, number>();
+    hours.forEach(h => map.set(h, 0));
+
+    upcomingList.forEach(r => {
+      const timeStr = r.date || '';
+      for (const h of hours) {
+        if (timeStr.toLowerCase().includes(h.toLowerCase().replace(' ', '')) || timeStr.toLowerCase().includes(h.toLowerCase())) {
+          map.set(h, (map.get(h) || 0) + (r.guests || 1));
+        }
+      }
+    });
+
+    return hours.map(h => ({ h, v: map.get(h) || 0 }));
+  }, [upcomingList]);
 
   // Settle Table Assignment
   const handleConfirmAssignTable = async (e: React.FormEvent) => {

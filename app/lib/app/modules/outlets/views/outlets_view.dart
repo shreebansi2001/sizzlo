@@ -353,6 +353,29 @@ class OutletsView extends GetView<OutletsController> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
+                        onPressed: () => controller.openMenu(outlet),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF5A3E1B)),
+                          backgroundColor: const Color(0x1AD4AF37),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.restaurant_menu_rounded, size: 14, color: AppColors.goldAccent),
+                              const SizedBox(width: 4),
+                              Text('Menu', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: OutlinedButton(
                         onPressed: () => controller.openDirections(outlet),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFF3B2E1E)),
@@ -372,7 +395,7 @@ class OutletsView extends GetView<OutletsController> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => controller.callOutlet(outlet.contactNumber),
@@ -388,13 +411,13 @@ class OutletsView extends GetView<OutletsController> {
                             children: [
                               const Icon(Icons.call_rounded, size: 14, color: Color(0xFF4EE3B8)),
                               const SizedBox(width: 4),
-                              Text('Call Desk', style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
+                              Text('Call', style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => Get.toNamed(AppRoutes.RESERVATIONS),
@@ -405,7 +428,7 @@ class OutletsView extends GetView<OutletsController> {
                         ),
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: Text('Book Table', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black)),
+                          child: Text('Book', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black)),
                         ),
                       ),
                     ),

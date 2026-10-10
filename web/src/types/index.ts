@@ -224,3 +224,162 @@ export interface AdminAuthUser {
   permissions: string[];
 }
 
+export interface PaymentRecord {
+  id: number;
+  paymentId: string;
+  orderId?: string;
+  customerName: string;
+  customerMobile: string;
+  customerEmail?: string;
+  membershipId?: string;
+  paymentType: 'SUBSCRIPTION' | 'EVENT_BOOKING' | 'BILL_SETTLEMENT' | 'BANQUET_ADVANCE' | 'MANUAL';
+  planId?: string;
+  planName?: string;
+  amount: number;
+  baseAmount?: number;
+  discountAmount?: number;
+  taxAmount?: number;
+  paymentMode: 'UPI' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'NET_BANKING' | 'RAZORPAY_GATEWAY' | 'CASH' | 'STORE_QR' | 'POS_TERMINAL' | string;
+  status: 'SUCCESS' | 'PENDING' | 'FAILED' | 'REFUNDED';
+  outletName?: string;
+  staffId?: string;
+  invoiceNumber?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface SalesTarget {
+  id?: number;
+  targetMonth: string;
+  masterTargetRevenue: number;
+  floorTargetRevenue: number;
+  corporateTargetRevenue: number;
+  floorAchievedRevenue: number;
+  corporateAchievedRevenue: number;
+  floorPlansSold: number;
+  corporatePlansSold: number;
+  payrollApproved?: boolean;
+  payrollApprovedAt?: string;
+}
+
+export interface SalesStaffQuota {
+  id?: number;
+  staffId: string;
+  staffName: string;
+  roleType: 'FLOOR' | 'CORPORATE';
+  branchName: string;
+  targetMonth: string;
+  targetRevenue: number;
+  targetCount: number;
+  achievedRevenue: number;
+  achievedCount: number;
+  calculatedCommission: number;
+  bonusEarned: number;
+}
+
+export interface CorporateLead {
+  id?: number;
+  companyName: string;
+  gstNumber?: string;
+  contactPerson: string;
+  contactMobile: string;
+  email?: string;
+  employeeCount: number;
+  planTier: 'CLASSIC' | 'SIGNATURE' | 'ELITE' | string;
+  dealValue: number;
+  stage: 'NEW_LEAD' | 'PROPOSAL_SENT' | 'NEGOTIATION' | 'CLOSED_WON' | 'LOST' | string;
+  assignedBdeId?: string;
+  assignedBdeName?: string;
+  tlApproved?: boolean;
+  notes?: string;
+  createdAt?: string;
+  closedAt?: string;
+}
+
+export interface SalesTrainingModule {
+  id?: number;
+  title: string;
+  category: 'FLOOR_PITCH' | 'CORPORATE_B2B' | 'OBJECTION_HANDLING' | 'BANQUET_ODC' | 'PRODUCT_KNOWLEDGE' | string;
+  targetAudience: 'ALL' | 'FLOOR' | 'CORPORATE' | string;
+  description: string;
+  contentHtml?: string;
+  videoUrl?: string;
+  durationMinutes: number;
+  createdByName: string;
+  active: boolean;
+  createdAt?: string;
+}
+
+export interface SalesRewardContest {
+  id?: number;
+  contestTitle: string;
+  description: string;
+  channel: 'ALL' | 'FLOOR' | 'CORPORATE' | string;
+  prizeReward: string;
+  targetCriteria: string;
+  startDate?: string;
+  endDate?: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'DRAFT' | string;
+  winnerStaffId?: string;
+  winnerStaffName?: string;
+  winnerPrizeAwarded?: boolean;
+  createdAt?: string;
+}
+
+export interface SalesCommissionRecord {
+  id?: number;
+  transactionId: string;
+  customerMobile: string;
+  customerName: string;
+  planTier: string;
+  planFee: number;
+  channel: 'FLOOR' | 'CORPORATE';
+  staffId: string;
+  staffName: string;
+  branchName: string;
+  commissionAmount: number;
+  bonusMultiplier: number;
+  payoutStatus: 'PENDING' | 'APPROVED' | 'PAID';
+  targetMonth: string;
+  createdAt: string;
+}
+
+export interface IncentiveLedger {
+  targetMonth: string;
+  floorTargetRevenue: number;
+  floorAchievedRevenue: number;
+  floorAchievementPct: number;
+  floorPlansSold: number;
+  floorIncentiveTotal: number;
+  corporateTargetRevenue: number;
+  corporateAchievedRevenue: number;
+  corporateAchievementPct: number;
+  corporateIncentiveTotal: number;
+  masterTargetRevenue: number;
+  masterAchievedRevenue: number;
+  masterAchievementPct: number;
+  tlOverrideCommission: number;
+  totalPayrollIncentive: number;
+  isPayrollApproved: boolean;
+  payrollApprovedAt?: string;
+}
+
+export interface BanquetInquiry {
+  id: number;
+  customerName: string;
+  customerMobile: string;
+  email?: string;
+  eventCategory: string;
+  eventDate: string;
+  eventShift: string;
+  estimatedPax: number;
+  customRequirements?: string;
+  status: string;
+  assignedTo?: string;
+  membershipTier?: string;
+  zeroPointsAcknowledged: boolean;
+  createdAt: string;
+}
+
+
+

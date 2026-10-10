@@ -322,6 +322,39 @@ public class RbacController {
             if (("admin".equals(uname) || "admin@sizzlo.com".equals(uname)) && "admin123".equals(req.password.trim())) {
                 userOpt = userRepository.findByUsername("owner@sizzlo.com");
             }
+            // Auto-provision Sales TL if missing
+            else if ("salestl@sizzlo.com".equals(uname) && "admin123".equals(req.password.trim())) {
+                AdminUser tl = new AdminUser(
+                        "salestl@sizzlo.com",
+                        "salestl@sizzlo.com",
+                        "Pooja Sharma (Sales Head / TL)",
+                        "+91 98250 99000",
+                        "admin123",
+                        "SALES_TL",
+                        "Sales Team Lead (Head of Sales)",
+                        "All Branches",
+                        null,
+                        "SYSTEM"
+                );
+                tl.setCustomPermissions("DASHBOARD_VIEW,SALES_MANAGE,CUSTOMERS_MANAGE,MEMBERSHIPS_MANAGE,EVENTS_MANAGE,PAYMENTS_SETTLE_APPROVE,LOYALTY_MANAGE");
+                userOpt = Optional.of(userRepository.save(tl));
+            }
+            // Auto-provision Owner if missing
+            else if ("owner@sizzlo.com".equals(uname) && "admin123".equals(req.password.trim())) {
+                AdminUser owner = new AdminUser(
+                        "owner@sizzlo.com",
+                        "owner@sizzlo.com",
+                        "Rajesh Patel (Group Owner)",
+                        "+91 98250 11000",
+                        "admin123",
+                        "SUPER_ADMIN",
+                        "Owner (Super Admin)",
+                        "All Branches",
+                        null,
+                        "SYSTEM"
+                );
+                userOpt = Optional.of(userRepository.save(owner));
+            }
         }
 
         if (!userOpt.isPresent() || !userOpt.get().getPassword().equals(req.password.trim())) {

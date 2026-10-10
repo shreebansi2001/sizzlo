@@ -229,6 +229,21 @@ public class MemberServiceImpl implements MemberService {
         if (updatedProfile.getSpouseBirthday() != null) existing.setSpouseBirthday(updatedProfile.getSpouseBirthday());
         if (updatedProfile.getAnniversaryDate() != null) existing.setAnniversaryDate(updatedProfile.getAnniversaryDate());
         if (updatedProfile.getIsMarried() != null) existing.setIsMarried(updatedProfile.getIsMarried());
+
+        // Admin editable operational fields
+        if (updatedProfile.getMembershipType() != null) existing.setMembershipType(updatedProfile.getMembershipType());
+        if (updatedProfile.getSubscriptionTier() != null) existing.setSubscriptionTier(updatedProfile.getSubscriptionTier());
+        if (updatedProfile.getStatus() != null) existing.setStatus(updatedProfile.getStatus());
+        if (updatedProfile.getIssuedDate() != null) existing.setIssuedDate(updatedProfile.getIssuedDate());
+        if (updatedProfile.getExpiryDate() != null) existing.setExpiryDate(updatedProfile.getExpiryDate());
+        if (updatedProfile.getLoyaltyPoints() != null) existing.setLoyaltyPoints(updatedProfile.getLoyaltyPoints());
+        if (updatedProfile.getLoyaltyGoal() != null) existing.setLoyaltyGoal(updatedProfile.getLoyaltyGoal());
+        if (updatedProfile.getTotalSavings() != null) existing.setTotalSavings(updatedProfile.getTotalSavings());
+        if (updatedProfile.getCouponsTotal() != null) existing.setCouponsTotal(updatedProfile.getCouponsTotal());
+        if (updatedProfile.getCouponsUsed() != null) existing.setCouponsUsed(updatedProfile.getCouponsUsed());
+        if (updatedProfile.getPendingDues() != null) existing.setPendingDues(updatedProfile.getPendingDues());
+        if (updatedProfile.getTotalSpend() != null) existing.setTotalSpend(updatedProfile.getTotalSpend());
+
         MemberProfile saved = memberProfileRepository.save(existing);
         return sanitizeProfile(saved);
     }
