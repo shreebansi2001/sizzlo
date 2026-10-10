@@ -1605,7 +1605,6 @@ class HomeView extends GetView<HomeController> {
       );
     });
   }
-
   Widget _buildActiveInquiryTrackerCard(BuildContext context) {
     return Obx(() {
       final inq = controller.latestInquiry.value;
