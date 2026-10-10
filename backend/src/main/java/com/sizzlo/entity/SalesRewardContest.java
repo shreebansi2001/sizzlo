@@ -12,13 +12,14 @@ public class SalesRewardContest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "contest_title")
+    @Column(name = "contest_title", nullable = false)
     private String contestTitle;
 
-    @Column(length = 1000)
+    @Column(length = 2000)
     private String description;
 
-    private String channel;
+    @Column(nullable = false)
+    private String channel; // ALL, FLOOR, CORPORATE
 
     @Column(name = "prize_reward")
     private String prizeReward;
@@ -32,7 +33,8 @@ public class SalesRewardContest {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    private String status;
+    @Column(nullable = false)
+    private String status; // ACTIVE, COMPLETED, DRAFT
 
     @Column(name = "winner_staff_id")
     private String winnerStaffId;
@@ -41,10 +43,17 @@ public class SalesRewardContest {
     private String winnerStaffName;
 
     @Column(name = "winner_prize_awarded")
-    private Boolean winnerPrizeAwarded = false;
+    private Boolean winnerPrizeAwarded;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (status == null) status = "ACTIVE";
+        if (winnerPrizeAwarded == null) winnerPrizeAwarded = false;
+    }
 
     public SalesRewardContest() {}
 

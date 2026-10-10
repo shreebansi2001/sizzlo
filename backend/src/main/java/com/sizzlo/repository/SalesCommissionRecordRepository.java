@@ -8,6 +8,5 @@ import java.util.List;
 
 @Repository
 public interface SalesCommissionRecordRepository extends JpaRepository<SalesCommissionRecord, Long> {
-    List<SalesCommissionRecord> findByTargetMonth(String targetMonth);
     List<SalesCommissionRecord> findAllByOrderByCreatedAtDesc();
 }

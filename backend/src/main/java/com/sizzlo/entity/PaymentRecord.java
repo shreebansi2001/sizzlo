@@ -11,16 +11,16 @@ public class PaymentRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "payment_id")
+    @Column(name = "payment_id", unique = true, nullable = false)
     private String paymentId;
 
     @Column(name = "order_id")
     private String orderId;
 
-    @Column(name = "customer_name")
+    @Column(name = "customer_name", nullable = false)
     private String customerName;
 
-    @Column(name = "customer_mobile")
+    @Column(name = "customer_mobile", nullable = false)
     private String customerMobile;
 
     @Column(name = "customer_email")
@@ -29,8 +29,8 @@ public class PaymentRecord {
     @Column(name = "membership_id")
     private String membershipId;
 
-    @Column(name = "payment_type")
-    private String paymentType;
+    @Column(name = "payment_type", nullable = false)
+    private String paymentType; // SUBSCRIPTION, EVENT_BOOKING, BILL_SETTLEMENT, BANQUET_ADVANCE, MANUAL
 
     @Column(name = "plan_id")
     private String planId;
@@ -38,21 +38,23 @@ public class PaymentRecord {
     @Column(name = "plan_name")
     private String planName;
 
+    @Column(nullable = false)
     private Double amount;
 
     @Column(name = "base_amount")
     private Double baseAmount;
 
-    @Column(name = "discount_amount")
-    private Double discountAmount;
-
     @Column(name = "tax_amount")
     private Double taxAmount;
 
-    @Column(name = "payment_mode")
-    private String paymentMode;
+    @Column(name = "discount_amount")
+    private Double discountAmount;
 
-    private String status;
+    @Column(name = "payment_mode", nullable = false)
+    private String paymentMode; // UPI, CASH, CARD, STORE_QR, POS_TERMINAL
+
+    @Column(nullable = false)
+    private String status; // SUCCESS, PENDING, FAILED, REFUNDED
 
     @Column(name = "outlet_name")
     private String outletName;
@@ -67,7 +69,14 @@ public class PaymentRecord {
     private String notes;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (discountAmount == null) discountAmount = 0.0;
+        if (status == null) status = "SUCCESS";
+    }
 
     public PaymentRecord() {}
 
@@ -107,11 +116,11 @@ public class PaymentRecord {
     public Double getBaseAmount() { return baseAmount; }
     public void setBaseAmount(Double baseAmount) { this.baseAmount = baseAmount; }
 
-    public Double getDiscountAmount() { return discountAmount; }
-    public void setDiscountAmount(Double discountAmount) { this.discountAmount = discountAmount; }
-
     public Double getTaxAmount() { return taxAmount; }
     public void setTaxAmount(Double taxAmount) { this.taxAmount = taxAmount; }
+
+    public Double getDiscountAmount() { return discountAmount; }
+    public void setDiscountAmount(Double discountAmount) { this.discountAmount = discountAmount; }
 
     public String getPaymentMode() { return paymentMode; }
     public void setPaymentMode(String paymentMode) { this.paymentMode = paymentMode; }

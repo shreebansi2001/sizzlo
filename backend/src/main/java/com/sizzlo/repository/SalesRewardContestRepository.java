@@ -8,6 +8,5 @@ import java.util.List;
 
 @Repository
 public interface SalesRewardContestRepository extends JpaRepository<SalesRewardContest, Long> {
-    List<SalesRewardContest> findByStatus(String status);
     List<SalesRewardContest> findAllByOrderByCreatedAtDesc();
 }

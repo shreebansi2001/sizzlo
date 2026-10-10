@@ -9,6 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, Long> {
-    List<PaymentRecord> findAllByOrderByCreatedAtDesc();
     Optional<PaymentRecord> findByPaymentId(String paymentId);
+    List<PaymentRecord> findAllByOrderByCreatedAtDesc();
 }

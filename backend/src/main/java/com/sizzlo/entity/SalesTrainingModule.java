@@ -11,14 +11,16 @@ public class SalesTrainingModule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String title;
 
-    private String category;
+    @Column(nullable = false)
+    private String category; // FLOOR_PITCH, CORPORATE_PITCH, OBJECTION_HANDLING, etc.
 
     @Column(name = "target_audience")
-    private String targetAudience;
+    private String targetAudience; // ALL, FLOOR_CAPTAINS, CORPORATE_BDES
 
-    @Column(length = 1000)
+    @Column(length = 2000)
     private String description;
 
     @Lob
@@ -34,10 +36,17 @@ public class SalesTrainingModule {
     @Column(name = "created_by_name")
     private String createdByName;
 
-    private Boolean active = true;
+    @Column(nullable = false)
+    private Boolean active;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (active == null) active = true;
+    }
 
     public SalesTrainingModule() {}
 

@@ -10,20 +10,20 @@ public class SalesStaffQuota {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "staff_id")
+    @Column(name = "staff_id", nullable = false)
     private String staffId;
 
-    @Column(name = "staff_name")
+    @Column(name = "staff_name", nullable = false)
     private String staffName;
 
-    @Column(name = "role_type")
-    private String roleType;
+    @Column(name = "role_type", nullable = false)
+    private String roleType; // FLOOR, CORPORATE
 
     @Column(name = "branch_name")
     private String branchName;
 
-    @Column(name = "target_month")
-    private String targetMonth;
+    @Column(name = "target_month", nullable = false)
+    private String targetMonth; // e.g. "OCT-2026"
 
     @Column(name = "target_revenue")
     private Double targetRevenue;
@@ -42,6 +42,14 @@ public class SalesStaffQuota {
 
     @Column(name = "bonus_earned")
     private Double bonusEarned;
+
+    @PrePersist
+    public void prePersist() {
+        if (achievedRevenue == null) achievedRevenue = 0.0;
+        if (achievedCount == null) achievedCount = 0;
+        if (calculatedCommission == null) calculatedCommission = 0.0;
+        if (bonusEarned == null) bonusEarned = 0.0;
+    }
 
     public SalesStaffQuota() {}
 

@@ -8,6 +8,5 @@ import java.util.List;
 
 @Repository
 public interface SalesTrainingModuleRepository extends JpaRepository<SalesTrainingModule, Long> {
-    List<SalesTrainingModule> findByTargetAudience(String targetAudience);
     List<SalesTrainingModule> findByActiveTrueOrderByCreatedAtDesc();
 }
