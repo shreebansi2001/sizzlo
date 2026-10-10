@@ -81,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
       group: 'Operations',
       items: [
         { id: 'coupons', label: 'Voucher Manager', icon: Ticket, perm: 'COUPONS_MANAGE' },
-        { id: 'reservations', label: 'Calendar & Bookings', icon: Calendar, badge: 'Live', perm: 'RESERVATIONS_MANAGE' },
+        { id: 'reservations', label: 'Reservations & Calendar', icon: CalendarCheck, badge: 'Live', perm: 'RESERVATIONS_MANAGE' },
         { id: 'floor', label: 'Floor & Tables', icon: Armchair, perm: 'FLOOR_TABLES_MANAGE' },
         { id: 'outlets', label: 'Venues & Outlets', icon: Store, perm: 'OUTLETS_MANAGE' },
         { id: 'events', label: 'Events & Brunches', icon: PartyPopper, perm: 'EVENTS_MANAGE' },

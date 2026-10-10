@@ -215,7 +215,7 @@ export function App() {
       case 'coupons':
         return { title: 'Voucher Management', subtitle: 'Create, issue and track dining privilege vouchers' };
       case 'reservations':
-        return { title: 'Interactive Calendar & Bookings', subtitle: 'Monthly calendar view, branch scoping, 2-guest couple tables, and host settlement desk' };
+        return { title: 'Reservations & Booking Calendar', subtitle: 'Live table reservations, banquet bookings, monthly calendar, and branch filters' };
       case 'floor':
         return { title: 'Floor & Tables', subtitle: 'Live seating capacity, dining table states and waitlist queue' };
       case 'outlets':
