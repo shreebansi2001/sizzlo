@@ -61,6 +61,7 @@ import {
 
 interface ReservationsPageProps {
   reservations: Reservation[];
+  defaultViewMode?: 'calendar' | 'desk' | 'ledger';
   onRefresh?: () => void;
 }
 
@@ -150,7 +151,7 @@ export interface BanquetBookingItem {
 
 export const DEFAULT_BANQUET_EVENTS: BanquetBookingItem[] = [];
 
-export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations: initialReservations, onRefresh }) => {
+export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations: initialReservations, defaultViewMode = 'desk', onRefresh }) => {
   const mapReservations = (list: Reservation[]): UpcomingItem[] => {
     const mapped: UpcomingItem[] = list.map(r => ({
       dbId: r.id,
@@ -238,7 +239,13 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
   const [selectedBanquetBooking, setSelectedBanquetBooking] = useState<BanquetBookingItem | null>(null);
 
   // Interactive Calendar State ("what is today and which branch, history & future")
-  const [viewMode, setViewMode] = useState<'calendar' | 'desk' | 'ledger'>('calendar');
+  const [viewMode, setViewMode] = useState<'calendar' | 'desk' | 'ledger'>(defaultViewMode);
+
+  useEffect(() => {
+    if (defaultViewMode) {
+      setViewMode(defaultViewMode);
+    }
+  }, [defaultViewMode]);
   const [currentCalMonth, setCurrentCalMonth] = useState<Date>(new Date());
   const [selectedCalDate, setSelectedCalDate] = useState<Date | null>(new Date());
   const [calBranchFilter, setCalBranchFilter] = useState<string>('All');

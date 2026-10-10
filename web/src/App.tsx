@@ -38,6 +38,7 @@ const TAB_PERMISSIONS: Record<string, string> = {
   coupons: 'COUPONS_MANAGE',
   payments: 'PAYMENTS_SETTLE_APPROVE',
   reservations: 'RESERVATIONS_MANAGE',
+  calendar: 'RESERVATIONS_MANAGE',
   floor: 'FLOOR_TABLES_MANAGE',
   activity: 'DASHBOARD_VIEW',
   redemption: 'REDEMPTION_VALIDATE',
@@ -144,7 +145,7 @@ export function App() {
     const validTabs = [
       'dashboard', 'insights', 'ceo', 'customers', 'payments', 
       'sales', 'sales_performance', 'sales_floor', 'sales_corporate', 'sales_training', 'sales_payroll',
-      'memberships', 'loyalty', 'coupons', 'reservations', 'floor',
+      'memberships', 'loyalty', 'coupons', 'reservations', 'calendar', 'floor',
       'outlets', 'events', 'banquets', 'marketing', 'staff', 'feedback'
     ];
     return validTabs.includes(hash) ? hash : 'dashboard';
@@ -215,7 +216,9 @@ export function App() {
       case 'coupons':
         return { title: 'Voucher Management', subtitle: 'Create, issue and track dining privilege vouchers' };
       case 'reservations':
-        return { title: 'Reservations & Booking Calendar', subtitle: 'Live table reservations, banquet bookings, monthly calendar, and branch filters' };
+        return { title: 'Live Reservations & Settlement Desk', subtitle: 'Real-time table booking inquiries, live chime alerts, guest seating & table allocation' };
+      case 'calendar':
+        return { title: 'Interactive Booking Calendar', subtitle: 'Monthly calendar view, branch scoping, couple/family filters, past history & future schedule' };
       case 'floor':
         return { title: 'Floor & Tables', subtitle: 'Live seating capacity, dining table states and waitlist queue' };
       case 'outlets':
@@ -336,7 +339,20 @@ export function App() {
             <PaymentsPage payments={[]} />
           )}
           {currentTab === 'reservations' && (
-            <ReservationsPage key={`reservations-${refreshKey}`} reservations={[]} onRefresh={handleRefresh} />
+            <ReservationsPage 
+              key={`reservations-${refreshKey}`} 
+              reservations={[]} 
+              defaultViewMode="desk"
+              onRefresh={handleRefresh} 
+            />
+          )}
+          {currentTab === 'calendar' && (
+            <ReservationsPage 
+              key={`calendar-${refreshKey}`} 
+              reservations={[]} 
+              defaultViewMode="calendar"
+              onRefresh={handleRefresh} 
+            />
           )}
           {currentTab === 'floor' && (
             <FloorPage key={`floor-${refreshKey}`} />
