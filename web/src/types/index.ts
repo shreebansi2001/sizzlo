@@ -57,6 +57,7 @@ export interface Reservation {
   advanceDeducted?: boolean;
   posSettlementId?: number;
   tableAssigned?: string;
+  createdAt?: string;
 }
 
 export interface OutletTimeSlot {
@@ -118,6 +119,20 @@ export interface EventItem {
   guests: number;
   value: number;
   status: 'Confirmed' | 'Pipeline';
+}
+
+export interface BanquetHall {
+  id: number | string;
+  name: string;
+  outletName: string;
+  minCapacity: number;
+  maxCapacity: number;
+  ratePerPlate?: number;
+  slotRentalPrice?: number;
+  supportedSessions?: string; // e.g. "Morning,Evening,Full Day"
+  amenities?: string;
+  status: 'Active' | 'Maintenance' | 'Inactive';
+  imageUrl?: string;
 }
 
 export interface PendingPayment {

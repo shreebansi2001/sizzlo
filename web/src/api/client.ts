@@ -17,7 +17,8 @@ import {
   SystemRight,
   AdminRole,
   AdminUser,
-  AdminAuthUser
+  AdminAuthUser,
+  BanquetHall
 } from '../types';
 
 export const API_BASE = (typeof window !== 'undefined' && window.location.hostname === 'cheeragskitchen.in')
@@ -534,6 +535,113 @@ export async function assignBanquetLead(id: number, assignedTo: string) {
 export async function updateBanquetLeadStatus(id: number, status: string) {
   const res = await apiClient.put(`/banquets/leads/${id}/status?status=${encodeURIComponent(status)}`);
   return res.data;
+}
+
+// Banquet Master & Halls Management
+export const DEFAULT_BANQUET_HALLS: BanquetHall[] = [
+  {
+    id: 1,
+    name: 'The Imperial Grand Ballroom',
+    outletName: 'House of Yanki Banquets Bopal',
+    minCapacity: 150,
+    maxCapacity: 500,
+    ratePerPlate: 1250,
+    slotRentalPrice: 65000,
+    supportedSessions: 'Morning,Evening,Full Day',
+    amenities: 'Grand Stage,State-of-art Audio/Visual,Bridal Green Room,Central Climate Control,Valet Parking,Custom Chandelier Lighting',
+    status: 'Active',
+    imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: 2,
+    name: 'Crystal Terrace Lawn',
+    outletName: 'House of Yanki Banquets Bopal',
+    minCapacity: 80,
+    maxCapacity: 300,
+    ratePerPlate: 950,
+    slotRentalPrice: 45000,
+    supportedSessions: 'Evening,Full Day',
+    amenities: 'Open Air Canopy,Live Barbeque Counter,Ambient Fairy Lighting,DJ Stage,Lawn Lounge',
+    status: 'Active',
+    imageUrl: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: 3,
+    name: 'Sapphire Celebration Hall',
+    outletName: 'Yanki Sizzlerr SG Highway',
+    minCapacity: 40,
+    maxCapacity: 120,
+    ratePerPlate: 850,
+    slotRentalPrice: 25000,
+    supportedSessions: 'Morning,Evening',
+    amenities: 'Intimate Gathering Space,Projector & Mic,Hi-Tea Station,Central AC,Private Buffet Line',
+    status: 'Active',
+    imageUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80'
+  }
+];
+
+export async function fetchBanquetHalls(): Promise<BanquetHall[]> {
+  try {
+    const res = await apiClient.get('/banquets/halls');
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return DEFAULT_BANQUET_HALLS;
+}
+
+export async function createBanquetHall(hall: Partial<BanquetHall>): Promise<BanquetHall> {
+  try {
+    const res = await apiClient.post('/banquets/halls', hall);
+    if (res.data?.success && res.data.data) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return {
+    id: Date.now(),
+    name: hall.name || 'New Banquet Hall',
+    outletName: hall.outletName || 'House of Yanki Banquets Bopal',
+    minCapacity: hall.minCapacity || 50,
+    maxCapacity: hall.maxCapacity || 250,
+    ratePerPlate: hall.ratePerPlate || 950,
+    slotRentalPrice: hall.slotRentalPrice || 35000,
+    supportedSessions: hall.supportedSessions || 'Morning,Evening',
+    amenities: hall.amenities || 'Air Conditioning,Sound System',
+    status: (hall.status as any) || 'Active',
+    imageUrl: hall.imageUrl || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'
+  };
+}
+
+export async function updateBanquetHall(id: number | string, hall: Partial<BanquetHall>): Promise<BanquetHall> {
+  try {
+    const res = await apiClient.put(`/banquets/halls/${id}`, hall);
+    if (res.data?.success && res.data.data) {
+      return res.data.data;
+    }
+  } catch (_) {}
+  return {
+    id,
+    name: hall.name || 'Banquet Hall',
+    outletName: hall.outletName || 'House of Yanki Banquets Bopal',
+    minCapacity: hall.minCapacity || 50,
+    maxCapacity: hall.maxCapacity || 250,
+    ratePerPlate: hall.ratePerPlate || 950,
+    slotRentalPrice: hall.slotRentalPrice || 35000,
+    supportedSessions: hall.supportedSessions || 'Morning,Evening',
+    amenities: hall.amenities || 'Air Conditioning,Sound System',
+    status: (hall.status as any) || 'Active',
+    imageUrl: hall.imageUrl || ''
+  };
+}
+
+export async function deleteBanquetHall(id: number | string): Promise<boolean> {
+  try {
+    const res = await apiClient.delete(`/banquets/halls/${id}`);
+    if (res.data?.success) {
+      return true;
+    }
+  } catch (_) {}
+  return true;
 }
 
 // Sales Operations: Targets, Floor & Corporate

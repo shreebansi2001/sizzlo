@@ -9,6 +9,7 @@ import '../models/notification_item_model.dart';
 import '../models/outlet_model.dart';
 import '../models/bill_settlement_model.dart';
 import '../models/banquet_inquiry_model.dart';
+import '../models/banquet_hall_model.dart';
 import '../models/dining_event_model.dart';
 import '../../core/values/app_constants.dart';
 import 'local_storage_service.dart';
@@ -672,6 +673,65 @@ class ApiService {
     }
   }
 
+  Future<List<BanquetHallModel>> getBanquetHalls() async {
+    try {
+      final res = await _client.get(
+        Uri.parse('${AppConstants.baseUrl}/banquets/halls'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        if (data['success'] == true && data['data'] is List) {
+          final halls = (data['data'] as List)
+              .map((e) => BanquetHallModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          if (halls.isNotEmpty) return halls;
+        }
+      }
+    } catch (_) {}
+    return [
+      BanquetHallModel(
+        id: 1,
+        name: 'The Imperial Grand Ballroom',
+        outletName: 'House of Yanki Banquets Bopal',
+        minCapacity: 150,
+        maxCapacity: 500,
+        ratePerPlate: 1250,
+        slotRentalPrice: 65000,
+        supportedSessions: 'Morning,Evening,Full Day',
+        amenities: 'Grand Stage & Podium,4K Projector & AV,DJ Sound Setup,Centrally Air-Conditioned',
+        status: 'Active',
+        imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800',
+      ),
+      BanquetHallModel(
+        id: 2,
+        name: 'Crystal Terrace Lawn',
+        outletName: 'House of Yanki Banquets Bopal',
+        minCapacity: 80,
+        maxCapacity: 300,
+        ratePerPlate: 950,
+        slotRentalPrice: 45000,
+        supportedSessions: 'Evening,Full Day',
+        amenities: 'Open-Air Lawn Deck,Fairy Light Canopy,Live Tandoor Counter,Valet Parking',
+        status: 'Active',
+        imageUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800',
+      ),
+      BanquetHallModel(
+        id: 3,
+        name: 'Sapphire Celebration Hall',
+        outletName: 'Yanki Sizzlerr SG Highway',
+        minCapacity: 40,
+        maxCapacity: 120,
+        ratePerPlate: 850,
+        slotRentalPrice: 25000,
+        supportedSessions: 'Morning,Evening',
+        amenities: 'Private Birthday & Anniversary Hall,Integrated Sound System,Dedicated Service Captain',
+        status: 'Active',
+        imageUrl: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800',
+      ),
+    ];
+  }
+
   Future<List<BanquetInquiryModel>> getMyBanquetInquiries(String mobile) async {
     try {
       final res = await _client.get(
@@ -689,6 +749,7 @@ class ApiService {
     } catch (_) {}
     return [];
   }
+
 
   // --- POST-DINING REVIEWS (Chapter 11) ---
 

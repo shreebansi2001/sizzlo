@@ -23,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private ActivityLogRepository activityLogRepository;
     @Autowired private BillSettlementRepository billSettlementRepository;
     @Autowired private BanquetInquiryRepository banquetInquiryRepository;
+    @Autowired(required = false) private com.sizzlo.repository.BanquetHallRepository banquetHallRepository;
     @Autowired private CorporateLeadRepository corporateLeadRepository;
     @Autowired private SalesTargetRepository salesTargetRepository;
     @Autowired private FeedbackTicketRepository feedbackTicketRepository;
@@ -64,6 +65,7 @@ public class DataInitializer implements CommandLineRunner {
         if (adminRoleRepository.count() == 0 || adminUserRepository.count() == 0) {
             seedRbacData();
         }
+        seedBanquets();
         cleanupDummyData();
     }
 
@@ -321,6 +323,47 @@ public class DataInitializer implements CommandLineRunner {
         bi.setMembershipTier("ELITE");
         bi.setZeroPointsAcknowledged(true);
         banquetInquiryRepository.save(bi);
+
+        if (banquetHallRepository != null && banquetHallRepository.count() == 0) {
+            com.sizzlo.entity.BanquetHall h1 = new com.sizzlo.entity.BanquetHall();
+            h1.setName("The Imperial Grand Ballroom");
+            h1.setOutletName("House of Yanki Banquets Bopal");
+            h1.setMinCapacity(150);
+            h1.setMaxCapacity(500);
+            h1.setRatePerPlate(1250.0);
+            h1.setSlotRentalPrice(65000.0);
+            h1.setSupportedSessions("Morning,Evening,Full Day");
+            h1.setAmenities("Grand Stage & Podium,4K Projector & AV,DJ Sound Setup,Bridal Suite,Dedicated Buffet Counter,Centrally Air-Conditioned");
+            h1.setStatus("Active");
+            h1.setImageUrl("https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800");
+            banquetHallRepository.save(h1);
+
+            com.sizzlo.entity.BanquetHall h2 = new com.sizzlo.entity.BanquetHall();
+            h2.setName("Crystal Terrace Lawn");
+            h2.setOutletName("House of Yanki Banquets Bopal");
+            h2.setMinCapacity(80);
+            h2.setMaxCapacity(300);
+            h2.setRatePerPlate(950.0);
+            h2.setSlotRentalPrice(45000.0);
+            h2.setSupportedSessions("Evening,Full Day");
+            h2.setAmenities("Open-Air Lawn Deck,Fairy Light Canopy,Live Tandoor Counter,Valet Parking,Cocktail High-Tables");
+            h2.setStatus("Active");
+            h2.setImageUrl("https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800");
+            banquetHallRepository.save(h2);
+
+            com.sizzlo.entity.BanquetHall h3 = new com.sizzlo.entity.BanquetHall();
+            h3.setName("Sapphire Celebration Hall");
+            h3.setOutletName("Yanki Sizzlerr SG Highway");
+            h3.setMinCapacity(40);
+            h3.setMaxCapacity(120);
+            h3.setRatePerPlate(850.0);
+            h3.setSlotRentalPrice(25000.0);
+            h3.setSupportedSessions("Morning,Evening");
+            h3.setAmenities("Private Birthday & Anniversary Hall,Integrated Sound System,Dedicated Service Captain,Executive Sizzler Buffet");
+            h3.setStatus("Active");
+            h3.setImageUrl("https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800");
+            banquetHallRepository.save(h3);
+        }
     }
 
     private void seedCorporateLeads() {

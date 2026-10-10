@@ -147,4 +147,57 @@ public class BanquetController {
 
         return ResponseEntity.ok(ApiResponse.success("Status updated to " + status, updated));
     }
+
+    @Autowired(required = false)
+    private com.sizzlo.repository.BanquetHallRepository banquetHallRepository;
+
+    @GetMapping("/halls")
+    public ResponseEntity<ApiResponse<List<com.sizzlo.entity.BanquetHall>>> getAllHalls() {
+        if (banquetHallRepository == null) {
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        }
+        return ResponseEntity.ok(ApiResponse.success(banquetHallRepository.findAll()));
+    }
+
+    @PostMapping("/halls")
+    public ResponseEntity<ApiResponse<com.sizzlo.entity.BanquetHall>> createHall(@RequestBody com.sizzlo.entity.BanquetHall hall) {
+        if (banquetHallRepository == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("BanquetHall repository unavailable"));
+        }
+        if (hall.getStatus() == null) hall.setStatus("Active");
+        com.sizzlo.entity.BanquetHall saved = banquetHallRepository.save(hall);
+        return ResponseEntity.ok(ApiResponse.success("Banquet hall created successfully", saved));
+    }
+
+    @PutMapping("/halls/{id}")
+    public ResponseEntity<ApiResponse<com.sizzlo.entity.BanquetHall>> updateHall(
+            @PathVariable Long id,
+            @RequestBody com.sizzlo.entity.BanquetHall hall) {
+        if (banquetHallRepository == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("BanquetHall repository unavailable"));
+        }
+        return banquetHallRepository.findById(id).map(existing -> {
+            if (hall.getName() != null) existing.setName(hall.getName());
+            if (hall.getOutletName() != null) existing.setOutletName(hall.getOutletName());
+            if (hall.getMinCapacity() != null) existing.setMinCapacity(hall.getMinCapacity());
+            if (hall.getMaxCapacity() != null) existing.setMaxCapacity(hall.getMaxCapacity());
+            if (hall.getRatePerPlate() != null) existing.setRatePerPlate(hall.getRatePerPlate());
+            if (hall.getSlotRentalPrice() != null) existing.setSlotRentalPrice(hall.getSlotRentalPrice());
+            if (hall.getSupportedSessions() != null) existing.setSupportedSessions(hall.getSupportedSessions());
+            if (hall.getAmenities() != null) existing.setAmenities(hall.getAmenities());
+            if (hall.getStatus() != null) existing.setStatus(hall.getStatus());
+            if (hall.getImageUrl() != null) existing.setImageUrl(hall.getImageUrl());
+            com.sizzlo.entity.BanquetHall saved = banquetHallRepository.save(existing);
+            return ResponseEntity.ok(ApiResponse.success("Banquet hall updated", saved));
+        }).orElse(ResponseEntity.badRequest().body(ApiResponse.error("Hall not found")));
+    }
+
+    @DeleteMapping("/halls/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteHall(@PathVariable Long id) {
+        if (banquetHallRepository != null && banquetHallRepository.existsById(id)) {
+            banquetHallRepository.deleteById(id);
+            return ResponseEntity.ok(ApiResponse.success("Banquet hall deleted successfully", null));
+        }
+        return ResponseEntity.badRequest().body(ApiResponse.error("Hall not found"));
+    }
 }

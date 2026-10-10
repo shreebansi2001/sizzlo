@@ -143,6 +143,183 @@ class BanquetView extends GetView<BanquetController> {
         ),
         const SizedBox(height: 18),
 
+        // Live Banquet Halls Showcase Carousel & Direct Selection
+        Obx(() {
+          if (controller.dynamicHalls.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'AVAILABLE BANQUET VENUES (${controller.dynamicHalls.length})',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.goldAccent,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  Text(
+                    'Tap hall to select',
+                    style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[500]),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 195,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: controller.dynamicHalls.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final hall = controller.dynamicHalls[index];
+                    final isSelected = controller.selectedHall.value?.id == hall.id ||
+                        (controller.selectedHall.value == null && controller.selectedBanquetVenue.value.contains(hall.name));
+                    return GestureDetector(
+                      onTap: () => controller.selectHall(hall),
+                      child: Container(
+                        width: 250,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF191714),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? AppColors.goldAccent : const Color(0xFF332B22),
+                            width: isSelected ? 1.8 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.goldAccent.withOpacity(0.25),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Stack(
+                              children: [
+                                SizedBox(
+                                  height: 95,
+                                  width: double.infinity,
+                                  child: Image.network(
+                                    hall.imageUrl.isNotEmpty
+                                        ? hall.imageUrl
+                                        : 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800',
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: const Color(0xFF2C241B),
+                                      child: const Icon(Icons.apartment_rounded, color: AppColors.goldAccent, size: 32),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: hall.status == 'Active'
+                                          ? const Color(0xFF10B981).withOpacity(0.9)
+                                          : const Color(0xFFF59E0B).withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      hall.status,
+                                      style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Positioned(
+                                    top: 6,
+                                    left: 6,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.75),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: AppColors.goldAccent, width: 0.8),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.check_circle, size: 10, color: AppColors.goldAccent),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            'SELECTED',
+                                            style: GoogleFonts.outfit(fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.goldAccent),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    hall.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.location_on_outlined, size: 11, color: AppColors.goldAccent),
+                                      const SizedBox(width: 3),
+                                      Expanded(
+                                        child: Text(
+                                          hall.outletName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[400]),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${hall.minCapacity}–${hall.maxCapacity} Pax',
+                                        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFFDCCDB7)),
+                                      ),
+                                      Text(
+                                        'From ₹${hall.ratePerPlate.toInt()}/plate',
+                                        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF4EE3B8)),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 18),
+            ],
+          );
+        }),
+
         // Main Banquet Form Container
         Container(
           padding: const EdgeInsets.all(20),

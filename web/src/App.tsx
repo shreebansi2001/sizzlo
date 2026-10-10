@@ -16,6 +16,7 @@ import { MarketingPage } from './pages/MarketingPage';
 import { StaffPage } from './pages/StaffPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { FloorPage } from './pages/FloorPage';
+import { BanquetsPage } from './pages/BanquetsPage';
 import { LoginPage } from './pages/LoginPage';
 
 import { AdminAuthUser } from './types';
@@ -35,6 +36,7 @@ const TAB_PERMISSIONS: Record<string, string> = {
   redemption: 'REDEMPTION_VALIDATE',
   outlets: 'OUTLETS_MANAGE',
   events: 'EVENTS_MANAGE',
+  banquets: 'EVENTS_MANAGE',
   marketing: 'MARKETING_MANAGE',
   staff: 'USER_MGMT',
   feedback: 'FEEDBACK_VIEW',
@@ -135,7 +137,7 @@ export function App() {
     const validTabs = [
       'dashboard', 'insights', 'ceo', 'customers', 'memberships', 'loyalty', 
       'coupons', 'payments', 'reservations', 'floor',
-      'outlets', 'events', 'marketing', 'staff', 'feedback'
+      'outlets', 'events', 'banquets', 'marketing', 'staff', 'feedback'
     ];
     return validTabs.includes(hash) ? hash : 'dashboard';
   };
@@ -193,13 +195,15 @@ export function App() {
       case 'payments':
         return { title: 'Pending Collections & Dues', subtitle: 'Automated reminders via WhatsApp, SMS, and Email' };
       case 'reservations':
-        return { title: 'Table Reservations & Inquiries', subtitle: 'Live customer booking requests, table settlements, waitlist queue, and audio alerts' };
+        return { title: 'Interactive Calendar & Bookings', subtitle: 'Monthly calendar view, branch scoping, 2-guest couple tables, and host settlement desk' };
       case 'floor':
         return { title: 'Floor & Tables', subtitle: 'Live seating capacity, dining table states and waitlist queue' };
       case 'outlets':
         return { title: 'Venues & Dining Concepts', subtitle: 'Compare venue revenues, ABV, and ratings' };
       case 'events':
         return { title: 'Exclusive Events & Sunday Brunches', subtitle: 'Manage Sunday Brunches, Chef Table passes, guest capacities, attendee lists and banquet desk' };
+      case 'banquets':
+        return { title: 'Banquet Master & Halls Management', subtitle: 'Manage banquet venues, capacity ranges, per-plate pricing, slot rentals, and dynamic app visibility' };
       case 'notifications':
       case 'marketing':
         return { title: 'Broadcast & Push Notifications', subtitle: 'Compose and dispatch instant push notifications, WhatsApp alerts, and subscriber broadcasts' };
@@ -290,6 +294,9 @@ export function App() {
           )}
           {currentTab === 'events' && (
             <EventsPage events={[]} />
+          )}
+          {currentTab === 'banquets' && (
+            <BanquetsPage key={`banquets-${refreshKey}`} />
           )}
           {(currentTab === 'marketing' || currentTab === 'notifications') && (
             <MarketingPage channels={[]} presets={[]} />

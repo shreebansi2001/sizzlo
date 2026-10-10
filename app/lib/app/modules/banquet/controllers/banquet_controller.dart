@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/banquet_inquiry_model.dart';
+import '../../../data/models/banquet_hall_model.dart';
 import '../../../data/services/api_service.dart';
 import '../../../core/values/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
@@ -14,7 +15,10 @@ class BanquetController extends GetxController {
 
   final RxBool isSubmitting = false.obs;
   final RxBool isLoadingInquiries = false.obs;
+  final RxBool isLoadingHalls = false.obs;
   final RxList<BanquetInquiryModel> myInquiries = <BanquetInquiryModel>[].obs;
+  final RxList<BanquetHallModel> dynamicHalls = <BanquetHallModel>[].obs;
+  final Rx<BanquetHallModel?> selectedHall = Rx<BanquetHallModel?>(null);
 
   // --- TAB 1: BANQUET HALL FORM STATE ---
   final TextEditingController banquetEventNameController = TextEditingController();
@@ -23,12 +27,12 @@ class BanquetController extends GetxController {
   final TextEditingController banquetNotesController = TextEditingController();
 
   final RxString selectedBanquetVenue = 'House of Yanki Banquets - Bodakdev'.obs;
-  final List<String> banquetVenues = [
+  final RxList<String> banquetVenues = <String>[
     'House of Yanki Banquets - Bodakdev',
     'House of Yanki Banquets - Bopal Sky Deck',
     'Yanki Sizzlerr Navrangpura Banquet Lounge',
     'Dough by Yanki CG Road Private Hall',
-  ];
+  ].obs;
 
   final RxString selectedOccasion = 'Birthday Bash'.obs;
   final List<String> occasionOptions = [
@@ -108,6 +112,7 @@ class BanquetController extends GetxController {
       activeTab.value = Get.arguments['tab'] as int;
     }
     _initPrefilledContact();
+    loadBanquetHalls();
     loadMyInquiries();
   }
 
@@ -121,6 +126,33 @@ class BanquetController extends GetxController {
     banquetPhoneController.text = phone;
     odcNameController.text = name;
     odcPhoneController.text = phone;
+  }
+
+  Future<void> loadBanquetHalls() async {
+    isLoadingHalls.value = true;
+    try {
+      final halls = await _apiService.getBanquetHalls();
+      if (halls.isNotEmpty) {
+        dynamicHalls.assignAll(halls);
+        final venueNames = halls.map((h) => '${h.name} (${h.outletName})').toList();
+        banquetVenues.assignAll(venueNames);
+        if (selectedBanquetVenue.value.isEmpty || !banquetVenues.contains(selectedBanquetVenue.value)) {
+          selectedBanquetVenue.value = banquetVenues.first;
+          selectedHall.value = halls.first;
+        }
+      }
+    } catch (_) {} finally {
+      isLoadingHalls.value = false;
+    }
+  }
+
+  void selectHall(BanquetHallModel hall) {
+    selectedHall.value = hall;
+    final venueName = '${hall.name} (${hall.outletName})';
+    if (!banquetVenues.contains(venueName)) {
+      banquetVenues.insert(0, venueName);
+    }
+    selectedBanquetVenue.value = venueName;
   }
 
   Future<void> loadMyInquiries() async {
