@@ -34,26 +34,7 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets:
   const [isSending, setIsSending] = useState(false);
 
   // Broadcast History
-  const [recentDispatches, setRecentDispatches] = useState<DispatchedLog[]>([
-    {
-      id: 1,
-      title: 'Weekend Sizzler Festival 20% Off',
-      target: 'All Registered Users (Broadcast)',
-      type: 'TAG',
-      channel: 'Push Notification + WhatsApp',
-      time: '10 mins ago',
-      message: 'Flat 20% privilege discount on all artisanal sizzler combos across all Yanki outlets.'
-    },
-    {
-      id: 2,
-      title: 'VIP Sparkling Sunday Brunch Priority Pass',
-      target: 'VIP Subscribers Only',
-      type: 'GIFT',
-      channel: 'Push Notification + WhatsApp',
-      time: '2 hours ago',
-      message: 'Reserve exclusive priority seating for Yanki Sparkling Sunday Brunch at CG Road.'
-    },
-  ]);
+  const [recentDispatches, setRecentDispatches] = useState<DispatchedLog[]>([]);
 
   const loadHistory = async () => {
     try {
@@ -543,31 +524,45 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ channels, presets:
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {recentDispatches.map((log) => (
-            <div key={log.id} style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '14px 18px',
-              borderRadius: 14,
+          {recentDispatches.length === 0 ? (
+            <div style={{
+              padding: '24px',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              fontSize: 13,
               background: 'var(--surface-alt)',
-              border: '1px solid var(--border)',
+              borderRadius: 14,
+              border: '1px dashed var(--border)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.15)', display: 'grid', placeItems: 'center' }}>
-                  <Bell size={18} color="#10B981" />
-                </div>
-                <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', marginBottom: 2 }}>{log.title}</h4>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    Target: <strong style={{ color: 'var(--gold)' }}>{log.target}</strong> · Channel: {log.channel}
-                    {log.message && <span style={{ marginLeft: 6, color: 'var(--text-dim)' }}>— "{log.message}"</span>}
+              No broadcast notifications dispatched yet. Send a push or campaign above to reach app users.
+            </div>
+          ) : (
+            recentDispatches.map((log) => (
+              <div key={log.id} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '14px 18px',
+                borderRadius: 14,
+                background: 'var(--surface-alt)',
+                border: '1px solid var(--border)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.15)', display: 'grid', placeItems: 'center' }}>
+                    <Bell size={18} color="#10B981" />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', marginBottom: 2 }}>{log.title}</h4>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      Target: <strong style={{ color: 'var(--gold)' }}>{log.target}</strong> · Channel: {log.channel}
+                      {log.message && <span style={{ marginLeft: 6, color: 'var(--text-dim)' }}>— "{log.message}"</span>}
+                    </div>
                   </div>
                 </div>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{log.time}</span>
               </div>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{log.time}</span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

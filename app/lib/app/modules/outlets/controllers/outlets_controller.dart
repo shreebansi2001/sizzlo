@@ -131,11 +131,34 @@ class OutletsController extends GetxController {
       );
     } else {
       Get.snackbar(
-        'Subscribed!',
-        'We will alert you on opening week with a celebration voucher.',
-        backgroundColor: const Color(0xFFD4AF37),
-        colorText: Colors.black,
+        'Alert Request Failed',
+        'Could not subscribe right now. Please try again.',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
       );
     }
   }
+
+  Future<void> openMenu([OutletModel? outlet]) async {
+    final menuUri = Uri.parse('https://www.yankisizzlerr.com/menu.html');
+    try {
+      if (await canLaunchUrl(menuUri)) {
+        await launchUrl(menuUri, mode: LaunchMode.inAppBrowserView);
+      } else {
+        await launchUrl(menuUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      try {
+        await launchUrl(menuUri, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        Get.snackbar(
+          'Dining Menu',
+          'Could not open online menu: $e',
+          backgroundColor: const Color(0xFF331D12),
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
 }
+

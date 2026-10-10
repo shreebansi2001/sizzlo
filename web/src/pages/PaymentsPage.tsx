@@ -1,158 +1,317 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Check, 
-  X, 
-  RefreshCw, 
-  CreditCard, 
-  Banknote, 
-  QrCode, 
-  Globe, 
-  FileText, 
-  ShieldCheck, 
-  AlertTriangle,
-  Receipt,
-  Download,
-  Send,
-  MessageCircle,
-  Link as LinkIcon
+  Check, X, RefreshCw, CreditCard, Banknote, QrCode, Globe, FileText, 
+  ShieldCheck, AlertTriangle, Receipt, Download, Send, MessageCircle, 
+  Plus, Search, Calendar, ChevronLeft, ChevronRight, Filter, Eye,
+  ArrowUpRight, Clock, User, Phone, Mail, Award, Crown, Sparkles, CheckCircle2,
+  DollarSign, Wallet, Printer, ExternalLink, ArrowDownLeft
 } from 'lucide-react';
+import axios from 'axios';
 import { 
   fetchPendingBills, 
   approveBill, 
   rejectBill, 
   fetchShiftSummary, 
-  fetchRazorpayTransactions,
   fetchRazorpaySummary,
   BillSettlementDTO, 
   ShiftSummaryDTO,
-  RazorpayTransactionDTO,
   RazorpaySummaryDTO
 } from '../api/client';
-import { PendingPayment, Member } from '../types';
-import axios from 'axios';
+import { PendingPayment, Member, PaymentRecord } from '../types';
 
 const safeCurrency = (val: any): string => {
   const num = Number(val);
   return isNaN(num) ? '₹0' : `₹${num.toLocaleString('en-IN')}`;
 };
 
-const safeNumber = (val: any): string => {
-  const num = Number(val);
-  return isNaN(num) ? '0' : num.toLocaleString('en-IN');
-};
-
 interface PaymentsPageProps {
   payments?: PendingPayment[];
 }
 
-export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPayments }) => {
-  const [activeTab, setActiveTab] = useState<'queue' | 'shift' | 'dues' | 'razorpay'>('queue');
+export const PaymentsPage: React.FC<PaymentsPageProps> = () => {
+  const [activeTab, setActiveTab] = useState<'all' | 'subscriptions' | 'pos_settlements' | 'events' | 'dues' | 'gateway'>('all');
+  
+  // Data States
+  const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>([]);
   const [pendingBills, setPendingBills] = useState<BillSettlementDTO[]>([]);
+  const [allBills, setAllBills] = useState<BillSettlementDTO[]>([]);
   const [shiftSummary, setShiftSummary] = useState<ShiftSummaryDTO | null>(null);
-  const [razorpayTransactions, setRazorpayTransactions] = useState<RazorpayTransactionDTO[]>([]);
   const [razorpaySummary, setRazorpaySummary] = useState<RazorpaySummaryDTO | null>(null);
+  const [duesList, setDuesList] = useState<PendingPayment[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modeFilter, setModeFilter] = useState<string>('ALL');
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
-  // Dues state
-  const [paymentList, setPaymentList] = useState<PendingPayment[]>(initialPayments || []);
+  // Filters & Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [modeFilter, setModeFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Receipt Modal State
+  const [selectedReceipt, setSelectedReceipt] = useState<PaymentRecord | null>(null);
+
+  // Manual Offline Entry Modal State
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    customerName: '',
+    customerMobile: '',
+    customerEmail: '',
+    membershipId: '',
+    paymentType: 'SUBSCRIPTION',
+    planId: 'SIGNATURE',
+    planName: 'Sizzlo Signature VIP Pass (Annual)',
+    amount: 10000,
+    paymentMode: 'CASH',
+    outletName: 'Yanki Sizzlerr - CG Road',
+    notes: 'In-person front desk counter collection'
+  });
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+
+  // Refund Confirmation Modal
+  const [refundTarget, setRefundTarget] = useState<PaymentRecord | null>(null);
+  const [refundReason, setRefundReason] = useState('Customer cancelled / billing dispute');
+  const [isProcessingRefund, setIsProcessingRefund] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [bills, shift, rzpTxns, rzpSum] = await Promise.all([
-        fetchPendingBills(),
-        fetchShiftSummary(),
-        fetchRazorpayTransactions(),
-        fetchRazorpaySummary()
+      const [recRes, billsQueue, allBillsRes, shift, rzpSum, membersRes] = await Promise.all([
+        axios.get('/api/payments/records', { timeout: 3500 }).catch(() => ({ data: { success: true, data: [] } })),
+        fetchPendingBills().catch(() => []),
+        axios.get('/api/bills/all', { timeout: 3500 }).catch(() => ({ data: { success: true, data: [] } })),
+        fetchShiftSummary().catch(() => null),
+        fetchRazorpaySummary().catch(() => null),
+        axios.get('/api/members', { timeout: 3500 }).catch(() => ({ data: { success: true, data: [] } }))
       ]);
-      setPendingBills(bills);
+
+      if (recRes.data?.success && Array.isArray(recRes.data.data)) {
+        setPaymentRecords(recRes.data.data);
+      }
+      setPendingBills(billsQueue || []);
+      if (allBillsRes.data?.success && Array.isArray(allBillsRes.data.data)) {
+        setAllBills(allBillsRes.data.data);
+      }
       setShiftSummary(shift);
-      setRazorpayTransactions(rzpTxns);
       setRazorpaySummary(rzpSum);
-    } catch (_) {}
-    setLoading(false);
+
+      if (membersRes.data?.success && Array.isArray(membersRes.data.data)) {
+        const dues = membersRes.data.data
+          .filter((m: Member) => (m.pendingDues && m.pendingDues > 0) || m.status === 'Renewal Due')
+          .map((m: Member) => ({
+            id: m.membershipId,
+            name: m.fullName,
+            mobile: m.mobile,
+            pending: m.pendingDues || 0,
+            dueDate: m.expiryDate || 'Immediate',
+            reminder: 'Ready to send',
+          }));
+        setDuesList(dues);
+      }
+    } catch (_) {
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 5000); // Polling every 5s for live cashier updates
+    const interval = setInterval(loadData, 8000);
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    axios.get('/api/members', { timeout: 2500 })
-      .then(res => {
-        if (res.data?.success && Array.isArray(res.data.data)) {
-          const duesMembers = res.data.data
-            .filter((m: Member) => (m.pendingDues && m.pendingDues > 0) || m.status === 'Renewal Due')
-            .map((m: Member) => ({
-              id: m.membershipId,
-              name: m.fullName,
-              mobile: m.mobile,
-              pending: m.pendingDues > 0 ? m.pendingDues : 10000,
-              dueDate: m.expiryDate,
-              reminder: 'Ready to send',
-            }));
-          setPaymentList(duesMembers);
-        } else {
-          setPaymentList([]);
-        }
-      })
-      .catch(() => {
-        setPaymentList([]);
-      });
-  }, []);
+  // Filtered Payments computation
+  const filteredPayments = useMemo(() => {
+    return paymentRecords.filter((p) => {
+      const term = searchTerm.toLowerCase().trim();
+      const matchesSearch = !term || 
+        (p.paymentId || '').toLowerCase().includes(term) ||
+        (p.orderId || '').toLowerCase().includes(term) ||
+        (p.customerName || '').toLowerCase().includes(term) ||
+        (p.customerMobile || '').includes(term) ||
+        (p.membershipId || '').toLowerCase().includes(term) ||
+        (p.invoiceNumber || '').toLowerCase().includes(term);
 
-  const handleApprove = async (billId: number, invoiceNo: string) => {
+      let matchesTab = true;
+      if (activeTab === 'subscriptions') matchesTab = p.paymentType === 'SUBSCRIPTION';
+      else if (activeTab === 'events') matchesTab = p.paymentType === 'EVENT_BOOKING';
+      else if (activeTab === 'pos_settlements') matchesTab = p.paymentType === 'BILL_SETTLEMENT';
+
+      const mode = (p.paymentMode || '').toUpperCase();
+      let matchesMode = true;
+      if (modeFilter === 'UPI') matchesMode = mode.includes('UPI');
+      else if (modeFilter === 'CARD') matchesMode = mode.includes('CARD');
+      else if (modeFilter === 'CASH') matchesMode = mode.includes('CASH');
+      else if (modeFilter === 'QR') matchesMode = mode.includes('QR');
+      else if (modeFilter === 'RAZORPAY') matchesMode = mode.includes('RAZORPAY');
+
+      const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
+
+      return matchesSearch && matchesTab && matchesMode && matchesStatus;
+    });
+  }, [paymentRecords, activeTab, searchTerm, modeFilter, statusFilter]);
+
+  // Reset pagination on filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeTab, modeFilter, statusFilter, pageSize]);
+
+  // Pagination Computations
+  const totalItems = filteredPayments.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (validCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedRecords = useMemo(() => {
+    return filteredPayments.slice(startIndex, endIndex);
+  }, [filteredPayments, startIndex, endIndex]);
+
+  // Summary Metrics calculations
+  const totalCollectedSum = useMemo(() => {
+    return paymentRecords
+      .filter(p => p.status === 'SUCCESS')
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  }, [paymentRecords]);
+
+  const subscriptionRevenue = useMemo(() => {
+    return paymentRecords
+      .filter(p => p.status === 'SUCCESS' && p.paymentType === 'SUBSCRIPTION')
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  }, [paymentRecords]);
+
+  const onlineGatewayVolume = useMemo(() => {
+    return paymentRecords
+      .filter(p => p.status === 'SUCCESS' && !p.paymentMode?.toUpperCase().includes('CASH'))
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  }, [paymentRecords]);
+
+  const cashCollections = useMemo(() => {
+    return paymentRecords
+      .filter(p => p.status === 'SUCCESS' && p.paymentMode?.toUpperCase().includes('CASH'))
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  }, [paymentRecords]);
+
+  const totalDuesSum = useMemo(() => {
+    return duesList.reduce((sum, d) => sum + (Number(d.pending) || 0), 0);
+  }, [duesList]);
+
+  const handleApproveBill = async (billId: number) => {
     try {
-      const res = await approveBill(billId, 'CSH-01');
-      if (res.success) {
-        setActionNotice(`Bill #${invoiceNo} APPROVED! Coupon burned permanently & loyalty points credited to customer.`);
-        await loadData();
-      } else {
-        setActionNotice(`Error: ${res.message}`);
+      const res = await approveBill(billId);
+      if (res) {
+        setActionNotice(`✅ Bill #${billId} approved & settlement confirmed!`);
+        loadData();
+        setTimeout(() => setActionNotice(null), 4000);
       }
     } catch (e: any) {
-      setActionNotice(`Approval failed: ${e.message}`);
+      setActionNotice(`Failed to approve: ${e.message}`);
     }
-    setTimeout(() => setActionNotice(null), 4500);
   };
 
-  const handleReject = async (billId: number, invoiceNo: string) => {
-    const reason = window.prompt(`Reason for rejecting Bill #${invoiceNo}:`, 'Discrepancy in POS invoice amount');
+  const handleRejectBill = async (billId: number) => {
+    const reason = prompt('Please enter rejection reason:');
     if (!reason) return;
     try {
       const res = await rejectBill(billId, reason);
-      if (res.success) {
-        setActionNotice(`Bill #${invoiceNo} has been rejected.`);
-        await loadData();
+      if (res) {
+        setActionNotice(`❌ Bill #${billId} rejected.`);
+        loadData();
+        setTimeout(() => setActionNotice(null), 4000);
       }
     } catch (e: any) {
-      setActionNotice(`Rejection failed: ${e.message}`);
+      setActionNotice(`Failed to reject: ${e.message}`);
     }
-    setTimeout(() => setActionNotice(null), 4000);
   };
 
-  const filteredBills = pendingBills.filter(b => {
-    if (modeFilter === 'ALL') return true;
-    return b.paymentMode === modeFilter;
-  });
-
-  const getModeIcon = (mode: string) => {
-    switch (mode) {
-      case 'CASH': return <Banknote size={16} color="#10B981" />;
-      case 'CARD': return <CreditCard size={16} color="#3B82F6" />;
-      case 'ONLINE': return <Globe size={16} color="#A855F7" />;
-      case 'STORE_QR': return <QrCode size={16} color="#FF8A00" />;
-      default: return <Receipt size={16} color="var(--primary)" />;
+  const handleSaveManualPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingManual(true);
+    try {
+      const res = await axios.post('/api/payments/manual-entry', manualForm, { timeout: 3500 });
+      if (res.data?.success) {
+        setActionNotice(`🎉 Payment of ${safeCurrency(manualForm.amount)} recorded successfully!`);
+        setShowManualModal(false);
+        setManualForm({
+          customerName: '',
+          customerMobile: '',
+          customerEmail: '',
+          membershipId: '',
+          paymentType: 'SUBSCRIPTION',
+          planId: 'SIGNATURE',
+          planName: 'Sizzlo Signature VIP Pass (Annual)',
+          amount: 10000,
+          paymentMode: 'CASH',
+          outletName: 'Yanki Sizzlerr - CG Road',
+          notes: 'In-person front desk counter collection'
+        });
+        loadData();
+        setTimeout(() => setActionNotice(null), 4000);
+      }
+    } catch (err: any) {
+      setActionNotice(`Failed to record payment: ${err.message}`);
+    } finally {
+      setIsSubmittingManual(false);
     }
+  };
+
+  const handleProcessRefund = async () => {
+    if (!refundTarget) return;
+    setIsProcessingRefund(true);
+    try {
+      const res = await axios.post(`/api/payments/${refundTarget.paymentId}/refund?reason=${encodeURIComponent(refundReason)}`, {}, { timeout: 3500 });
+      if (res.data?.success) {
+        setActionNotice(`💸 Payment ${refundTarget.paymentId} marked as REFUNDED.`);
+        setRefundTarget(null);
+        loadData();
+        setTimeout(() => setActionNotice(null), 4000);
+      }
+    } catch (err: any) {
+      setActionNotice(`Refund failed: ${err.message}`);
+    } finally {
+      setIsProcessingRefund(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['Payment ID', 'Order ID', 'Invoice #', 'Customer Name', 'Mobile', 'Type', 'Plan / Purpose', 'Amount (₹)', 'Payment Mode', 'Status', 'Outlet', 'Timestamp'];
+    const rows = filteredPayments.map(p => [
+      `"${p.paymentId}"`,
+      `"${p.orderId || ''}"`,
+      `"${p.invoiceNumber || ''}"`,
+      `"${p.customerName}"`,
+      `"${p.customerMobile}"`,
+      `"${p.paymentType}"`,
+      `"${p.planName || p.planId || ''}"`,
+      `"${p.amount}"`,
+      `"${p.paymentMode}"`,
+      `"${p.status}"`,
+      `"${p.outletName || ''}"`,
+      `"${p.createdAt}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Sizzlo_Payments_Ledger_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const getModeBadge = (mode: string) => {
+    const m = (mode || 'UPI').toUpperCase();
+    if (m.includes('UPI')) return { label: 'UPI / QR', icon: QrCode, color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)' };
+    if (m.includes('CARD')) return { label: 'Card / POS', icon: CreditCard, color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.15)' };
+    if (m.includes('CASH')) return { label: 'Cash Counter', icon: Banknote, color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' };
+    return { label: 'Razorpay Net', icon: Globe, color: 'var(--gold)', bg: 'rgba(232, 184, 74, 0.15)' };
   };
 
   return (
-    <div>
-      {/* Top Banner Alert */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Toast Notice */}
       {actionNotice && (
         <div style={{
           background: 'rgba(232, 184, 74, 0.15)',
@@ -160,946 +319,973 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({ payments: initialPay
           color: 'var(--primary)',
           padding: '12px 18px',
           borderRadius: 12,
-          marginBottom: 20,
           display: 'flex',
           alignItems: 'center',
           gap: 10,
           fontSize: 13,
           fontWeight: 600
         }}>
-          <Check size={16} color="var(--gold-dark)" />
+          <Sparkles size={16} color="var(--gold-dark)" />
           {actionNotice}
         </div>
       )}
 
-      {/* Header & Sub-Navigation */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 16,
-        marginBottom: 24
-      }}>
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.02em' }}>
-            Cashier Operations &amp; Payment Settlement Desk
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            SRS Chapter 10 &amp; 18: Non-Integrated POS Standalone Verification, Coupon Burn &amp; Points Crediting
-          </p>
+      {/* 5 Top Executive Financial KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16 }}>
+        <div className="kpi-card" style={{ background: 'var(--surface)', borderRadius: 16, padding: 18, border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="kpi-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL REVENUE COLLECTED</span>
+            <Wallet size={16} color="var(--primary)" />
+          </div>
+          <div className="kpi-value" style={{ marginTop: 8, fontSize: 26, fontWeight: 800, color: '#FFFFFF' }}>
+            {safeCurrency(totalCollectedSum)}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>All settled channels</span>
         </div>
 
-        {/* Tab Controls */}
-        <div style={{
-          display: 'flex',
-          gap: 6,
-          background: 'var(--surface)',
-          padding: 4,
-          borderRadius: 12,
-          border: '1px solid var(--border)'
-        }}>
+        <div className="kpi-card" style={{ background: 'var(--surface)', borderRadius: 16, padding: 18, border: '1px solid rgba(232, 184, 74, 0.3)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="kpi-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)' }}>SUBSCRIPTION REVENUE</span>
+            <Crown size={16} color="var(--gold)" />
+          </div>
+          <div className="kpi-value" style={{ marginTop: 8, fontSize: 26, fontWeight: 800, color: 'var(--gold)' }}>
+            {safeCurrency(subscriptionRevenue)}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>Annual VIP Pass sales</span>
+        </div>
+
+        <div className="kpi-card" style={{ background: 'var(--surface)', borderRadius: 16, padding: 18, border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="kpi-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>ONLINE / GATEWAY VOLUME</span>
+            <Globe size={16} color="#10B981" />
+          </div>
+          <div className="kpi-value" style={{ marginTop: 8, fontSize: 26, fontWeight: 800, color: '#10B981' }}>
+            {safeCurrency(onlineGatewayVolume)}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>Razorpay, UPI &amp; Cards</span>
+        </div>
+
+        <div className="kpi-card" style={{ background: 'var(--surface)', borderRadius: 16, padding: 18, border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="kpi-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>CASH &amp; COUNTER POS</span>
+            <Banknote size={16} color="#F59E0B" />
+          </div>
+          <div className="kpi-value" style={{ marginTop: 8, fontSize: 26, fontWeight: 800, color: '#F59E0B' }}>
+            {safeCurrency(cashCollections)}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>Physical outlet collections</span>
+        </div>
+
+        <div className="kpi-card" style={{ background: 'var(--surface)', borderRadius: 16, padding: 18, border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="kpi-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>PENDING APPROVALS / DUES</span>
+            <AlertTriangle size={16} color="#F87171" />
+          </div>
+          <div className="kpi-value" style={{ marginTop: 8, fontSize: 26, fontWeight: 800, color: pendingBills.length > 0 ? '#F87171' : '#FFFFFF' }}>
+            {pendingBills.length} Bills / {safeCurrency(totalDuesSum)}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>Cashier queue &amp; renewals</span>
+        </div>
+      </div>
+
+      {/* Main Navigation Tabs */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: 12, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[
+            { id: 'all', label: 'All Transactions Ledger', count: paymentRecords.length },
+            { id: 'subscriptions', label: 'VIP Plan Purchases', count: paymentRecords.filter(p => p.paymentType === 'SUBSCRIPTION').length },
+            { id: 'pos_settlements', label: 'Dine-In Bill Settlements', count: pendingBills.length + allBills.length },
+            { id: 'events', label: 'Event & Brunch Passes', count: paymentRecords.filter(p => p.paymentType === 'EVENT_BOOKING').length },
+            { id: 'dues', label: 'Pending Dues & Collections', count: duesList.length },
+            { id: 'gateway', label: 'Razorpay Gateway & Telemetry', count: null },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id as any)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 10,
+                border: 'none',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: activeTab === t.id ? 'var(--primary)' : 'transparent',
+                color: activeTab === t.id ? '#070A09' : 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {t.label} {t.count !== null && <span style={{ opacity: 0.8, fontSize: 11 }}>({t.count})</span>}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={() => setActiveTab('queue')}
+            onClick={() => setShowManualModal(true)}
             style={{
-              padding: '8px 16px',
-              fontSize: 12,
-              fontWeight: 700,
-              borderRadius: 8,
+              padding: '8px 14px',
+              borderRadius: 10,
+              background: 'var(--primary)',
               border: 'none',
+              color: '#000',
+              fontSize: 12,
+              fontWeight: 800,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              background: activeTab === 'queue' ? 'var(--primary)' : 'transparent',
-              color: activeTab === 'queue' ? '#070A09' : 'var(--text-muted)'
+              gap: 6
             }}
           >
-            <Receipt size={14} /> Settlement Queue
-            {pendingBills.length > 0 && (
-              <span style={{
-                background: activeTab === 'queue' ? '#070A09' : '#EF4444',
-                color: activeTab === 'queue' ? 'var(--primary)' : '#FFF',
-                borderRadius: 9999,
-                fontSize: 10,
-                padding: '1px 6px',
-                fontWeight: 800
-              }}>
-                {pendingBills.length}
-              </span>
-            )}
+            <Plus size={14} /> Record Offline Payment
           </button>
 
           <button
-            onClick={() => setActiveTab('shift')}
+            onClick={handleExportCSV}
             style={{
-              padding: '8px 16px',
+              padding: '8px 14px',
+              borderRadius: 10,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              color: '#FFFFFF',
               fontSize: 12,
-              fontWeight: 700,
-              borderRadius: 8,
-              border: 'none',
+              fontWeight: 600,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              background: activeTab === 'shift' ? 'var(--primary)' : 'transparent',
-              color: activeTab === 'shift' ? '#070A09' : 'var(--text-muted)'
+              gap: 6
             }}
           >
-            <FileText size={14} /> Shift Closeout
-          </button>
-
-          <button
-            onClick={() => setActiveTab('dues')}
-            style={{
-              padding: '8px 16px',
-              fontSize: 12,
-              fontWeight: 700,
-              borderRadius: 8,
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: activeTab === 'dues' ? 'var(--primary)' : 'transparent',
-              color: activeTab === 'dues' ? '#070A09' : 'var(--text-muted)'
-            }}
-          >
-            <ShieldCheck size={14} /> Subscriber Dues
-          </button>
-
-          <button
-            onClick={() => setActiveTab('razorpay')}
-            style={{
-              padding: '8px 16px',
-              fontSize: 12,
-              fontWeight: 700,
-              borderRadius: 8,
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: activeTab === 'razorpay' ? 'var(--primary)' : 'transparent',
-              color: activeTab === 'razorpay' ? '#070A09' : 'var(--text-muted)'
-            }}
-          >
-            <Globe size={14} /> Razorpay Gateway
-            <span style={{
-              background: activeTab === 'razorpay' ? '#070A09' : '#10B981',
-              color: activeTab === 'razorpay' ? '#10B981' : '#FFF',
-              borderRadius: 9999,
-              fontSize: 9,
-              padding: '1px 5px',
-              fontWeight: 800
-            }}>
-              LIVE
-            </span>
+            <Download size={14} /> Export CSV
           </button>
         </div>
       </div>
 
-      {/* ======================================================== */}
-      {/* TAB 1: LIVE CASHIER SETTLEMENT QUEUE (SRS CHAPTER 10 & 18) */}
-      {/* ======================================================== */}
-      {activeTab === 'queue' && (
-        <div>
-          {/* Top Quick Status & Mode Filters */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 12,
-            marginBottom: 20
-          }}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { label: 'All Modes', val: 'ALL' },
-                { label: 'Cash Payments', val: 'CASH' },
-                { label: 'Card EDC Swipes', val: 'CARD' },
-                { label: 'Store Counter QR', val: 'STORE_QR' },
-                { label: 'Online In-App', val: 'ONLINE' },
-              ].map(f => (
+      {/* FILTER & SEARCH BAR (for ledger tabs) */}
+      {activeTab !== 'dues' && activeTab !== 'gateway' && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="search-input" style={{ width: 280 }}>
+              <Search size={16} color="#94A3B8" />
+              <input 
+                type="text" 
+                placeholder="Search Txn ID, order, name, phone, invoice..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Mode Filter */}
+            <div style={{ display: 'flex', gap: 4, background: 'var(--surface-alt)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
+              {['ALL', 'UPI', 'CARD', 'CASH', 'RAZORPAY'].map(m => (
                 <button
-                  key={f.val}
-                  onClick={() => setModeFilter(f.val)}
+                  key={m}
+                  onClick={() => setModeFilter(m)}
                   style={{
-                    padding: '6px 14px',
-                    borderRadius: 20,
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: 'none',
                     fontSize: 11,
                     fontWeight: 700,
                     cursor: 'pointer',
-                    border: modeFilter === f.val ? '1px solid var(--primary)' : '1px solid var(--border)',
-                    background: modeFilter === f.val ? 'rgba(255, 138, 0, 0.15)' : 'var(--surface)',
-                    color: modeFilter === f.val ? 'var(--primary)' : 'var(--text-muted)'
+                    background: modeFilter === m ? 'var(--primary)' : 'transparent',
+                    color: modeFilter === m ? '#070A09' : 'var(--text-muted)'
                   }}
                 >
-                  {f.label}
+                  {m === 'ALL' ? 'All Modes' : m}
                 </button>
               ))}
             </div>
 
-            <button
-              onClick={loadData}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 12px',
-                borderRadius: 8,
-                background: 'var(--surface-alt)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-main)',
-                fontSize: 11,
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Refresh Live Queue
-            </button>
-          </div>
-
-          {/* Pending Bills Grid / Table */}
-          {filteredBills.length === 0 ? (
-            <div style={{
-              background: 'var(--surface)',
-              borderRadius: 20,
-              border: '1px solid var(--border)',
-              padding: '60px 20px',
-              textAlign: 'center'
-            }}>
-              <Check size={40} color="#10B981" style={{ margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--primary)' }}>
-                Cashier Queue is All Clear!
-              </h3>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 450, margin: '8px auto 0' }}>
-                No dining bills currently pending verification. When customers enter their POS Invoice Number in the Sizzlo mobile app, they appear here instantly.
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
-              {filteredBills.map((b) => (
-                <div
-                  key={b.id}
+            {/* Status Filter */}
+            <div style={{ display: 'flex', gap: 4, background: 'var(--surface-alt)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
+              {['ALL', 'SUCCESS', 'PENDING', 'REFUNDED'].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
                   style={{
-                    background: 'var(--surface)',
-                    borderRadius: 16,
-                    border: '1px solid var(--border)',
-                    padding: 20,
-                    boxShadow: 'var(--shadow-card)',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: 'none',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: statusFilter === s ? 'rgba(255,255,255,0.1)' : 'transparent',
+                    color: statusFilter === s ? '#FFFFFF' : 'var(--text-muted)'
                   }}
                 >
-                  {/* Top Header Card */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{
-                          fontSize: 11,
-                          fontWeight: 800,
-                          textTransform: 'uppercase',
-                          background: 'rgba(255, 138, 0, 0.15)',
-                          color: 'var(--primary)',
-                          padding: '2px 8px',
-                          borderRadius: 6
-                        }}>
-                          POS #{b.posInvoiceNumber}
-                        </span>
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                          {b.outletName}
-                        </span>
-                      </div>
-                      <h4 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)', marginTop: 6 }}>
-                        {b.customerName}
-                      </h4>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {b.customerMobile}
-                      </div>
-                    </div>
-
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '4px 10px',
-                      borderRadius: 8,
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid var(--border)'
-                    }}>
-                      {getModeIcon(b.paymentMode)}
-                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-main)' }}>
-                        {b.paymentMode.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Pricing Breakdown */}
-                  <div style={{
-                    background: 'var(--background)',
-                    padding: 12,
-                    borderRadius: 12,
-                    border: '1px solid var(--border)',
-                    marginBottom: 14
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      <span>Gross Bill Amount:</span>
-                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{safeCurrency(b.grossAmount)}</span>
-                    </div>
-
-                    {b.couponCode && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#10B981', marginBottom: 4 }}>
-                        <span>Coupon [{b.couponCode}]:</span>
-                        <span style={{ fontWeight: 700 }}>-{safeCurrency(b.discountAmount)}</span>
-                      </div>
-                    )}
-
-                    {b.tableAdvanceDeduction && b.tableAdvanceDeduction > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#10B981', marginBottom: 4 }}>
-                        <span>Table Holding Advance {b.bookingReference ? `[${b.bookingReference}]` : ''}:</span>
-                        <span style={{ fontWeight: 700 }}>-₹{b.tableAdvanceDeduction.toLocaleString('en-IN')}</span>
-                      </div>
-                    )}
-
-                    {b.receiptImageUrl && (
-                      <div style={{ marginTop: 6, marginBottom: 6, padding: '6px 10px', borderRadius: 8, background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 11, color: '#3B82F6', fontWeight: 600 }}>📸 Customer Receipt Photo</span>
-                        <a href={b.receiptImageUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#3B82F6', fontWeight: 700, textDecoration: 'underline' }}>
-                          View Image
-                        </a>
-                      </div>
-                    )}
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 800, color: 'var(--primary)', borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 4 }}>
-                      <span>Net Payable:</span>
-                      <span style={{ fontSize: 16 }}>{safeCurrency(b.netPayable)}</span>
-                    </div>
-                  </div>
-
-                  {/* Mode Specific Verification Hint */}
-                  {b.paymentMode === 'STORE_QR' && (
-                    <div style={{
-                      background: 'rgba(255, 138, 0, 0.1)',
-                      border: '1px dashed var(--primary)',
-                      borderRadius: 10,
-                      padding: '8px 12px',
-                      marginBottom: 14,
-                      fontSize: 11,
-                      color: 'var(--primary)'
-                    }}>
-                      <strong>Verify Counter UTR:</strong> {b.upiUtr || 'Pending UTR Entry'}
-                    </div>
-                  )}
-
-                  {b.paymentMode === 'CASH' && (
-                    <div style={{
-                      background: 'rgba(16, 185, 129, 0.1)',
-                      border: '1px dashed #10B981',
-                      borderRadius: 10,
-                      padding: '8px 12px',
-                      marginBottom: 14,
-                      fontSize: 11,
-                      color: '#10B981'
-                    }}>
-                      <strong>Action:</strong> Verify physical cash of ₹{b.netPayable} received from server.
-                    </div>
-                  )}
-
-                  {b.paymentMode === 'CARD' && (
-                    <div style={{
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px dashed #3B82F6',
-                      borderRadius: 10,
-                      padding: '8px 12px',
-                      marginBottom: 14,
-                      fontSize: 11,
-                      color: '#3B82F6'
-                    }}>
-                      <strong>Action:</strong> Check printed EDC card charge slip matches POS #{b.posInvoiceNumber}.
-                    </div>
-                  )}
-
-                  {/* Approval / Rejection Action Buttons */}
-                  <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                    <button
-                      onClick={() => handleReject(b.id, b.posInvoiceNumber)}
-                      style={{
-                        flex: 1,
-                        padding: '10px 14px',
-                        borderRadius: 10,
-                        border: '1px solid var(--border)',
-                        background: 'var(--surface-alt)',
-                        color: 'var(--danger)',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6
-                      }}
-                    >
-                      <X size={14} /> Flag Discrepancy
-                    </button>
-
-                    <button
-                      onClick={() => handleApprove(b.id, b.posInvoiceNumber)}
-                      style={{
-                        flex: 1.5,
-                        padding: '10px 14px',
-                        borderRadius: 10,
-                        border: 'none',
-                        background: 'var(--primary)',
-                        color: '#070A09',
-                        fontSize: 12,
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        boxShadow: '0 4px 12px rgba(255, 138, 0, 0.25)'
-                      }}
-                    >
-                      <Check size={16} /> Approve &amp; Burn Coupon
-                    </button>
-                  </div>
-                </div>
+                  {s}
+                </button>
               ))}
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* TAB 2: SHIFT RECONCILIATION CLOSEOUT (SRS CHAPTER 18.2)   */}
-      {/* ======================================================== */}
-      {/* ======================================================== */}
-      {/* TAB 2: SHIFT RECONCILIATION CLOSEOUT (SRS CHAPTER 18.2)   */}
-      {/* ======================================================== */}
-      {activeTab === 'shift' && (() => {
-        const raw = (shiftSummary || {}) as any;
-        const cashRev = Number(raw.cashRevenue ?? raw.cashCollected ?? 0);
-        const cardRev = Number(raw.cardRevenue ?? raw.cardEdcSlips ?? 0);
-        const qrRev = Number(raw.qrRevenue ?? raw.storeCounterQrTotal ?? 0);
-        const onlineRev = Number(raw.onlineRevenue ?? raw.onlineGatewayTotal ?? 0);
-        const discountRev = Number(raw.totalDiscounts ?? raw.totalPromotionalDiscount ?? 0);
-        const totalTx = Number(raw.totalTransactions ?? raw.approvedCount ?? 0);
-        const shiftDate = raw.shiftDate || new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-        const recStatus = raw.reconciliationStatus || 'Balanced (0.00 Variance)';
-        const newSubs = Number(raw.newSubscriptionsEnrolled ?? 0);
-
-        return (
-          <div>
-            <div style={{
-              background: 'var(--surface)',
-              borderRadius: 20,
-              border: '1px solid var(--border)',
-              padding: 24,
-              marginBottom: 24,
-              boxShadow: 'var(--shadow-card)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-                <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>
-                    End-of-Shift Reconciliation Report
-                  </h3>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    Operational Date: {shiftDate} · Shift Counter Desk #1
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <span style={{
-                    padding: '6px 14px',
-                    borderRadius: 20,
-                    fontSize: 11,
-                    fontWeight: 800,
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    color: '#10B981',
-                    border: '1px solid rgba(16, 185, 129, 0.3)'
-                  }}>
-                    Status: {recStatus}
-                  </span>
-
-                  <button
-                    onClick={() => alert('Shift reconciliation PDF exported.')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '6px 12px',
-                      borderRadius: 8,
-                      background: 'var(--primary)',
-                      border: 'none',
-                      color: '#070A09',
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Download size={14} /> Export Shift PDF
-                  </button>
-                </div>
-              </div>
-
-              {/* Metrics Breakdown */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                <div className="kpi-card">
-                  <span className="kpi-label">TOTAL SIZZLO BILLS</span>
-                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24 }}>{totalTx}</div>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Verified dining settlements</span>
-                </div>
-
-                <div className="kpi-card">
-                  <span className="kpi-label">CASH COLLECTED</span>
-                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#10B981' }}>
-                    {safeCurrency(cashRev)}
-                  </div>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Physical cash in drawer</span>
-                </div>
-
-                <div className="kpi-card">
-                  <span className="kpi-label">CARD EDC SLIPS</span>
-                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#3B82F6' }}>
-                    {safeCurrency(cardRev)}
-                  </div>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Counter EDC machine total</span>
-                </div>
-
-                <div className="kpi-card">
-                  <span className="kpi-label">STORE COUNTER QR</span>
-                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#FF8A00' }}>
-                    {safeCurrency(qrRev)}
-                  </div>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>UPI Soundbox / QR transfers</span>
-                </div>
-
-                <div className="kpi-card">
-                  <span className="kpi-label">ONLINE GATEWAY</span>
-                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#A855F7' }}>
-                    {safeCurrency(onlineRev)}
-                  </div>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>In-App Razorpay settlements</span>
-                </div>
-
-                <div className="kpi-card">
-                  <span className="kpi-label">COUPON DISCOUNTS</span>
-                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: '#EF4444' }}>
-                    {safeCurrency(discountRev)}
-                  </div>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Burned subscriber vouchers</span>
-                </div>
-
-                <div className="kpi-card">
-                  <span className="kpi-label">FLOOR SUBSCRIPTIONS</span>
-                  <div className="kpi-value" style={{ marginTop: 6, fontSize: 24, color: 'var(--primary)' }}>
-                    {newSubs}
-                  </div>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Enrolled by captains today</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ======================================================== */}
-      {/* TAB 3: SUBSCRIBER DUES & REMINDERS                        */}
-      {/* ======================================================== */}
-      {activeTab === 'dues' && (
-        <div style={{
-          background: 'var(--surface)',
-          borderRadius: 20,
-          border: '1px solid var(--border)',
-          overflow: 'hidden',
-          boxShadow: 'var(--shadow-card)'
-        }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>Outstanding Subscriber Dues</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Automated payment collection reminders via WhatsApp, SMS, and Email</p>
-            </div>
-            <span style={{
-              fontSize: 12,
-              fontWeight: 700,
-              background: 'rgba(239, 68, 68, 0.15)',
-              color: 'var(--danger)',
-              padding: '4px 10px',
-              borderRadius: 20
-            }}>
-              {paymentList.length} Pending Accounts
-            </span>
-          </div>
-
-          <div style={{ overflowX: 'auto' }}>
-            <table className="admin-table">
-              <thead>
+      {/* TAB 1, 2, 4: UNIFIED PAYMENTS LEDGER */}
+      {(activeTab === 'all' || activeTab === 'subscriptions' || activeTab === 'events') && (
+        <div className="data-table-card" style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th style={{ width: '140px' }}>Payment ID / Ref</th>
+                <th>Customer Details</th>
+                <th>Payment Type &amp; Item</th>
+                <th>Mode of Payment</th>
+                <th>Amount Paid</th>
+                <th>Status</th>
+                <th>Outlet / Channel</th>
+                <th>Timestamp</th>
+                <th style={{ textAlign: 'center' }}>Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedRecords.length === 0 ? (
                 <tr>
-                  <th>Customer</th>
-                  <th>Amount Due</th>
-                  <th>Plan Tier</th>
-                  <th>Due Date</th>
-                  <th>Reminder Status</th>
-                  <th>Quick Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paymentList.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                      <Check size={24} color="#10B981" style={{ display: 'block', margin: '0 auto 8px' }} />
-                      No subscriber dues currently pending. All user accounts are fully settled and cleared!
-                    </td>
-                  </tr>
-                ) : (
-                  paymentList.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{p.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.id} · {p.mobile}</div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--danger)' }}>
-                        {safeCurrency(p.pending)}
-                      </span>
-                    </td>
-                    <td>
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        background: 'rgba(255, 138, 0, 0.15)',
-                        color: 'var(--primary)',
-                        padding: '3px 8px',
-                        borderRadius: 6
-                      }}>
-                        VIP Annual
-                      </span>
-                    </td>
-                    <td style={{ fontSize: 13, fontWeight: 600 }}>{p.dueDate}</td>
-                    <td>
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: p.reminder.includes('today') ? 'var(--warning)' : 'var(--text-muted)'
-                      }}>
-                        {p.reminder}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button
-                          onClick={() => {
-                            setActionNotice(`SMS reminder sent to ${p.name}`);
-                            setTimeout(() => setActionNotice(null), 3000);
-                          }}
-                          style={{
-                            background: 'rgba(16, 185, 129, 0.15)',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                            color: '#10B981',
-                            padding: '6px 10px',
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            fontSize: 11,
-                            fontWeight: 700
-                          }}
-                        >
-                          <MessageCircle size={12} /> WhatsApp Nudge
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setPaymentList(paymentList.filter(item => item.id !== p.id));
-                            setActionNotice(`Payment settled for ${p.name}`);
-                            setTimeout(() => setActionNotice(null), 3000);
-                          }}
-                          style={{
-                            background: 'var(--primary)',
-                            color: '#070A09',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            fontSize: 11,
-                            fontWeight: 700
-                          }}
-                        >
-                          <Check size={12} /> Mark Settled
-                        </button>
+                  <td colSpan={9} style={{ padding: '60px 24px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <Receipt size={24} />
                       </div>
-                    </td>
-                  </tr>
-                )))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                      <p style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 15, margin: 0 }}>
+                        {loading ? 'Fetching transactions...' : 'No Payment Transactions Found'}
+                      </p>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0, maxWidth: 360 }}>
+                        {loading ? 'Please wait.' : 'Payments made via Mobile App (Razorpay/UPI) or offline counter settlements will appear here in real-time.'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedRecords.map((p) => {
+                  const modeBadge = getModeBadge(p.paymentMode);
+                  const isSuccess = p.status === 'SUCCESS';
+                  const isRefunded = p.status === 'REFUNDED';
 
-      {/* ======================================================== */}
-      {/* TAB 4: RAZORPAY GATEWAY & RECONCILIATION LEDGER */}
-      {/* ======================================================== */}
-      {activeTab === 'razorpay' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Gateway Status Header Card */}
+                  return (
+                    <tr key={p.id || p.paymentId}>
+                      <td>
+                        <div>
+                          <span style={{ fontWeight: 800, color: 'var(--primary)', fontFamily: 'monospace', fontSize: 12 }}>
+                            {p.paymentId}
+                          </span>
+                          {p.invoiceNumber && (
+                            <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '2px 0 0', fontFamily: 'monospace' }}>
+                              {p.invoiceNumber}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div>
+                          <p style={{ fontWeight: 700, color: '#FFFFFF', fontSize: 13, margin: 0 }}>{p.customerName || 'Patron'}</p>
+                          <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', margin: '2px 0 0' }}>{p.customerMobile}</p>
+                        </div>
+                      </td>
+                      <td>
+                        <div>
+                          <span style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            background: p.paymentType === 'SUBSCRIPTION' ? 'rgba(232, 184, 74, 0.15)' : 'rgba(96, 165, 250, 0.15)',
+                            color: p.paymentType === 'SUBSCRIPTION' ? 'var(--gold)' : '#60A5FA',
+                            border: `1px solid ${p.paymentType === 'SUBSCRIPTION' ? 'rgba(232, 184, 74, 0.3)' : 'rgba(96, 165, 250, 0.3)'}`
+                          }}>
+                            {p.paymentType}
+                          </span>
+                          <p style={{ fontSize: 11, color: '#FFFFFF', fontWeight: 600, margin: '4px 0 0' }}>
+                            {p.planName || p.planId || 'Direct Payment'}
+                          </p>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: '4px 10px',
+                          borderRadius: 20,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          background: modeBadge.bg,
+                          color: modeBadge.color
+                        }}>
+                          <modeBadge.icon size={12} />
+                          {p.paymentMode}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: 800, color: '#FFFFFF', fontSize: 14 }}>
+                        {safeCurrency(p.amount)}
+                      </td>
+                      <td>
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          padding: '3px 8px',
+                          borderRadius: 20,
+                          background: isSuccess ? 'rgba(16, 185, 129, 0.15)' : isRefunded ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                          color: isSuccess ? '#10B981' : isRefunded ? '#EF4444' : '#F59E0B',
+                          border: `1px solid ${isSuccess ? 'rgba(16, 185, 129, 0.3)' : isRefunded ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                        }}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                          {p.outletName || 'Digital Online'}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                          {p.createdAt ? p.createdAt.replace('T', ' ').substring(0, 16) : 'Just now'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                          <button
+                            onClick={() => setSelectedReceipt(p)}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              background: 'var(--surface-alt)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--primary)',
+                              fontSize: 11,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4
+                            }}
+                            title="View Digital Receipt"
+                          >
+                            <Receipt size={12} /> Receipt
+                          </button>
+
+                          {isSuccess && (
+                            <button
+                              onClick={() => setRefundTarget(p)}
+                              style={{
+                                padding: '6px 8px',
+                                borderRadius: 8,
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                color: '#EF4444',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                              title="Process Refund"
+                            >
+                              Refund
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+
+          {/* Pagination Controls */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.6) 100%)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            borderRadius: 16,
-            padding: '20px 24px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            padding: '14px 20px',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--surface-alt)',
             flexWrap: 'wrap',
-            gap: 16
+            gap: 12,
+            fontSize: 12
           }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{
-                  display: 'inline-block',
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: '#10B981',
-                  boxShadow: '0 0 10px #10B981'
-                }} />
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#10B981', letterSpacing: '0.02em' }}>
-                  RAZORPAY GATEWAY CONNECTED &amp; ACTIVE
-                </h3>
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                Key ID: <code style={{ color: 'var(--primary)', background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: 4 }}>{razorpaySummary?.keyId || 'rzp_test_SIZZLO_VIP2026'}</code> · Webhook Auto-Clearance Active · Zero Manual Approval Required for Mode 3
-              </p>
+            <div style={{ color: 'var(--text-muted)' }}>
+              Showing <strong style={{ color: '#FFFFFF' }}>{totalItems === 0 ? 0 : startIndex + 1}</strong> to{' '}
+              <strong style={{ color: '#FFFFFF' }}>{endIndex}</strong> of{' '}
+              <strong style={{ color: 'var(--primary)' }}>{totalItems}</strong> payments
             </div>
 
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={async () => {
-                  try {
-                    await axios.post('/api/payments/razorpay/webhook', {
-                      event: 'payment.captured',
-                      amount: 10000
-                    });
-                    setActionNotice('Test Webhook dispatched! Simulated instant payment captured.');
-                    await loadData();
-                    setTimeout(() => setActionNotice(null), 4000);
-                  } catch (e: any) {
-                    setActionNotice('Webhook test trigger error');
-                  }
-                }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Rows:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
                 style={{
-                  background: 'rgba(16, 185, 129, 0.2)',
-                  border: '1px solid rgba(16, 185, 129, 0.4)',
-                  color: '#10B981',
-                  padding: '8px 16px',
-                  borderRadius: 10,
-                  cursor: 'pointer',
+                  padding: '4px 10px',
+                  borderRadius: 8,
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  color: '#FFFFFF',
                   fontSize: 12,
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6
+                  cursor: 'pointer',
+                  fontWeight: 600
                 }}
               >
-                <RefreshCw size={13} /> Test Webhook Ping
+                <option value={5}>5 per page</option>
+                <option value={10}>10 per page</option>
+                <option value={20}>20 per page</option>
+                <option value={50}>50 per page</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={validCurrentPage <= 1}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)',
+                  color: validCurrentPage <= 1 ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+                  cursor: validCurrentPage <= 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 11,
+                  fontWeight: 600
+                }}
+              >
+                <ChevronLeft size={14} /> Prev
+              </button>
+
+              <span style={{ color: 'var(--text-muted)', padding: '0 8px' }}>
+                Page <strong style={{ color: 'var(--primary)' }}>{validCurrentPage}</strong> of {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={validCurrentPage >= totalPages}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)',
+                  color: validCurrentPage >= totalPages ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+                  cursor: validCurrentPage >= totalPages ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 11,
+                  fontWeight: 600
+                }}
+              >
+                Next <ChevronRight size={14} />
               </button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Metric KPI Cards */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: 16
-          }}>
-            <div style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 16,
-              padding: 20
-            }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-                TOTAL RAZORPAY VOLUME
-              </span>
-              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--primary)', marginTop: 8 }}>
-                {safeCurrency(razorpaySummary?.totalVolumeInRupees ?? 27450)}
+      {/* TAB 3: DINE-IN BILL SETTLEMENTS & CASHIER QUEUE */}
+      {activeTab === 'pos_settlements' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Pending Approval Queue */}
+          <div style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', padding: 20, boxShadow: 'var(--shadow-card)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--primary)', margin: 0 }}>
+                  Live Cashier Verification Queue ({pendingBills.length})
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                  Dining table settlement requests pending manager approval
+                </p>
               </div>
-              <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>
-                ● 100% Verified in Escrow
-              </span>
             </div>
 
-            <div style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 16,
-              padding: 20
-            }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-                ONLINE TRANSACTIONS
-              </span>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#FFFFFF', marginTop: 8 }}>
-                {razorpayTransactions.length || 3}
+            {pendingBills.length === 0 ? (
+              <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                🎉 No pending table settlements. All cashier bills are cleared!
               </div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                Subscriptions &amp; Dine-in Bills
-              </span>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+                {pendingBills.map(b => (
+                  <div key={b.id} style={{ background: 'var(--surface-alt)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 14, padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, color: 'var(--primary)', fontSize: 13 }}>
+                        Bill #{b.id} {b.posInvoiceNumber ? `· ${b.posInvoiceNumber}` : ''}
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B' }}>
+                        {b.paymentMode}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: 12, marginBottom: 12 }}>
+                      <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.customerName || 'Walk-in Patron'}</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Cashier: {b.cashierId || 'Front Counter'} · {b.outletName}</div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', padding: 10, borderRadius: 8, marginBottom: 14, fontSize: 12 }}>
+                      <span>Gross: {safeCurrency(b.grossAmount)}</span>
+                      <span>Discount: -{safeCurrency(b.discountAmount)}</span>
+                      <span style={{ fontWeight: 800, color: 'var(--gold)' }}>Net: {safeCurrency(b.netPayable)}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => handleApproveBill(b.id)}
+                        style={{
+                          flex: 1,
+                          padding: '8px',
+                          borderRadius: 8,
+                          background: '#10B981',
+                          border: 'none',
+                          color: '#FFFFFF',
+                          fontWeight: 800,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4
+                        }}
+                      >
+                        <Check size={14} /> Approve Settlement
+                      </button>
+
+                      <button
+                        onClick={() => handleRejectBill(b.id)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          color: '#EF4444',
+                          fontWeight: 700,
+                          fontSize: 12,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <X size={14} /> Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: PENDING DUES & REMINDERS */}
+      {activeTab === 'dues' && (
+        <div className="data-table-card" style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Member ID</th>
+                <th>Member Name &amp; Phone</th>
+                <th>Outstanding Dues</th>
+                <th>Due Date / Expiry</th>
+                <th>Reminder Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {duesList.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: '50px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    🎉 No outstanding dues or expired renewals found! All accounts in good standing.
+                  </td>
+                </tr>
+              ) : (
+                duesList.map((d, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 800, color: 'var(--primary)', fontFamily: 'monospace' }}>
+                      {d.id}
+                    </td>
+                    <td>
+                      <div>
+                        <p style={{ fontWeight: 700, color: '#FFFFFF', margin: 0 }}>{d.name}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', margin: '2px 0 0' }}>{d.mobile}</p>
+                      </div>
+                    </td>
+                    <td style={{ fontWeight: 800, color: '#F87171', fontSize: 14 }}>
+                      {safeCurrency(d.pending)}
+                    </td>
+                    <td>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{d.dueDate}</span>
+                    </td>
+                    <td>
+                      <a
+                        href={`https://wa.me/${(d.mobile || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Dear ${d.name}, gentle reminder from Sizzlo Club regarding your subscription renewal / dining dues of ${safeCurrency(d.pending)}. Please settle online or visit your nearest outlet to continue enjoying VIP privileges.`)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 8,
+                          background: 'rgba(37, 211, 102, 0.15)',
+                          border: '1px solid rgba(37, 211, 102, 0.3)',
+                          color: '#25D366',
+                          fontWeight: 700,
+                          fontSize: 11,
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5
+                        }}
+                      >
+                        <MessageCircle size={13} /> Send WhatsApp Payment Link
+                      </a>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* TAB 6: RAZORPAY GATEWAY TELEMETRY */}
+      {activeTab === 'gateway' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', padding: 24, boxShadow: 'var(--shadow-card)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <ShieldCheck size={20} color="var(--gold)" />
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Razorpay Gateway Status</h3>
             </div>
 
-            <div style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 16,
-              padding: 20
-            }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-                PAYMENT CHANNELS
-              </span>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#FFFFFF', marginTop: 8 }}>
-                UPI / Cards / NetBanking
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>API Key ID:</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary)' }}>
+                  {razorpaySummary?.keyId || 'rzp_live_S5dgGJ3fEPa3fO'}
+                </span>
               </div>
-              <span style={{ fontSize: 11, color: '#10B981' }}>
-                Instant App Webhook Routing
-              </span>
-            </div>
 
-            <div style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 16,
-              padding: 20
-            }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-                CASHIER CLEARANCE
-              </span>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#10B981', marginTop: 8 }}>
-                AUTO-SETTLED
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Gateway Connection:</span>
+                <span style={{ fontWeight: 700, color: '#10B981' }}>● OPERATIONAL (LIVE)</span>
               </div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                Bypasses physical till delay
-              </span>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Webhook URL:</span>
+                <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#FFFFFF' }}>/api/payments/razorpay/webhook</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Settlement Cadence:</span>
+                <span style={{ fontWeight: 700, color: '#FFFFFF' }}>T+1 Automated Bank Settlement</span>
+              </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Transactions Table */}
+      {/* MODAL 1: DIGITAL TAX INVOICE / RECEIPT MODAL */}
+      {selectedReceipt && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1100,
+          backdropFilter: 'blur(6px)',
+          padding: 20
+        }}>
           <div style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',
-            borderRadius: 16,
-            overflow: 'hidden'
+            borderRadius: 20,
+            width: '100%',
+            maxWidth: 520,
+            padding: 28,
+            boxShadow: '0 20px 50px rgba(0,0,0,0.7)',
+            position: 'relative'
           }}>
-            <div style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
               <div>
-                <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>
-                  Razorpay Real-Time Transactions &amp; Audit Log
-                </h4>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  Live synchronized orders, payment IDs, and automatic loyalty allocations
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--gold)', letterSpacing: '0.08em' }}>
+                  SIZZLO HOSPITALITY GROUP
+                </span>
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF', margin: '4px 0 0' }}>
+                  Tax Invoice &amp; Receipt
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace', margin: '2px 0 0' }}>
+                  {selectedReceipt.invoiceNumber || `INV-${selectedReceipt.paymentId}`}
                 </p>
               </div>
+
               <button
-                onClick={loadData}
+                onClick={() => setSelectedReceipt(null)}
+                style={{ background: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 10, padding: 6, cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Receipt Summary Card */}
+            <div style={{ background: 'var(--surface-alt)', borderRadius: 14, padding: 18, border: '1px solid var(--border)', marginBottom: 18, fontSize: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 14 }}>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Customer:</span>
+                  <p style={{ fontWeight: 700, color: '#FFFFFF', margin: '2px 0 0' }}>{selectedReceipt.customerName}</p>
+                  <p style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11, margin: 0 }}>{selectedReceipt.customerMobile}</p>
+                </div>
+
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Payment Date:</span>
+                  <p style={{ fontWeight: 700, color: '#FFFFFF', margin: '2px 0 0' }}>
+                    {selectedReceipt.createdAt ? selectedReceipt.createdAt.replace('T', ' ').substring(0, 16) : 'Recent'}
+                  </p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 11, margin: 0 }}>{selectedReceipt.outletName || 'Digital'}</p>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Item / Plan:</span>
+                  <span style={{ fontWeight: 700, color: '#FFFFFF' }}>{selectedReceipt.planName || selectedReceipt.planId || selectedReceipt.paymentType}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Payment Mode:</span>
+                  <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{selectedReceipt.paymentMode}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Transaction ID:</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#FFFFFF' }}>{selectedReceipt.paymentId}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed var(--border)', paddingTop: 8, marginTop: 4 }}>
+                  <span style={{ fontWeight: 800, fontSize: 14, color: '#FFFFFF' }}>Net Amount Paid:</span>
+                  <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--gold)' }}>{safeCurrency(selectedReceipt.amount)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => window.print()}
                 style={{
-                  background: 'transparent',
+                  padding: '9px 16px',
+                  borderRadius: 10,
+                  background: 'var(--surface-alt)',
                   border: '1px solid var(--border)',
-                  color: 'var(--primary)',
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  fontSize: 11,
+                  color: '#FFFFFF',
                   fontWeight: 700,
+                  fontSize: 12,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6
                 }}
               >
-                <RefreshCw size={12} /> Refresh
+                <Printer size={14} /> Print Receipt
+              </button>
+
+              <button
+                onClick={() => setSelectedReceipt(null)}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: 10,
+                  background: 'var(--primary)',
+                  border: 'none',
+                  color: '#000',
+                  fontWeight: 800,
+                  fontSize: 12,
+                  cursor: 'pointer'
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: MANUAL OFFLINE PAYMENT RECORDING */}
+      {showManualModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1100,
+          backdropFilter: 'blur(6px)',
+          padding: 20
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 20,
+            width: '100%',
+            maxWidth: 520,
+            padding: 24
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)', margin: 0 }}>
+                Record Counter / Offline Payment
+              </h3>
+              <button
+                onClick={() => setShowManualModal(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={20} />
               </button>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11 }}>ORDER &amp; PAYMENT ID</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11 }}>CUSTOMER</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11 }}>PURPOSE / TYPE</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11 }}>METHOD</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11 }}>AMOUNT</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11 }}>STATUS</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-muted)', fontWeight: 700, fontSize: 11 }}>TIMESTAMP</th>
-                </tr>
-              </thead>
-              <tbody>
-                {razorpayTransactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} style={{ padding: 36, textAlign: 'center', color: 'var(--text-muted)' }}>
-                      No online Razorpay transactions recorded yet.
-                    </td>
-                  </tr>
-                ) : (
-                  razorpayTransactions.map((tx, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: 12 }}>{tx.orderId}</div>
-                        <div style={{ color: 'var(--primary)', fontSize: 11, fontFamily: 'monospace' }}>{tx.paymentId}</div>
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ fontWeight: 600, color: '#FFFFFF' }}>{tx.customerName || 'User'}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tx.customerMobile || '+91 98250 12345'}</div>
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{
-                          padding: '3px 8px',
-                          borderRadius: 6,
-                          fontSize: 10,
-                          fontWeight: 800,
-                          background: tx.type === 'SUBSCRIPTION' ? 'rgba(217, 119, 6, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                          color: tx.type === 'SUBSCRIPTION' ? '#F59E0B' : '#60A5FA',
-                          border: `1px solid ${tx.type === 'SUBSCRIPTION' ? 'rgba(217, 119, 6, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`
-                        }}>
-                          {tx.type} {tx.planId ? `(${tx.planId})` : tx.posInvoiceNumber ? `(${tx.posInvoiceNumber})` : ''}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: 12 }}>
-                        {tx.channel || 'GATEWAY_UPI'}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--primary)' }}>
-                        {safeCurrency(tx.amount)}
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{
-                          padding: '3px 8px',
-                          borderRadius: 6,
-                          fontSize: 10,
-                          fontWeight: 800,
-                          background: 'rgba(16, 185, 129, 0.15)',
-                          color: '#10B981',
-                          border: '1px solid rgba(16, 185, 129, 0.3)'
-                        }}>
-                          {tx.status || 'CAPTURED'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: 11 }}>
-                        {tx.timestamp ? new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            <form onSubmit={handleSaveManualPayment} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                  Customer Full Name *
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={manualForm.customerName}
+                  onChange={(e) => setManualForm({ ...manualForm, customerName: e.target.value })}
+                  placeholder="e.g. Ramesh Shah"
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, background: 'var(--surface-alt)', border: '1px solid var(--border)', color: '#FFFFFF', fontSize: 12 }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                    Customer Mobile Number *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={manualForm.customerMobile}
+                    onChange={(e) => setManualForm({ ...manualForm, customerMobile: e.target.value })}
+                    placeholder="+91 98250 12345"
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, background: 'var(--surface-alt)', border: '1px solid var(--border)', color: '#FFFFFF', fontSize: 12 }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                    Amount (₹) *
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    value={manualForm.amount}
+                    onChange={(e) => setManualForm({ ...manualForm, amount: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, background: 'var(--surface-alt)', border: '1px solid var(--border)', color: '#FFFFFF', fontSize: 12, fontWeight: 700 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                    Payment Type
+                  </label>
+                  <select
+                    value={manualForm.paymentType}
+                    onChange={(e) => setManualForm({ ...manualForm, paymentType: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, background: 'var(--surface-alt)', border: '1px solid var(--border)', color: '#FFFFFF', fontSize: 12 }}
+                  >
+                    <option value="SUBSCRIPTION">VIP Subscription</option>
+                    <option value="BILL_SETTLEMENT">Dining Bill Settlement</option>
+                    <option value="EVENT_BOOKING">Event / Brunch Booking</option>
+                    <option value="BANQUET_ADVANCE">Banquet Advance</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                    Payment Mode
+                  </label>
+                  <select
+                    value={manualForm.paymentMode}
+                    onChange={(e) => setManualForm({ ...manualForm, paymentMode: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, background: 'var(--surface-alt)', border: '1px solid var(--border)', color: '#FFFFFF', fontSize: 12 }}
+                  >
+                    <option value="CASH">Cash Counter</option>
+                    <option value="STORE_QR">Store QR (Paytm/GPay)</option>
+                    <option value="POS_TERMINAL">Card Swipe (POS)</option>
+                    <option value="UPI">Direct UPI Transfer</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowManualModal(false)}
+                  style={{ padding: '9px 16px', borderRadius: 8, background: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingManual}
+                  style={{ padding: '9px 20px', borderRadius: 8, background: 'var(--primary)', border: 'none', color: '#000', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  {isSubmittingManual ? 'Recording...' : 'Save & Record Payment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: REFUND CONFIRMATION */}
+      {refundTarget && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1100,
+          backdropFilter: 'blur(6px)',
+          padding: 20
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: 20,
+            width: '100%',
+            maxWidth: 440,
+            padding: 24
+          }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#EF4444', margin: 0, marginBottom: 8 }}>
+              Confirm Payment Refund
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 16px' }}>
+              Are you sure you want to mark transaction <strong>{refundTarget.paymentId}</strong> for <strong>{safeCurrency(refundTarget.amount)}</strong> as refunded?
+            </p>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                Refund Reason:
+              </label>
+              <input
+                type="text"
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                style={{ width: '100%', padding: '9px 12px', borderRadius: 8, background: 'var(--surface-alt)', border: '1px solid var(--border)', color: '#FFFFFF', fontSize: 12 }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                onClick={() => setRefundTarget(null)}
+                style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isProcessingRefund}
+                onClick={handleProcessRefund}
+                style={{ padding: '8px 18px', borderRadius: 8, background: '#EF4444', border: 'none', color: '#FFFFFF', fontWeight: 800, cursor: 'pointer' }}
+              >
+                {isProcessingRefund ? 'Refunding...' : 'Confirm Refund'}
+              </button>
+            </div>
           </div>
         </div>
       )}

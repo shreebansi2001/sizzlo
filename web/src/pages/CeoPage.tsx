@@ -64,8 +64,8 @@ export const CeoPage: React.FC<CeoPageProps> = ({ kpis: initialKpis, outlets: in
   // Dynamic EBITDA Weighted Margin
   const dynamicWeightedMargin = totalRevLakhs > 0
     ? (activeOutlets.reduce((acc, o) => acc + ((o.revenueLakhs || 0) * (20 + ((o.rating || 4.5) * 1.5))), 0) / totalRevLakhs).toFixed(1)
-    : '24.8';
-  const marginExpansion = `+${((Number(dynamicWeightedMargin) - 20) * 0.4).toFixed(1)}% expansion`;
+    : '0';
+  const marginExpansion = totalRevLakhs > 0 ? `+${((Number(dynamicWeightedMargin) - 20) * 0.4).toFixed(1)}% expansion` : '0% expansion';
 
   // Dynamic VIP Retention calculation from real patron dataset
   const subscribedMembers = memberList.filter(m => {
@@ -76,7 +76,7 @@ export const CeoPage: React.FC<CeoPageProps> = ({ kpis: initialKpis, outlets: in
   const activeSubscribedCount = subscribedMembers.filter(m => m.status === 'Active').length;
   const dynamicRetentionRate = subscribedMembers.length > 0
     ? ((activeSubscribedCount / subscribedMembers.length) * 100).toFixed(1)
-    : '88.6';
+    : '0';
 
   // Dynamic Brand Performance Breakdown directly from API Outlets
   const brandPerformance = activeOutlets.map(o => {
@@ -93,7 +93,7 @@ export const CeoPage: React.FC<CeoPageProps> = ({ kpis: initialKpis, outlets: in
     };
   });
 
-  const topVenueName = activeOutlets[0]?.name || 'Bodakdev Signature';
+  const topVenueName = activeOutlets[0]?.name || 'Flagship Outlet';
 
   const executiveDirectives = [
     { 

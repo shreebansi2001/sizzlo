@@ -10,6 +10,7 @@ import { OutletsPage } from './pages/OutletsPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { MembershipsPage } from './pages/MembershipsPage';
 import { PaymentsPage } from './pages/PaymentsPage';
+import { SalesPage } from './pages/SalesPage';
 import { LoyaltyPage } from './pages/LoyaltyPage';
 import { EventsPage } from './pages/EventsPage';
 import { MarketingPage } from './pages/MarketingPage';
@@ -26,6 +27,12 @@ const TAB_PERMISSIONS: Record<string, string> = {
   insights: 'INSIGHTS_VIEW',
   ceo: 'CEO_SUITE_VIEW',
   customers: 'CUSTOMERS_MANAGE',
+  sales: 'SALES_MANAGE',
+  sales_performance: 'SALES_MANAGE',
+  sales_floor: 'SALES_MANAGE',
+  sales_corporate: 'SALES_MANAGE',
+  sales_training: 'SALES_MANAGE',
+  sales_payroll: 'SALES_MANAGE',
   memberships: 'MEMBERSHIPS_MANAGE',
   loyalty: 'LOYALTY_MANAGE',
   coupons: 'COUPONS_MANAGE',
@@ -135,8 +142,9 @@ export function App() {
   const getInitialTab = () => {
     const hash = window.location.hash.replace('#', '');
     const validTabs = [
-      'dashboard', 'insights', 'ceo', 'customers', 'memberships', 'loyalty', 
-      'coupons', 'payments', 'reservations', 'floor',
+      'dashboard', 'insights', 'ceo', 'customers', 'payments', 
+      'sales', 'sales_performance', 'sales_floor', 'sales_corporate', 'sales_training', 'sales_payroll',
+      'memberships', 'loyalty', 'coupons', 'reservations', 'floor',
       'outlets', 'events', 'banquets', 'marketing', 'staff', 'feedback'
     ];
     return validTabs.includes(hash) ? hash : 'dashboard';
@@ -185,15 +193,27 @@ export function App() {
       case 'ceo':
         return { title: 'CEO Strategic Suite', subtitle: 'Consolidated group revenue, forecast and margins' };
       case 'customers':
-        return { title: 'Users Management', subtitle: 'View registered users, subscribed VIP members & free accounts' };
+        return { title: 'Sizzlo Club & Member Registry', subtitle: '360° Patron profiles, digital VIP passports, spend analytics, loyalty wallets & privileges' };
+      case 'payments':
+        return { title: 'Payments & Financial Operations Hub', subtitle: 'Unified transaction ledger, plan purchases, mode of payment, POS table settlements & digital receipts' };
+      case 'sales':
+        return { title: 'Targets & Quota Bifurcation', subtitle: 'Owner Master Mandates • TL Multi-Branch Split • Floor Captain & Corporate BDE Quotas' };
+      case 'sales_performance':
+        return { title: 'Team Performance & Lagging Radar', subtitle: 'Live Rep-by-Rep Diagnostics • Quota vs Achieved • Lagging Deficit Alerts & Coaching Interventions' };
+      case 'sales_floor':
+        return { title: 'Floor Sales Enroller & Table POS', subtitle: 'Dining Table Quick-Enrollment • Real-time Member Provisioning • Auto-Attributed Commission' };
+      case 'sales_corporate':
+        return { title: 'Corporate Deals & Banquet Dispatch', subtitle: 'Company Pipeline CRM • TL Deal Approval • Bulk Corporate Passes • Banquet Lead Desk' };
+      case 'sales_training':
+        return { title: 'Sales Contests & Pitch Playbooks', subtitle: 'Live Incentive Contests • Leaderboards • Table Pitch Scripts & Objection Handling' };
+      case 'sales_payroll':
+        return { title: 'Incentive Ledger & Commission Payroll', subtitle: 'Audited Commission Records • TL Overrides • Owner Sign-Off & CSV Export' };
       case 'memberships':
-        return { title: 'Subscription Management', subtitle: 'Track subscriptions, renewal forecast and lifetime growth' };
+        return { title: 'Subscription Plans & Privileges', subtitle: 'Configure Classic, Signature, and Elite tiers, pricing, dining perks, and terms' };
       case 'loyalty':
         return { title: 'Loyalty Point Management', subtitle: 'Track points issuance, redemption and free renewals' };
       case 'coupons':
         return { title: 'Voucher Management', subtitle: 'Create, issue and track dining privilege vouchers' };
-      case 'payments':
-        return { title: 'Pending Collections & Dues', subtitle: 'Automated reminders via WhatsApp, SMS, and Email' };
       case 'reservations':
         return { title: 'Interactive Calendar & Bookings', subtitle: 'Monthly calendar view, branch scoping, 2-guest couple tables, and host settlement desk' };
       case 'floor':
@@ -270,6 +290,38 @@ export function App() {
           )}
           {currentTab === 'customers' && (
             <CustomersPage key={`customers-${refreshKey}`} onRefresh={handleRefresh} />
+          )}
+          {currentTab === 'payments' && (
+            <PaymentsPage payments={[]} />
+          )}
+          {(currentTab === 'sales' || 
+            currentTab === 'sales_performance' || 
+            currentTab === 'sales_floor' || 
+            currentTab === 'sales_corporate' || 
+            currentTab === 'sales_training' || 
+            currentTab === 'sales_payroll') && (
+            <SalesPage 
+              key={`sales-${currentTab}-${refreshKey}`} 
+              currentUser={currentUser}
+              activeSection={
+                currentTab === 'sales_performance' ? 'performance' :
+                currentTab === 'sales_floor' ? 'floor' :
+                currentTab === 'sales_corporate' ? 'corporate' :
+                currentTab === 'sales_training' ? 'training' :
+                currentTab === 'sales_payroll' ? 'payroll' : 'targets'
+              }
+              onNavigateSection={(sec) => {
+                const tabMap: Record<string, string> = {
+                  targets: 'sales',
+                  performance: 'sales_performance',
+                  floor: 'sales_floor',
+                  corporate: 'sales_corporate',
+                  training: 'sales_training',
+                  payroll: 'sales_payroll'
+                };
+                setCurrentTab(tabMap[sec] || 'sales');
+              }}
+            />
           )}
           {currentTab === 'memberships' && (
             <MembershipsPage />
