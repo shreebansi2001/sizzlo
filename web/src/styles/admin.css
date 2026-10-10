@@ -102,10 +102,15 @@ body {
   display: flex;
   min-height: 100vh;
   background-color: var(--background);
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
 }
 
 .admin-sidebar {
   width: 260px;
+  min-width: 260px;
   background-color: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
   color: var(--text-main);
@@ -116,7 +121,7 @@ body {
   bottom: 0;
   left: 0;
   z-index: 50;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sidebar-brand {
@@ -211,17 +216,23 @@ body {
 
 /* Main Area */
 .admin-main {
-  flex: 1;
+  flex: 1 1 0%;
   margin-left: 260px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background: var(--background);
+  min-width: 0;
+  width: calc(100% - 260px);
+  max-width: calc(100vw - 260px);
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .admin-header {
-  height: 72px;
-  background: rgba(7, 10, 9, 0.85);
+  min-height: 68px;
+  height: auto;
+  background: rgba(7, 10, 9, 0.9);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
@@ -230,24 +241,31 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
+  padding: 12px 24px;
+  gap: 14px;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .header-search {
   position: relative;
-  width: 320px;
+  width: 280px;
+  max-width: 100%;
 }
 
 .header-search input {
   width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
-  padding: 10px 14px 10px 38px;
+  padding: 9px 14px 9px 36px;
   border-radius: 12px;
   color: var(--text-main);
   font-size: 13px;
   outline: none;
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .header-search input:focus {
@@ -276,8 +294,13 @@ body {
 }
 
 .admin-content {
-  padding: 32px;
-  flex: 1;
+  padding: 24px;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Page Header */

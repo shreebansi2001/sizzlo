@@ -24,6 +24,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       color: '#C9A24D',
     },
     {
+      title: 'Sales Team Lead (Head of Sales)',
+      subtitle: 'Sales Operations & Quotas · All Branches',
+      email: 'salestl@sizzlo.com',
+      pass: 'admin123',
+      badge: '👩‍💼 Sales TL',
+      color: '#3B82F6',
+    },
+    {
       title: 'Branch Admin (Bodakdev)',
       subtitle: 'Branch Admin GM · Bodakdev Branch',
       email: 'bodakdev.admin@sizzlo.com',

@@ -25,7 +25,7 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     activePlan.value = member.value.planId;
-    diningEvents.value = [];
+    diningEvents.value = <DiningEventModel>[];
     loadDashboardData();
   }
 

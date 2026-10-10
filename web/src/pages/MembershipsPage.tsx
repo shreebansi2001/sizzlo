@@ -24,7 +24,7 @@ import { fetchPlans, addOfferToPlan, removeOfferFromPlan, updatePlanDetails } fr
 
 export const MembershipsPage: React.FC = () => {
   const [memberList, setMemberList] = useState<Member[]>([]);
-  const [membershipRev, setMembershipRev] = useState('₹1.10 Lakh');
+  const [membershipRev, setMembershipRev] = useState('₹0');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);

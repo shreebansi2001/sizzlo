@@ -346,7 +346,7 @@ class ApiService {
         }
       }
     } catch (_) {}
-    return _defaultActiveOutlets(brand);
+    return [];
   }
 
   Future<List<OutletModel>> getUpcomingOutlets() async {
@@ -361,133 +361,7 @@ class ApiService {
         }
       }
     } catch (_) {}
-    return _defaultUpcomingOutlets();
-  }
-
-  List<OutletModel> _defaultActiveOutlets([String? brand]) {
-    final list = [
-      OutletModel(
-        id: 33,
-        name: 'Yanki Sizzlerr Vastrapur Lake',
-        brand: 'Yanki Sizzlerr',
-        address: 'Opp. Vastrapur Lake, AlphaOne Mall, Vastrapur, Ahmedabad',
-        city: 'Ahmedabad',
-        contactNumber: '+91 98250 12345',
-        rating: 4.9,
-        isUpcoming: false,
-        conceptTag: 'Lakeview Sizzler & Grill Bar',
-        targetLaunchDate: '',
-        openingHours: '11:30 AM - 11:30 PM',
-        latitude: 23.0402,
-        longitude: 72.5309,
-        imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800',
-      ),
-      OutletModel(
-        id: 1,
-        name: 'Yanki Sizzlerr Bodakdev',
-        brand: 'Yanki Sizzlerr',
-        address: 'Bodakdev, Ahmedabad',
-        city: 'Ahmedabad',
-        contactNumber: '+91 79 4001 0001',
-        rating: 4.9,
-        isUpcoming: false,
-        conceptTag: 'Heritage Sizzler Dining',
-        targetLaunchDate: '',
-        openingHours: '12:00 PM - 11:30 PM',
-        latitude: 23.0373,
-        longitude: 72.5120,
-        imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800',
-      ),
-      OutletModel(
-        id: 2,
-        name: 'Yanki Sizzlerr SG Highway',
-        brand: 'Yanki Sizzlerr',
-        address: 'SG Highway, Ahmedabad',
-        city: 'Ahmedabad',
-        contactNumber: '+91 79 4001 0002',
-        rating: 4.8,
-        isUpcoming: false,
-        conceptTag: 'Signature Dine-in Lounge',
-        targetLaunchDate: '',
-        openingHours: '12:00 PM - 11:30 PM',
-        latitude: 23.0525,
-        longitude: 72.5028,
-        imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800',
-      ),
-      OutletModel(
-        id: 3,
-        name: 'Dough by Yanki CG Road',
-        brand: 'Dough by Yanki',
-        address: 'CG Road, Ahmedabad',
-        city: 'Ahmedabad',
-        contactNumber: '+91 79 4001 0003',
-        rating: 4.7,
-        isUpcoming: false,
-        conceptTag: 'Bakery & Artisanal Café',
-        targetLaunchDate: '',
-        openingHours: '10:00 AM - 11:00 PM',
-        latitude: 23.0298,
-        longitude: 72.5567,
-        imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800',
-      ),
-      OutletModel(
-        id: 4,
-        name: 'House of Yanki Banquets Bopal',
-        brand: 'House of Yanki',
-        address: 'South Bopal, Ahmedabad',
-        city: 'Ahmedabad',
-        contactNumber: '+91 79 4001 0004',
-        rating: 4.9,
-        isUpcoming: false,
-        conceptTag: 'Grand Banquets & Lawns',
-        targetLaunchDate: '',
-        openingHours: '10:00 AM - 12:00 AM',
-        latitude: 23.0135,
-        longitude: 72.4645,
-        imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800',
-      ),
-    ];
-    if (brand != null && brand.isNotEmpty && brand != 'All' && brand != 'All Outlets') {
-      return list.where((o) => o.brand.toLowerCase() == brand.toLowerCase()).toList();
-    }
-    return list;
-  }
-
-  List<OutletModel> _defaultUpcomingOutlets() {
-    return [
-      OutletModel(
-        id: 5,
-        name: 'Yanki Sizzlerr Sindhu Bhavan Road',
-        brand: 'Yanki Sizzlerr',
-        address: 'Sindhu Bhavan Road, Ahmedabad',
-        city: 'Ahmedabad',
-        contactNumber: '+91 79 4001 0005',
-        rating: 4.9,
-        isUpcoming: true,
-        conceptTag: 'Rooftop Sizzler Lounge',
-        targetLaunchDate: 'Opening December 2026',
-        openingHours: 'Opening Soon',
-        latitude: 23.0450,
-        longitude: 72.5050,
-        imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800',
-      ),
-      OutletModel(
-        id: 6,
-        name: 'Dough by Yanki Infocity',
-        brand: 'Dough by Yanki',
-        address: 'Infocity, Gandhinagar',
-        city: 'Gandhinagar',
-        contactNumber: '+91 79 4001 0006',
-        rating: 4.8,
-        isUpcoming: true,
-        conceptTag: 'Express Café & Bakery',
-        targetLaunchDate: 'Opening January 2027',
-        openingHours: 'Opening Soon',
-        latitude: 23.1890,
-        longitude: 72.6280,
-        imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800',
-      ),
-    ];
+    return [];
   }
 
   Future<bool> notifyLaunch(String outletName, String mobile) async {
@@ -995,83 +869,7 @@ class ApiService {
         }
       }
     } catch (_) {}
-    return _mockPlans();
-  }
-
-  List<Map<String, dynamic>> _mockPlans() {
-    return [
-      {
-        'id': 'classic',
-        'name': 'Classic',
-        'memberLabel': 'CLASSIC SUBSCRIBER',
-        'price': 1,
-        'couponLimit': 6,
-        'giftVoucherLimit': 0,
-        'offerLabel': '6 OFFERS',
-        'description': 'Yanki Sizzlerr only',
-        'personality': 'Warm Premium',
-        'highlights': [
-          '10% off across 6 visits',
-          'Birthday week benefit',
-          'Complimentary couple meal',
-        ],
-        'benefits': [
-          '10% off bill amount, 6 times a year',
-          'Complimentary birthday dessert and gift voucher',
-          'Complimentary couple meal on special anniversary',
-          'Priority table reservations on weekends',
-          'Valid across all Yanki Sizzlerr locations',
-        ],
-      },
-      {
-        'id': 'signature',
-        'name': 'Signature',
-        'memberLabel': 'SIGNATURE SUBSCRIBER',
-        'price': 2,
-        'couponLimit': 12,
-        'giftVoucherLimit': 0,
-        'offerLabel': '12 OFFERS',
-        'description': 'Restaurant, Dough, banquet and catering',
-        'personality': 'Rich & Sophisticated',
-        'highlights': [
-          '12 dining visits annually',
-          'Dough by Yanki rewards',
-          'Banquet and catering benefits',
-        ],
-        'benefits': [
-          '12 dining visits annually with 10% privilege discount',
-          'Couple dinner at 50% off twice per year',
-          'Dough by Yanki Buy 1 Get 1 complimentary',
-          'Banquet & catering privileges at House of Yanki',
-          'Free renewal subscription upon earning 25,000 points',
-          'VIP private table reservation with dedicated manager',
-        ],
-      },
-      {
-        'id': 'elite',
-        'name': 'Elite',
-        'memberLabel': 'ELITE SUBSCRIBER',
-        'price': 3,
-        'couponLimit': 10,
-        'giftVoucherLimit': 5,
-        'offerLabel': '10 OFFERS + GIFT VOUCHERS',
-        'description': 'All Yanki outlets',
-        'personality': 'Exclusive VIP',
-        'highlights': [
-          '18 dining visits annually',
-          'Premium banquet benefits',
-          'Exclusive gift vouchers',
-        ],
-        'benefits': [
-          '18 dining visits annually across all Yanki outlets',
-          'Premium banquet reservations with dedicated catering manager',
-          'Exclusive gift vouchers worth ₹5,000 for family & friends',
-          'All access pass to Yanki Signature, Dough & Banquets',
-          'Complimentary VIP birthday dinner for up to 4 guests',
-          'Highest priority reservation window even on rush days',
-        ],
-      },
-    ];
+    return [];
   }
 
   /// Fetch active dining events

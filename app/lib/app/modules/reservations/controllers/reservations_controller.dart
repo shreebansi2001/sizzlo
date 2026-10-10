@@ -107,7 +107,9 @@ class ReservationsController extends GetxController {
   final RxString banquetCategory = 'Wedding'.obs;
   final RxString banquetShift = 'Dinner'.obs;
   final RxInt banquetPax = 100.obs;
-  final banquetDateController = TextEditingController(text: '2026-11-20');
+  final banquetDateController = TextEditingController(
+    text: DateFormat('yyyy-MM-dd').format(DateTime.now().add(const Duration(days: 14))),
+  );
   final banquetNotesController = TextEditingController();
 
   final RxList<String> outlets = <String>[
