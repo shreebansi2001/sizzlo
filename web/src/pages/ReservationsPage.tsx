@@ -52,6 +52,7 @@ import {
   deleteTimeSlot, 
   fetchOutlets,
   fetchBanquetHalls,
+  fetchBanquetLeads,
   createBanquetHall,
   updateBanquetHall,
   deleteBanquetHall,
@@ -82,367 +83,7 @@ interface UpcomingItem {
   createdAt?: string;
 }
 
-const DEFAULT_MOCK_BOOKINGS: UpcomingItem[] = [
-  // LAST WEEK (Past History: 1 Oct - 7 Oct 2026)
-  {
-    dbId: 'hist-1',
-    id: 'R-1920',
-    customer: 'Vikram Malhotra',
-    mobile: '+91 98251 44321',
-    outlet: 'Yanki Sizzlerr Bodakdev',
-    date: '05 Oct 2026, 08:00 PM',
-    guests: 2,
-    status: 'Completed',
-    vip: true,
-    tierPriorityTag: 'Signature',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: true,
-    notes: 'Window booth · Couple anniversary dinner',
-    tableAssigned: 'T4',
-    createdAt: '2026-10-05T14:30:00.000'
-  },
-  {
-    dbId: 'hist-2',
-    id: 'R-1921',
-    customer: 'Ananya Singhania',
-    mobile: '+91 98980 11223',
-    outlet: 'Yanki Sizzlerr SG Highway',
-    date: '04 Oct 2026, 08:30 PM',
-    guests: 4,
-    status: 'Completed',
-    vip: true,
-    tierPriorityTag: 'Elite',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: true,
-    notes: 'Family dinner celebration',
-    tableAssigned: 'T8',
-    createdAt: '2026-10-04T12:00:00.000'
-  },
-  {
-    dbId: 'hist-3',
-    id: 'R-1922',
-    customer: 'Rohan & Ritu Verma',
-    mobile: '+91 97240 88990',
-    outlet: 'Dough by Yanki CG Road',
-    date: '03 Oct 2026, 07:45 PM',
-    guests: 2,
-    status: 'Completed',
-    vip: false,
-    tierPriorityTag: 'Non-Subscriber',
-    bookingAdvance: 99,
-    advancePaid: true,
-    advanceDeducted: true,
-    notes: 'Artisan sourdough & desserts tasting',
-    tableAssigned: 'T2',
-    createdAt: '2026-10-03T16:15:00.000'
-  },
-  {
-    dbId: 'hist-4',
-    id: 'R-1923',
-    customer: 'Sameer Desai',
-    mobile: '+91 99090 33445',
-    outlet: 'Yanki Sizzlerr Bodakdev',
-    date: '02 Oct 2026, 09:00 PM',
-    guests: 6,
-    status: 'Completed',
-    vip: true,
-    tierPriorityTag: 'Gold',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: true,
-    notes: 'Corporate client dinner',
-    tableAssigned: 'T11',
-    createdAt: '2026-10-02T18:40:00.000'
-  },
-  {
-    dbId: 'hist-5',
-    id: 'R-1924',
-    customer: 'Pooja Bhatt',
-    mobile: '+91 98255 77665',
-    outlet: 'Yanki Sizzlerr Vastrapur Lake',
-    date: '01 Oct 2026, 08:15 PM',
-    guests: 2,
-    status: 'Completed',
-    vip: false,
-    tierPriorityTag: 'Non-Subscriber',
-    bookingAdvance: 99,
-    advancePaid: true,
-    advanceDeducted: true,
-    notes: 'Lakeside deck table',
-    tableAssigned: 'T1',
-    createdAt: '2026-10-01T15:00:00.000'
-  },
-
-  // YESTERDAY (Past History: 9 Oct 2026)
-  {
-    dbId: 'hist-6',
-    id: 'R-2101',
-    customer: 'Rohit Sharma',
-    mobile: '+91 99887 76655',
-    outlet: 'Navrangpura',
-    date: '09 Oct 2026, 08:30 PM',
-    guests: 4,
-    status: 'Completed',
-    vip: false,
-    tierPriorityTag: 'Non-Subscriber',
-    bookingAdvance: 99,
-    advancePaid: true,
-    advanceDeducted: true,
-    notes: 'Birthday celebration table',
-    tableAssigned: 'T5',
-    createdAt: '2026-10-09T12:40:03.893'
-  },
-  {
-    dbId: 'hist-7',
-    id: 'R-2102',
-    customer: 'Aakash Dave',
-    mobile: '+91 97123 45678',
-    outlet: 'Yanki Sizzlerr Bodakdev',
-    date: '09 Oct 2026, 01:00 PM',
-    guests: 2,
-    status: 'Completed',
-    vip: true,
-    tierPriorityTag: 'Signature',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: true,
-    notes: 'Lunch sizzler tasting',
-    tableAssigned: 'T3',
-    createdAt: '2026-10-09T10:15:00.000'
-  },
-
-  // TODAY (10 Oct 2026)
-  {
-    dbId: 'today-1',
-    id: 'R-2841',
-    customer: 'Rahul Mehta',
-    mobile: '+91 98250 12345',
-    outlet: 'Yanki Sizzlerr Bodakdev',
-    date: 'Today, 08:30 PM',
-    guests: 4,
-    status: 'Confirmed',
-    vip: true,
-    tierPriorityTag: 'Signature',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Table 4 reserved - VIP booth',
-    tableAssigned: 'T4',
-    createdAt: '2026-10-10T09:00:00.000'
-  },
-  {
-    dbId: 'today-2',
-    id: 'R-3610',
-    customer: 'Dipa Patel',
-    mobile: '+91 88495 77644',
-    outlet: 'Yanki Sizzlerr Bodakdev',
-    date: 'Today, 12:30 PM',
-    guests: 2,
-    status: 'Confirmed',
-    vip: true,
-    tierPriorityTag: 'Signature',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Quiet couple table for lunch',
-    tableAssigned: 'T2',
-    createdAt: '2026-10-10T10:30:00.000'
-  },
-  {
-    dbId: 'today-3',
-    id: 'R-3612',
-    customer: 'Kunal Shah',
-    mobile: '+91 98790 65432',
-    outlet: 'Dough by Yanki CG Road',
-    date: 'Today, 08:15 PM',
-    guests: 2,
-    status: 'Waitlisted',
-    vip: false,
-    tierPriorityTag: 'Non-Subscriber',
-    bookingAdvance: 99,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Couple seating near dessert bar',
-    createdAt: '2026-10-10T11:00:00.000'
-  },
-  {
-    dbId: 'today-4',
-    id: 'R-3615',
-    customer: 'Neha Parikh',
-    mobile: '+91 98240 55112',
-    outlet: 'Yanki Sizzlerr SG Highway',
-    date: 'Today, 09:00 PM',
-    guests: 2,
-    status: 'Confirmed',
-    vip: false,
-    tierPriorityTag: 'Non-Subscriber',
-    bookingAdvance: 99,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Couple table reservation',
-    createdAt: '2026-10-10T11:15:00.000'
-  },
-
-  // TOMORROW (11 Oct 2026)
-  {
-    dbId: 'tmrw-1',
-    id: 'R-2840',
-    customer: 'Priya Shah',
-    mobile: '+91 98250 20000',
-    outlet: 'Dough by Yanki CG Road',
-    date: 'Tomorrow, 07:00 PM',
-    guests: 2,
-    status: 'Confirmed',
-    vip: false,
-    tierPriorityTag: 'Non-Subscriber',
-    bookingAdvance: 100,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Near bakery counter',
-    createdAt: '2026-10-10T11:30:00.000'
-  },
-  {
-    dbId: 'tmrw-2',
-    id: 'R-2839',
-    customer: 'Kabir Joshi',
-    mobile: '+91 98250 20333',
-    outlet: 'Yanki Sizzlerr SG Highway',
-    date: 'Tomorrow, 09:00 PM',
-    guests: 6,
-    status: 'Confirmed',
-    vip: true,
-    tierPriorityTag: 'Elite',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Elite Gold VIP Table T1',
-    tableAssigned: 'T1',
-    createdAt: '2026-10-10T11:45:00.000'
-  },
-  {
-    dbId: 'tmrw-3',
-    id: 'R-2842',
-    customer: 'Parthiv Patel',
-    mobile: '+91 99130 44556',
-    outlet: 'Yanki Sizzlerr Bodakdev',
-    date: 'Tomorrow, 08:30 PM',
-    guests: 2,
-    status: 'Confirmed',
-    vip: false,
-    tierPriorityTag: 'Non-Subscriber',
-    bookingAdvance: 99,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Couple dinner',
-    createdAt: '2026-10-10T12:00:00.000'
-  },
-
-  // FUTURE BOOKINGS (Next Week & Later: 14 Oct - 12 Nov 2026)
-  {
-    dbId: 'fut-1',
-    id: 'R-3901',
-    customer: 'Hardik Pandya',
-    mobile: '+91 98250 99887',
-    outlet: 'Yanki Sizzlerr Bodakdev',
-    date: '14 Oct 2026, 08:30 PM',
-    guests: 2,
-    status: 'Confirmed',
-    vip: true,
-    tierPriorityTag: 'Elite',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'VIP Couple Booth · Pre-order sizzler',
-    createdAt: '2026-10-10T12:15:00.000'
-  },
-  {
-    dbId: 'fut-2',
-    id: 'R-3902',
-    customer: 'Meera Sodha',
-    mobile: '+91 98791 22334',
-    outlet: 'House of Yanki Banquets Bopal',
-    date: '18 Oct 2026, 01:00 PM',
-    guests: 4,
-    status: 'Confirmed',
-    vip: false,
-    tierPriorityTag: 'Non-Subscriber',
-    bookingAdvance: 99,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Sunday Brunch celebration pass',
-    createdAt: '2026-10-10T12:30:00.000'
-  },
-  {
-    dbId: 'fut-3',
-    id: 'R-3903',
-    customer: 'Tanvi & Aarav',
-    mobile: '+91 99240 77889',
-    outlet: 'Yanki Sizzlerr SG Highway',
-    date: '22 Oct 2026, 08:00 PM',
-    guests: 2,
-    status: 'Confirmed',
-    vip: true,
-    tierPriorityTag: 'Signature',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Romantic couple dinner table',
-    createdAt: '2026-10-10T12:45:00.000'
-  },
-  {
-    dbId: 'fut-4',
-    id: 'R-3904',
-    customer: 'Dr. Kirit Trivedi',
-    mobile: '+91 98252 66778',
-    outlet: 'Yanki Sizzlerr Vastrapur Lake',
-    date: '28 Oct 2026, 07:30 PM',
-    guests: 8,
-    status: 'Confirmed',
-    vip: true,
-    tierPriorityTag: 'Signature',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Doctors association dinner party',
-    createdAt: '2026-10-10T13:00:00.000'
-  },
-  {
-    dbId: 'fut-5',
-    id: 'R-4101',
-    customer: 'Diwanji Family',
-    mobile: '+91 98240 11223',
-    outlet: 'House of Yanki Banquets Bopal',
-    date: '05 Nov 2026, 08:00 PM',
-    guests: 12,
-    status: 'Confirmed',
-    vip: true,
-    tierPriorityTag: 'Elite',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Pre-Diwali family banquet feast',
-    createdAt: '2026-10-10T13:15:00.000'
-  },
-  {
-    dbId: 'fut-6',
-    id: 'R-4102',
-    customer: 'Shalin & Bansi',
-    mobile: '+91 99099 88112',
-    outlet: 'Yanki Sizzlerr Bodakdev',
-    date: '12 Nov 2026, 08:30 PM',
-    guests: 2,
-    status: 'Confirmed',
-    vip: true,
-    tierPriorityTag: 'Signature',
-    bookingAdvance: 0,
-    advancePaid: true,
-    advanceDeducted: false,
-    notes: 'Couple booth table reservation',
-    createdAt: '2026-10-10T13:30:00.000'
-  }
-];
+const DEFAULT_MOCK_BOOKINGS: UpcomingItem[] = [];
 
 // ==============================================================
 // Web Audio API: Zomato / Swiggy-Style Order Notification Chime
@@ -507,162 +148,7 @@ export interface BanquetBookingItem {
   amenitiesRequested: string[];
 }
 
-export const DEFAULT_BANQUET_EVENTS: BanquetBookingItem[] = [
-  // 1. TODAY: Evening Wedding Reception at Bopal Imperial Ballroom
-  {
-    id: 'BQ-2026-101',
-    eventName: 'Pooja & Rohan Grand Wedding Reception',
-    hostName: 'Dr. Rohan Bhatt',
-    mobile: '+91 98250 88214',
-    outlet: 'House of Yanki Banquets Bopal',
-    hallName: 'The Imperial Grand Ballroom',
-    date: '2026-10-10',
-    displayDate: '10 Oct 2026',
-    session: 'Evening',
-    timeSlot: '07:00 PM – 12:00 AM',
-    guests: 420,
-    ratePerPlate: 1250,
-    slotRentalPrice: 65000,
-    totalEstimatedAmount: 590000,
-    advancePaid: 250000,
-    status: 'Confirmed',
-    cateringType: 'Pure Veg Royal Feast',
-    notes: 'Stage backdrop with fresh florals, LED entrance tunnel, 4-tier mocktail pyramid',
-    amenitiesRequested: ['Grand Stage', 'Audio/Visual', 'Bridal Green Room', 'Valet Parking', 'Central AC']
-  },
-  // 2. TODAY: Morning Corporate Conclave at SG Highway Sapphire Celebration Hall
-  {
-    id: 'BQ-2026-102',
-    eventName: 'Zydus Lifesciences Annual Dealer Conclave',
-    hostName: 'Kunal Singhania (VP Sales)',
-    mobile: '+91 98795 33100',
-    outlet: 'Yanki Sizzlerr SG Highway',
-    hallName: 'Sapphire Celebration Hall',
-    date: '2026-10-10',
-    displayDate: '10 Oct 2026',
-    session: 'Morning',
-    timeSlot: '10:00 AM – 03:30 PM',
-    guests: 85,
-    ratePerPlate: 850,
-    slotRentalPrice: 25000,
-    totalEstimatedAmount: 97250,
-    advancePaid: 50000,
-    status: 'Confirmed',
-    cateringType: 'Cocktail & Hi-Tea',
-    notes: 'Podium with 2 wireless mics, 4K projector for Q3 sales deck presentation, hot sizzler hi-tea',
-    amenitiesRequested: ['Projector & Mic', 'Hi-Tea Station', 'Central AC', 'Private Buffet Line']
-  },
-  // 3. THIS WEEK: 12 Oct 2026 - Mehta Silver Jubilee Sangeet at Bopal Crystal Terrace Lawn
-  {
-    id: 'BQ-2026-103',
-    eventName: 'Mehta Silver Jubilee 25th Anniversary Sangeet',
-    hostName: 'Pravin Mehta',
-    mobile: '+91 98240 66722',
-    outlet: 'House of Yanki Banquets Bopal',
-    hallName: 'Crystal Terrace Lawn',
-    date: '2026-10-12',
-    displayDate: '12 Oct 2026',
-    session: 'Evening',
-    timeSlot: '06:30 PM – 11:30 PM',
-    guests: 220,
-    ratePerPlate: 950,
-    slotRentalPrice: 45000,
-    totalEstimatedAmount: 254000,
-    advancePaid: 100000,
-    status: 'Confirmed',
-    cateringType: 'Jain Gourmet Special',
-    notes: 'Open air lawn fairy lights, wooden dance floor, acoustic live band setup',
-    amenitiesRequested: ['Open Air Canopy', 'Live Barbeque Counter', 'DJ Stage', 'Lawn Lounge']
-  },
-  // 4. THIS MONTH: 16 Oct 2026 - Adani Capital Leadership Summit
-  {
-    id: 'BQ-2026-104',
-    eventName: 'Adani Capital Executive Leadership Summit',
-    hostName: 'Priyanka Desai (HR Dir)',
-    mobile: '+91 99099 12450',
-    outlet: 'House of Yanki Banquets Bopal',
-    hallName: 'The Imperial Grand Ballroom',
-    date: '2026-10-16',
-    displayDate: '16 Oct 2026',
-    session: 'Full Day',
-    timeSlot: '09:00 AM – 09:00 PM',
-    guests: 260,
-    ratePerPlate: 1400,
-    slotRentalPrice: 90000,
-    totalEstimatedAmount: 454000,
-    advancePaid: 200000,
-    status: 'Confirmed',
-    cateringType: 'Multi-Cuisine Gala',
-    notes: 'Full day keynote, 3 rounds of gourmet artisan coffee & hors doeuvres, continental dinner',
-    amenitiesRequested: ['Grand Stage', 'Audio/Visual', 'Central Climate Control', 'Valet Parking']
-  },
-  // 5. FUTURE: 24 Oct 2026 - Pre-Diwali Corporate Gala
-  {
-    id: 'BQ-2026-105',
-    eventName: 'Torrent Pharma Pre-Diwali Family Gala',
-    hostName: 'Alok Trivedi',
-    mobile: '+91 98251 77309',
-    outlet: 'House of Yanki Banquets Bopal',
-    hallName: 'The Imperial Grand Ballroom',
-    date: '2026-10-24',
-    displayDate: '24 Oct 2026',
-    session: 'Evening',
-    timeSlot: '07:30 PM – 12:00 AM',
-    guests: 480,
-    ratePerPlate: 1350,
-    slotRentalPrice: 65000,
-    totalEstimatedAmount: 713000,
-    advancePaid: 350000,
-    status: 'Confirmed',
-    cateringType: 'Pure Veg Royal Feast',
-    notes: 'Festive traditional decor, diya chandeliers, signature live sizzler stations',
-    amenitiesRequested: ['Grand Stage', 'Custom Chandelier Lighting', 'Valet Parking', 'Central AC']
-  },
-  // 6. LAST WEEK (Past History): 05 Oct 2026
-  {
-    id: 'BQ-2026-106',
-    eventName: 'Shroff 50th Milestone Birthday Celebration',
-    hostName: 'Sameer Shroff',
-    mobile: '+91 97129 44883',
-    outlet: 'House of Yanki Banquets Bopal',
-    hallName: 'Crystal Terrace Lawn',
-    date: '2026-10-05',
-    displayDate: '05 Oct 2026',
-    session: 'Evening',
-    timeSlot: '07:00 PM – 11:30 PM',
-    guests: 140,
-    ratePerPlate: 950,
-    slotRentalPrice: 45000,
-    totalEstimatedAmount: 178000,
-    advancePaid: 178000,
-    status: 'Completed',
-    cateringType: 'Multi-Cuisine Gala',
-    notes: 'Golden jubilee retro theme, live acoustic saxophone, curated dessert bar',
-    amenitiesRequested: ['Open Air Canopy', 'Live Barbeque Counter', 'DJ Stage']
-  },
-  // 7. LAST WEEK (Past History): 02 Oct 2026
-  {
-    id: 'BQ-2026-107',
-    eventName: 'Cadila Pharma Q3 Strategy Board Meet',
-    hostName: 'Sanjay Varma',
-    mobile: '+91 98242 11990',
-    outlet: 'Yanki Sizzlerr SG Highway',
-    hallName: 'Sapphire Celebration Hall',
-    date: '2026-10-02',
-    displayDate: '02 Oct 2026',
-    session: 'Morning',
-    timeSlot: '09:30 AM – 02:30 PM',
-    guests: 60,
-    ratePerPlate: 850,
-    slotRentalPrice: 25000,
-    totalEstimatedAmount: 76000,
-    advancePaid: 76000,
-    status: 'Completed',
-    cateringType: 'Cocktail & Hi-Tea',
-    notes: 'Boardroom layout seating, high-speed WiFi, executive continental breakfast',
-    amenitiesRequested: ['Projector & Mic', 'Central AC', 'Private Buffet Line']
-  }
-];
+export const DEFAULT_BANQUET_EVENTS: BanquetBookingItem[] = [];
 
 export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations: initialReservations, onRefresh }) => {
   const mapReservations = (list: Reservation[]): UpcomingItem[] => {
@@ -685,17 +171,8 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
       createdAt: r.createdAt
     }));
 
-    // Merge: live bookings take precedence over mock seed items with same id
-    const existingIds = new Set(mapped.map(m => m.id));
-    const merged = [...mapped];
-    for (const mockItem of DEFAULT_MOCK_BOOKINGS) {
-      if (!existingIds.has(mockItem.id)) {
-        merged.push(mockItem);
-      }
-    }
-
     // VIP Subscriber Priority: Subscribed VIPs always go to top of queue!
-    return merged.sort((a, b) => {
+    return mapped.sort((a, b) => {
       if (a.vip && !b.vip) return -1;
       if (!a.vip && b.vip) return 1;
       return 0;
@@ -803,6 +280,36 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     } catch (_) {}
   };
 
+  const loadBanquetEvents = async () => {
+    try {
+      const data = await fetchBanquetLeads();
+      if (data && Array.isArray(data)) {
+        const mapped: BanquetBookingItem[] = data.map((d: any) => ({
+          id: `BQ-${d.id}`,
+          eventName: (d.eventCategory || 'Banquet Event') + ' - ' + (d.customerName || 'Inquiry'),
+          hostName: d.customerName || 'Guest',
+          mobile: d.customerMobile || '',
+          outlet: d.outletName || 'House of Yanki Banquets Bopal',
+          hallName: d.hallName || 'The Imperial Grand Ballroom',
+          date: d.eventDate || new Date().toISOString().split('T')[0],
+          displayDate: d.eventDate || '',
+          session: (d.eventShift as any) || 'Dinner',
+          timeSlot: d.eventShift === 'Dinner' ? '07:00 PM – 12:00 AM' : '11:00 AM – 03:30 PM',
+          guests: d.estimatedPax || 50,
+          ratePerPlate: 950,
+          slotRentalPrice: 45000,
+          totalEstimatedAmount: (d.estimatedPax || 50) * 950 + 45000,
+          advancePaid: 0,
+          status: (d.status === 'CONFIRMED' ? 'Confirmed' : d.status === 'CLOSED' ? 'Completed' : 'Tentative') as any,
+          cateringType: 'Pure Veg Royal Feast',
+          notes: d.customRequirements || '',
+          amenitiesRequested: []
+        }));
+        setBanquetEventsList(mapped);
+      }
+    } catch (_) {}
+  };
+
   const pollLiveReservations = async () => {
     try {
       const res = await axios.get('/api/reservations');
@@ -838,6 +345,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     loadFloorTables();
     loadSlots();
     loadBanquetHalls();
+    loadBanquetEvents();
     fetchOutlets().then((data) => {
       if (data && data.length > 0) setAvailableOutlets(data);
     }).catch(() => {});

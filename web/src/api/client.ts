@@ -538,56 +538,16 @@ export async function updateBanquetLeadStatus(id: number, status: string) {
 }
 
 // Banquet Master & Halls Management
-export const DEFAULT_BANQUET_HALLS: BanquetHall[] = [
-  {
-    id: 1,
-    name: 'The Imperial Grand Ballroom',
-    outletName: 'House of Yanki Banquets Bopal',
-    minCapacity: 150,
-    maxCapacity: 500,
-    ratePerPlate: 1250,
-    slotRentalPrice: 65000,
-    supportedSessions: 'Morning,Evening,Full Day',
-    amenities: 'Grand Stage,State-of-art Audio/Visual,Bridal Green Room,Central Climate Control,Valet Parking,Custom Chandelier Lighting',
-    status: 'Active',
-    imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: 2,
-    name: 'Crystal Terrace Lawn',
-    outletName: 'House of Yanki Banquets Bopal',
-    minCapacity: 80,
-    maxCapacity: 300,
-    ratePerPlate: 950,
-    slotRentalPrice: 45000,
-    supportedSessions: 'Evening,Full Day',
-    amenities: 'Open Air Canopy,Live Barbeque Counter,Ambient Fairy Lighting,DJ Stage,Lawn Lounge',
-    status: 'Active',
-    imageUrl: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: 3,
-    name: 'Sapphire Celebration Hall',
-    outletName: 'Yanki Sizzlerr SG Highway',
-    minCapacity: 40,
-    maxCapacity: 120,
-    ratePerPlate: 850,
-    slotRentalPrice: 25000,
-    supportedSessions: 'Morning,Evening',
-    amenities: 'Intimate Gathering Space,Projector & Mic,Hi-Tea Station,Central AC,Private Buffet Line',
-    status: 'Active',
-    imageUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80'
-  }
-];
+export const DEFAULT_BANQUET_HALLS: BanquetHall[] = [];
 
 export async function fetchBanquetHalls(): Promise<BanquetHall[]> {
   try {
     const res = await apiClient.get('/banquets/halls');
-    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+    if (res.data?.success && Array.isArray(res.data.data)) {
       return res.data.data;
     }
   } catch (_) {}
-  return DEFAULT_BANQUET_HALLS;
+  return [];
 }
 
 export async function createBanquetHall(hall: Partial<BanquetHall>): Promise<BanquetHall> {
