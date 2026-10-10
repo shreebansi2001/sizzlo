@@ -528,9 +528,8 @@ class ReservationsView extends GetView<ReservationsController> {
         SizedBox(
           height: 88,
           child: Obx(() {
-            // Touch observables so Obx registers them reactively
-            final _ = controller.selectedBookingDay.value;
-            final __ = controller.customBookingDate.value;
+            controller.selectedBookingDay.value;
+            controller.customBookingDate.value;
 
             return ListView(
               scrollDirection: Axis.horizontal,

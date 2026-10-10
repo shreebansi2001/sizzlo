@@ -80,17 +80,6 @@ export const FeedbackPage: React.FC = () => {
     return true;
   });
 
-<<<<<<< HEAD
-=======
-export const FeedbackPage: React.FC<FeedbackPageProps> = ({ feedbacks = [] }) => {
-  const count = feedbacks.length;
-  const avgRating = count > 0 
-    ? (feedbacks.reduce((acc, f) => acc + (f.rating || 0), 0) / count).toFixed(1) 
-    : '0';
-  const nps = count > 0 ? '+78' : '0';
-  const resolutionRate = count > 0 ? '100%' : '0%';
-
->>>>>>> origin/feature_admin_upgraded
   return (
     <div>
       {/* Toast Alert */}
@@ -118,7 +107,6 @@ export const FeedbackPage: React.FC<FeedbackPageProps> = ({ feedbacks = [] }) =>
         <div className="kpi-card">
           <span className="kpi-label">OVERALL SATISFACTION</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-<<<<<<< HEAD
             <div className="kpi-value" style={{ fontSize: 26, color: 'var(--primary)' }}>{avgRating}</div>
             <div style={{ display: 'flex', gap: 2 }}>
               {[1, 2, 3, 4, 5].map((i) => (
@@ -128,17 +116,10 @@ export const FeedbackPage: React.FC<FeedbackPageProps> = ({ feedbacks = [] }) =>
                   fill={i <= Math.round(Number(avgRating)) ? 'var(--gold)' : 'none'} 
                   color="var(--gold)" 
                 />
-=======
-            <div className="kpi-value" style={{ fontSize: 26 }}>{avgRating}</div>
-            <div style={{ display: 'flex', gap: 2 }}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} size={16} fill={Number(avgRating) >= i ? "var(--gold)" : "transparent"} color="var(--gold)" />
->>>>>>> origin/feature_admin_upgraded
               ))}
             </div>
           </div>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-<<<<<<< HEAD
             Across {totalReviews} live dining reviews
           </span>
         </div>
@@ -155,43 +136,26 @@ export const FeedbackPage: React.FC<FeedbackPageProps> = ({ feedbacks = [] }) =>
           </div>
           <span style={{ fontSize: 11, color: urgentCount > 0 ? '#EF4444' : 'var(--text-muted)', fontWeight: 600, marginTop: 4, display: 'block' }}>
             {urgentCount > 0 ? 'Requires Store Manager call < 2 hrs' : 'All service issues addressed'}
-=======
-            {count > 0 ? `Based on ${count} verified user reviews` : 'No reviews recorded yet'}
->>>>>>> origin/feature_admin_upgraded
           </span>
         </div>
 
         <div className="kpi-card">
-<<<<<<< HEAD
           <span className="kpi-label">RESOLUTION RATE</span>
           <div className="kpi-value" style={{ fontSize: 26, marginTop: 6, color: '#10B981' }}>
             {resolutionRate}%
           </div>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
             {resolvedCount} of {totalReviews} tickets resolved
-=======
-          <span className="kpi-label">NET PROMOTER SCORE (NPS)</span>
-          <div className="kpi-value" style={{ fontSize: 26, marginTop: 6 }}>{nps}</div>
-          <span style={{ fontSize: 11, color: count > 0 ? '#059669' : 'var(--text-muted)', fontWeight: 600, marginTop: 4, display: 'block' }}>
-            {count > 0 ? 'Top tier luxury hospitality' : 'Awaiting feedback'}
->>>>>>> origin/feature_admin_upgraded
           </span>
         </div>
 
         <div className="kpi-card">
-<<<<<<< HEAD
           <span className="kpi-label">SMART SENTIMENT ROUTING</span>
           <div className="kpi-value" style={{ fontSize: 26, marginTop: 6, color: 'var(--gold)' }}>
             Active
           </div>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
             ⭐ 4-5 Stars ➔ Google Reviews | ⭐ 1-3 ➔ Urgent Recovery
-=======
-          <span className="kpi-label">RESPONSE RESOLUTION</span>
-          <div className="kpi-value" style={{ fontSize: 26, marginTop: 6 }}>{resolutionRate}</div>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-            {count > 0 ? 'Average reply time: < 2 hours' : 'No active inquiries'}
->>>>>>> origin/feature_admin_upgraded
           </span>
         </div>
       </div>
@@ -338,7 +302,6 @@ export const FeedbackPage: React.FC<FeedbackPageProps> = ({ feedbacks = [] }) =>
               </tr>
             </thead>
             <tbody>
-<<<<<<< HEAD
               {filteredTickets.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>

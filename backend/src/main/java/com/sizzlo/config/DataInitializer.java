@@ -68,6 +68,7 @@ public class DataInitializer implements CommandLineRunner {
         }
         if (adminRoleRepository.count() == 0 || adminUserRepository.count() == 0) {
             seedRbacData();
+        }
         seedBanquets();
         if (salesStaffQuotaRepository.count() == 0) {
             seedSalesEcosystem();
