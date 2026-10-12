@@ -720,6 +720,8 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     latestName: string;
     latestGuests: number;
     latestOutlet: string;
+    isVip?: boolean;
+    tierTag?: string;
   } | null>(null);
   const prevIdsRef = useRef<Set<number | string>>(new Set());
   const isFirstLoadRef = useRef(true);
@@ -816,11 +818,15 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             if (soundEnabled) {
               playZomatoAlertSound();
             }
+            const firstNew = newArrivals[0];
+            const isVip = Boolean(firstNew.vip) || (firstNew.tierPriorityTag !== 'Non-Subscriber' && firstNew.tierPriorityTag !== 'GUEST' && Boolean(firstNew.tierPriorityTag));
             setNewInquiryNotice({
               count: newArrivals.length,
-              latestName: newArrivals[0].customerName,
-              latestGuests: newArrivals[0].guests,
-              latestOutlet: newArrivals[0].outlet
+              latestName: firstNew.customerName,
+              latestGuests: firstNew.guests,
+              latestOutlet: firstNew.outlet,
+              isVip,
+              tierTag: firstNew.tierPriorityTag || (isVip ? 'VIP Priority' : 'Non-Subscriber')
             });
           }
         } else {
@@ -1264,18 +1270,22 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
       {/* ============================================================== */}
-      {/* Zomato / Swiggy Pulsing Alert Banner on New Inquiry            */}
+      {/* Live Audio / Visual Alert Banner for New Inquiries            */}
       {/* ============================================================== */}
       {newInquiryNotice && (
         <div style={{
-          background: 'linear-gradient(90deg, rgba(255, 138, 0, 0.22), rgba(201, 162, 77, 0.22))',
-          border: '2px solid var(--primary)',
+          background: newInquiryNotice.isVip
+            ? 'linear-gradient(90deg, rgba(201, 162, 77, 0.28), rgba(255, 138, 0, 0.22))'
+            : 'linear-gradient(90deg, rgba(16, 185, 129, 0.24), rgba(6, 78, 59, 0.28))',
+          border: newInquiryNotice.isVip ? '2px solid var(--gold)' : '2px solid #10B981',
           borderRadius: 16,
           padding: '16px 22px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          boxShadow: '0 8px 30px rgba(255, 138, 0, 0.35)',
+          boxShadow: newInquiryNotice.isVip
+            ? '0 8px 30px rgba(201, 162, 77, 0.35)'
+            : '0 8px 30px rgba(16, 185, 129, 0.35)',
           animation: 'pulse 1.8s infinite',
           flexWrap: 'wrap',
           gap: 12
@@ -1285,22 +1295,35 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
               width: 44,
               height: 44,
               borderRadius: '50%',
-              background: 'var(--primary)',
+              background: newInquiryNotice.isVip ? 'var(--gold)' : '#10B981',
               color: '#070A09',
               display: 'grid',
               placeItems: 'center',
               fontWeight: 900,
               fontSize: 20,
-              boxShadow: '0 0 15px rgba(255, 138, 0, 0.8)'
+              boxShadow: newInquiryNotice.isVip ? '0 0 15px rgba(201, 162, 77, 0.8)' : '0 0 15px rgba(16, 185, 129, 0.8)'
             }}>
-              🔔
+              {newInquiryNotice.isVip ? '👑' : '🔔'}
             </div>
             <div>
-              <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                New Table Booking Inquiry Received!
-              </h4>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                <strong style={{ color: 'var(--primary)' }}>{newInquiryNotice.latestName}</strong> booked for {newInquiryNotice.latestGuests} guests at {newInquiryNotice.latestOutlet}. Settle a dining table or move to waitlist now.
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  {newInquiryNotice.isVip ? 'VIP Priority Table Booking Received!' : 'Weekday Table Booking Received!'}
+                </h4>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  padding: '2px 8px',
+                  borderRadius: 6,
+                  background: newInquiryNotice.isVip ? 'rgba(201, 162, 77, 0.25)' : 'rgba(16, 185, 129, 0.2)',
+                  color: newInquiryNotice.isVip ? 'var(--gold)' : '#10B981',
+                  border: newInquiryNotice.isVip ? '1px solid rgba(201, 162, 77, 0.5)' : '1px solid rgba(16, 185, 129, 0.4)'
+                }}>
+                  {newInquiryNotice.isVip ? `👑 VIP PRIORITY (${newInquiryNotice.tierTag || 'VIP'})` : '🎯 NON-SUBSCRIBER (WEEKDAY)'}
+                </span>
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                <strong style={{ color: newInquiryNotice.isVip ? 'var(--gold)' : 'var(--primary)' }}>{newInquiryNotice.latestName}</strong> booked for {newInquiryNotice.latestGuests} guests at {newInquiryNotice.latestOutlet}. {newInquiryNotice.isVip ? 'VIP priority host seating requested.' : 'Standard weekday reservation.'} Settle dining table now.
               </p>
             </div>
           </div>
@@ -2901,7 +2924,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                               fontWeight: 700,
                               color: b.vip ? 'var(--gold)' : '#10B981'
                             }}>
-                              {b.vip ? `👑 ${b.tierPriorityTag || 'VIP'}` : '🎯 Guest'}
+                              {b.vip ? `👑 ${b.tierPriorityTag || 'VIP Priority'}` : '🎯 Non-Subscriber (Weekday)'}
                             </span>
                           </div>
                         </div>
@@ -3054,7 +3077,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                         color: inq.vip ? 'var(--gold)' : '#10B981',
                         border: inq.vip ? '1px solid rgba(201, 162, 77, 0.4)' : '1px solid rgba(16, 185, 129, 0.3)'
                       }}>
-                        {inq.vip ? `👑 ${inq.tierPriorityTag || 'VIP'}` : '🎯 Guest Diner'}
+                        {inq.vip ? `👑 ${inq.tierPriorityTag || 'VIP Priority'}` : '🎯 Non-Subscriber (Weekday)'}
                       </span>
                     </div>
 
@@ -3541,7 +3564,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                           fontSize: 10,
                           fontWeight: 800
                         }}>
-                          <Crown size={11} color="var(--gold)" /> ★ VIP · {item.tierPriorityTag || 'VIP'}
+                          <Crown size={11} color="var(--gold)" /> ★ VIP Priority · {item.tierPriorityTag || 'VIP'}
                         </span>
                       ) : (
                         <span style={{
@@ -3556,7 +3579,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                           fontSize: 10,
                           fontWeight: 700
                         }}>
-                          🎯 Guest Diner
+                          🎯 Non-Subscriber (Weekday)
                         </span>
                       )}
                     </div>

@@ -68,8 +68,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onTabCha
           items.push({
             id: `res-${res.id || index}`,
             category: 'RESERVATION',
-            title: `Table Inquiry: ${res.customerName} (${res.guests} Guests)`,
-            description: `${res.reservationTime || 'Tonight'} at ${res.outlet || 'Main Dining'} • ${res.specialRequests || (res.tableAssigned ? `Table: ${res.tableAssigned}` : 'Awaiting floor assignment')}`,
+            title: res.vip
+              ? `👑 VIP Priority: ${res.customerName} (${res.guests} Guests)`
+              : `🎯 Weekday Booking: ${res.customerName} (${res.guests} Guests)`,
+            description: `${res.reservationTime || 'Tonight'} at ${res.outlet || 'Main Dining'} • ${res.vip ? 'VIP Member Priority • ' : 'Weekday Diner • '}${res.specialRequests || (res.tableAssigned ? `Table: ${res.tableAssigned}` : 'Awaiting floor assignment')}`,
             timeAgo: index === 0 ? 'Just now' : `${(index + 1) * 8}m ago`,
             targetTab: 'reservations',
             priority: res.vip ? 'HIGH' : 'MEDIUM',

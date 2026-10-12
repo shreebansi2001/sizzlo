@@ -91,12 +91,23 @@ class ReservationsController extends GetxController {
     currentBookingStep.value = 2;
   }
 
+  bool isDateBookable(DateTime date) {
+    if (isSubscribedMember.value) return true;
+    // Non-subscribers can book Monday (1) to Friday (5). Saturday (6) and Sunday (7) are subscriber-only.
+    return date.weekday != DateTime.saturday && date.weekday != DateTime.sunday;
+  }
+
   bool isDateSelected(DateTime date) {
     final cur = customBookingDate.value ?? DateTime.now();
     return cur.year == date.year && cur.month == date.month && cur.day == date.day;
   }
 
   void selectDate(DateTime date) {
+    if (!isDateBookable(date)) {
+      _showWeekendSubscriberOnlyDialog(date);
+      return;
+    }
+
     final now = DateTime.now();
     final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
     final isTomorrow = date.year == now.year && date.month == now.month && (date.day - now.day == 1);
@@ -194,6 +205,16 @@ class ReservationsController extends GetxController {
       isSubscribedMember.value = false;
       isVipTable.value = false;
       advanceRequired.value = 99.0;
+    } finally {
+      final now = DateTime.now();
+      final cur = customBookingDate.value ?? now;
+      if (!isDateBookable(cur)) {
+        DateTime nextWeekday = cur;
+        while (!isDateBookable(nextWeekday)) {
+          nextWeekday = nextWeekday.add(const Duration(days: 1));
+        }
+        selectDate(nextWeekday);
+      }
     }
   }
 
@@ -352,16 +373,19 @@ class ReservationsController extends GetxController {
       },
     );
     if (picked != null) {
-      customBookingDate.value = picked;
-      selectedBookingDay.value = DateFormat('EEE, dd MMM').format(picked);
+      if (!isDateBookable(picked)) {
+        _showWeekendSubscriberOnlyDialog(picked);
+        return;
+      }
+      selectDate(picked);
     }
   }
 
-  /// Triggers booking dialog for Regular Dine-in (VIP Members only)
+  /// Triggers booking dialog for Dine-in (VIP Priority for Subscribers, Mon-Fri for Non-Subscribers)
   void confirmAndBookTable() {
-    // Non-subscribed users can only view; booking requires active subscription
-    if (!isSubscribedMember.value) {
-      _showSubscriptionRequiredDialog();
+    final bookingDate = customBookingDate.value ?? DateTime.now();
+    if (!isDateBookable(bookingDate)) {
+      _showWeekendSubscriberOnlyDialog(bookingDate);
       return;
     }
 
@@ -384,17 +408,18 @@ class ReservationsController extends GetxController {
       return;
     }
 
+    final isSub = isSubscribedMember.value;
     final bookingTimeLabel = '${selectedBookingDay.value}, ${selectedTimeSlot.value}';
     const nominalCharge = 99.0;
     SizzloDialogs.showBookTableConfirm(
       outlet: selectedOutlet.value,
       time: bookingTimeLabel,
       guests: guestCount.value,
-      isVip: isVipTable.value,
+      isVip: isSub,
       bookingCharge: nominalCharge,
       specialRequests: specialNotesController.text.trim().isNotEmpty
           ? specialNotesController.text.trim()
-          : 'Standard dining reservation',
+          : (isSub ? 'VIP Priority Reservation (Exclusive Seating)' : 'Standard Dining Reservation (Weekday)'),
       onConfirm: _launchRazorpayTableBooking,
     );
   }
@@ -532,7 +557,7 @@ class ReservationsController extends GetxController {
     );
   }
 
-  void _showSubscriptionRequiredDialog() {
+  void _showWeekendSubscriberOnlyDialog([DateTime? date]) {
     Get.dialog(
       Dialog(
         backgroundColor: const Color(0xFF141312),
@@ -553,11 +578,11 @@ class ReservationsController extends GetxController {
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.goldAccent),
                 ),
-                child: const Icon(Icons.workspace_premium_rounded, color: AppColors.goldAccent, size: 34),
+                child: const Icon(Icons.weekend_rounded, color: AppColors.goldAccent, size: 32),
               ),
               const SizedBox(height: 16),
               Text(
-                'VIP Subscription Required',
+                'Weekend Booking (VIP Exclusive)',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
                   fontSize: 18,
@@ -567,7 +592,7 @@ class ReservationsController extends GetxController {
               ),
               const SizedBox(height: 10),
               Text(
-                'Instant table reservations & priority seating are exclusive privileges for Yanki VIP Subscribers.\n\nSubscribe now to unlock table bookings across all outlets, 12 welcome vouchers, and free birthday rewards!',
+                'Saturday & Sunday table reservations are reserved exclusively for Yanki VIP Subscribers to guarantee priority seating.\n\nNon-subscribers can freely book tables Monday through Friday. Upgrade to VIP to unlock full weekend dining!',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[300], height: 1.4),
               ),
@@ -586,7 +611,7 @@ class ReservationsController extends GetxController {
                     Get.toNamed(AppRoutes.PLANS);
                   },
                   child: Text(
-                    'Explore VIP Subscription Plans',
+                    'Unlock Weekends with VIP →',
                     style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 14),
                   ),
                 ),
@@ -594,7 +619,7 @@ class ReservationsController extends GetxController {
               const SizedBox(height: 10),
               TextButton(
                 onPressed: () => Get.back(),
-                child: Text('Maybe Later', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
+                child: Text('Choose a Weekday (Mon–Fri)', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[400])),
               ),
             ],
           ),
@@ -617,7 +642,7 @@ class ReservationsController extends GetxController {
         time: bookingTimeLabel,
         guests: guestCount.value,
         vip: isSub,
-        tierPriorityTag: isSub ? 'Signature' : 'Non-Subscriber',
+        tierPriorityTag: isSub ? 'VIP Priority' : 'Non-Subscriber',
         occasionTag: selectedOccasion.value,
         specialRequests: specialNotesController.text,
         bookingAdvance: 99.0,

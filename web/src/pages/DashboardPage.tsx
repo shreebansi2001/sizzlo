@@ -65,7 +65,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     axios.get('/api/reservations')
       .then(res => {
         if (res.data?.success && res.data.data) {
-          setReservations(res.data.data);
+          const list: Reservation[] = res.data.data;
+          const sorted = [...list].sort((a, b) => {
+            if (a.vip && !b.vip) return -1;
+            if (!a.vip && b.vip) return 1;
+            return 0;
+          });
+          setReservations(sorted);
         }
       })
       .catch(() => {});
@@ -415,9 +421,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </p>
                 </div>
                 {r.vip ? (
-                  <span className="badge badge-gold">VIP DINER</span>
+                  <span className="badge badge-gold">👑 VIP PRIORITY</span>
                 ) : (
-                  <span className="badge badge-success">{r.status}</span>
+                  <span className="badge badge-success">🎯 WEEKDAY DINER</span>
                 )}
               </div>
             ))}

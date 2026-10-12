@@ -273,31 +273,102 @@ class ReservationsView extends GetView<ReservationsController> {
   Widget _buildVipPerkBadge() {
     return Obx(() {
       final isSub = controller.isSubscribedMember.value;
-      if (!isSub) return const SizedBox.shrink();
+      if (isSub) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF261D13), Color(0xFF161412)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: AppColors.goldAccent.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.goldAccent.withOpacity(0.3)),
+                ),
+                child: const Icon(
+                  Icons.workspace_premium_rounded,
+                  color: AppColors.goldAccent,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'VIP PRIORITY DINING',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.goldAccent,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: AppColors.goldAccent.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'ALL 7 DAYS',
+                            style: GoogleFonts.outfit(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.goldAccent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'All 7 days booking active · Guaranteed priority host seating on admin console.',
+                      style: GoogleFonts.inter(fontSize: 10.5, color: Colors.grey[400]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // Non-subscriber informative banner
       return Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF261D13), Color(0xFF161412)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: const Color(0xFF161412),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
+          border: Border.all(color: const Color(0xFF2C241B)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: AppColors.goldAccent.withOpacity(0.15),
+                color: const Color(0xFF4EE3B8).withOpacity(0.12),
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.goldAccent.withOpacity(0.3)),
+                border: Border.all(color: const Color(0xFF4EE3B8).withOpacity(0.25)),
               ),
               child: const Icon(
-                Icons.workspace_premium_rounded,
-                color: AppColors.goldAccent,
+                Icons.calendar_today_rounded,
+                color: Color(0xFF4EE3B8),
                 size: 16,
               ),
             ),
@@ -309,27 +380,27 @@ class ReservationsView extends GetView<ReservationsController> {
                   Row(
                     children: [
                       Text(
-                        'VIP PRIORITY DINING',
+                        'WEEKDAY TABLE BOOKINGS OPEN',
                         style: GoogleFonts.outfit(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.goldAccent,
-                          letterSpacing: 0.8,
+                          color: Colors.white,
+                          letterSpacing: 0.6,
                         ),
                       ),
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                         decoration: BoxDecoration(
-                          color: AppColors.goldAccent.withOpacity(0.2),
+                          color: const Color(0xFF4EE3B8).withOpacity(0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'UNLOCKED',
+                          'MON – FRI',
                           style: GoogleFonts.outfit(
                             fontSize: 8.5,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.goldAccent,
+                            color: const Color(0xFF4EE3B8),
                           ),
                         ),
                       ),
@@ -337,7 +408,7 @@ class ReservationsView extends GetView<ReservationsController> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Complimentary priority seating & VIP booth greeting applied.',
+                    'Book Monday to Friday with 30-min notice. Saturday & Sunday reserved for VIPs.',
                     style: GoogleFonts.inter(fontSize: 10.5, color: Colors.grey[400]),
                   ),
                 ],
@@ -391,10 +462,11 @@ class ReservationsView extends GetView<ReservationsController> {
 
         // Horizontal Date Selector (Sleek modern pill cards)
         SizedBox(
-          height: 80,
+          height: 84,
           child: Obx(() {
             controller.selectedBookingDay.value;
             controller.customBookingDate.value;
+            final isSub = controller.isSubscribedMember.value;
 
             return ListView.separated(
               scrollDirection: Axis.horizontal,
@@ -406,6 +478,7 @@ class ReservationsView extends GetView<ReservationsController> {
                 final isSelected = controller.isDateSelected(date);
                 final isToday = index == 0;
                 final isTomorrow = index == 1;
+                final isBookable = controller.isDateBookable(date);
 
                 final dayLabel = isToday
                     ? 'TODAY'
@@ -419,7 +492,7 @@ class ReservationsView extends GetView<ReservationsController> {
                   onTap: () => controller.selectDate(date),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    width: 64,
+                    width: 66,
                     decoration: BoxDecoration(
                       gradient: isSelected
                           ? const LinearGradient(
@@ -428,14 +501,20 @@ class ReservationsView extends GetView<ReservationsController> {
                               end: Alignment.bottomCenter,
                             )
                           : null,
-                      color: isSelected ? null : const Color(0xFF171412),
+                      color: isSelected
+                          ? null
+                          : !isBookable
+                              ? const Color(0xFF141210)
+                              : const Color(0xFF171412),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected
                             ? AppColors.goldAccent
-                            : isToday
-                                ? AppColors.goldAccent.withOpacity(0.4)
-                                : const Color(0xFF2C241B),
+                            : !isBookable
+                                ? const Color(0xFF2E241B)
+                                : isToday
+                                    ? AppColors.goldAccent.withOpacity(0.4)
+                                    : const Color(0xFF2C241B),
                         width: isSelected ? 1.6 : 1.0,
                       ),
                       boxShadow: isSelected
@@ -448,41 +527,77 @@ class ReservationsView extends GetView<ReservationsController> {
                             ]
                           : null,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Stack(
                       children: [
-                        Text(
-                          dayLabel,
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: isSelected
-                                ? const Color(0xFF141312)
-                                : isToday
-                                    ? AppColors.goldAccent
-                                    : Colors.grey[500],
-                            letterSpacing: 0.4,
+                        // Weekend VIP lock badge for non-subscribers
+                        if (!isBookable && !isSub)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: AppColors.goldAccent.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(3),
+                                border: Border.all(color: AppColors.goldAccent.withOpacity(0.4), width: 0.5),
+                              ),
+                              child: Text(
+                                'VIP',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 7.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.goldAccent,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          dateNum,
-                          style: GoogleFonts.outfit(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: isSelected ? const Color(0xFF141312) : Colors.white,
-                            height: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          monthStr,
-                          style: GoogleFonts.inter(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected
-                                ? const Color(0xFF141312).withOpacity(0.85)
-                                : Colors.grey[400],
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                dayLabel,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: isSelected
+                                      ? const Color(0xFF141312)
+                                      : !isBookable
+                                          ? Colors.grey[600]
+                                          : isToday
+                                              ? AppColors.goldAccent
+                                              : Colors.grey[400],
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                dateNum,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  color: isSelected
+                                      ? const Color(0xFF141312)
+                                      : !isBookable
+                                          ? Colors.grey[500]
+                                          : Colors.white,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                monthStr,
+                                style: GoogleFonts.inter(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: isSelected
+                                      ? const Color(0xFF141312).withOpacity(0.85)
+                                      : !isBookable
+                                          ? Colors.grey[600]
+                                          : Colors.grey[400],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -498,6 +613,10 @@ class ReservationsView extends GetView<ReservationsController> {
         const SizedBox(height: 12),
         Obx(() {
           final formatted = controller.formattedSelectedDateText;
+          final curDate = controller.customBookingDate.value ?? DateTime.now();
+          final isBookable = controller.isDateBookable(curDate);
+          final isSub = controller.isSubscribedMember.value;
+
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -507,31 +626,43 @@ class ReservationsView extends GetView<ReservationsController> {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.event_available_rounded,
+                Icon(
+                  isBookable ? Icons.event_available_rounded : Icons.lock_outline_rounded,
                   size: 16,
-                  color: AppColors.goldAccent,
+                  color: isBookable ? AppColors.goldAccent : Colors.grey[400],
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Selected: ',
                   style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[400]),
                 ),
-                Text(
-                  formatted,
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.goldAccent,
+                Expanded(
+                  child: Text(
+                    formatted,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isBookable ? AppColors.goldAccent : Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4EE3B8).withOpacity(0.12),
+                    color: isBookable
+                        ? (isSub
+                            ? AppColors.goldAccent.withOpacity(0.15)
+                            : const Color(0xFF4EE3B8).withOpacity(0.12))
+                        : Colors.orange.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF4EE3B8).withOpacity(0.4)),
+                    border: Border.all(
+                      color: isBookable
+                          ? (isSub
+                              ? AppColors.goldAccent.withOpacity(0.4)
+                              : const Color(0xFF4EE3B8).withOpacity(0.4))
+                          : Colors.orange.withOpacity(0.4),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -539,18 +670,22 @@ class ReservationsView extends GetView<ReservationsController> {
                       Container(
                         width: 5,
                         height: 5,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF4EE3B8),
+                        decoration: BoxDecoration(
+                          color: isBookable
+                              ? (isSub ? AppColors.goldAccent : const Color(0xFF4EE3B8))
+                              : Colors.orange,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        'Tables Open',
+                        isBookable ? (isSub ? 'VIP Priority' : 'Tables Open') : 'VIP Only',
                         style: GoogleFonts.outfit(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF4EE3B8),
+                          color: isBookable
+                              ? (isSub ? AppColors.goldAccent : const Color(0xFF4EE3B8))
+                              : Colors.orange,
                         ),
                       ),
                     ],
@@ -931,8 +1066,8 @@ class ReservationsView extends GetView<ReservationsController> {
               child: Row(
                 children: [
                   Icon(
-                    isSub ? Icons.verified_rounded : Icons.info_outline_rounded,
-                    color: isSub ? AppColors.goldAccent : Colors.grey[400],
+                    isSub ? Icons.workspace_premium_rounded : Icons.calendar_today_rounded,
+                    color: isSub ? AppColors.goldAccent : const Color(0xFF4EE3B8),
                     size: 18,
                   ),
                   const SizedBox(width: 10),
@@ -941,18 +1076,20 @@ class ReservationsView extends GetView<ReservationsController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isSub ? 'VIP Priority Table · Included in Plan' : 'VIP Member Privilege · Table Reservation',
+                          isSub
+                              ? 'VIP Priority Table · All 7 Days Unlocked'
+                              : 'Standard Dining Reservation · Monday to Friday',
                           style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.goldAccent,
+                            color: isSub ? AppColors.goldAccent : const Color(0xFF4EE3B8),
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           isSub
-                              ? 'Your table is guaranteed with priority host seating. Nominal ₹99 cover charge is 100% deducted from your dining bill.'
-                              : 'Instant table reservations are reserved for Yanki VIP subscribers. Subscribe to reserve tables instantly.',
+                              ? 'Priority host seating on admin console. Nominal ₹99 cover charge is 100% deducted from your dining bill.'
+                              : 'Open Monday to Friday with 30-min notice. Nominal ₹99 cover is 100% deducted from your dining bill. VIP members receive weekend access & top priority seating.',
                           style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[400]),
                         ),
                       ],
@@ -969,8 +1106,8 @@ class ReservationsView extends GetView<ReservationsController> {
             text: controller.isSubmitting.value
                 ? 'Reserving Table...'
                 : controller.isSubscribedMember.value
-                    ? 'Book VIP Table • ₹99 Advance Cover'
-                    : 'Subscribe to Reserve Table 🔒',
+                    ? 'Book VIP Priority Table • ₹99 Advance Cover'
+                    : 'Book Table (Weekday) • ₹99 Advance Cover',
             isLoading: controller.isSubmitting.value,
             onPressed: controller.confirmAndBookTable,
           )),

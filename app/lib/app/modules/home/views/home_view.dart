@@ -333,9 +333,6 @@ class HomeView extends GetView<HomeController> {
             ),
             _buildFeaturedCoupons(),
             const SizedBox(height: 24),
-          ] else if (!controller.member.value.isSubscriber) ...[
-            _buildLockedVaultBanner(),
-            const SizedBox(height: 24),
           ],
 
           // Outlets Locator Tile matching demo_code
@@ -506,12 +503,6 @@ class HomeView extends GetView<HomeController> {
               onTap: () {
                 Get.find<NavigationController>().changeTab(2);
               },
-            ),
-            _buildOpButton(
-              icon: Icons.wallet_rounded,
-              label: 'My Vault',
-              badge: controller.member.value.isSubscriber ? '${controller.member.value.couponsLeft}' : null,
-              onTap: () => Get.find<NavigationController>().changeTab(1),
             ),
           ],
         ),
@@ -710,95 +701,6 @@ class HomeView extends GetView<HomeController> {
     });
   }
 
-  Widget _buildLockedVaultBanner() {
-    return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.PLANS),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF231A12), Color(0xFF140F0A)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFF6A4725)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: const Color(0xFF3B2814),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.5)),
-              ),
-              child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFD4AF37), size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      const Text(
-                        'VIP Coupon Vault',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontFamily: 'Playfair Display',
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.4)),
-                        ),
-                        child: const Text(
-                          'LOCKED',
-                          style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFFD4AF37)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Coupons unlock after plan enrollment. Choose Classic, Signature, or Elite plan.',
-                    style: TextStyle(fontSize: 11, color: Colors.white70, height: 1.3),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD4AF37),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.black, size: 13),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildOutletsTile() {
     return GestureDetector(
