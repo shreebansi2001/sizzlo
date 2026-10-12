@@ -7,7 +7,10 @@ class AppConstants {
   
   static const String _envApiUrl = String.fromEnvironment('API_URL');
 
-  // Backend API URL
+  // Set to true only if you explicitly want to run against local Mac backend (127.0.0.1:8085)
+  static const bool useLocalBackend = false;
+
+  // Backend API URL (Connected to live cheeragskitchen.in production)
   static String get baseUrl {
     if (_envApiUrl.isNotEmpty) {
       return _envApiUrl;
@@ -15,7 +18,7 @@ class AppConstants {
     if (kIsWeb) {
       return '/api';
     }
-    if (kDebugMode) {
+    if (useLocalBackend && kDebugMode) {
       try {
         if (Platform.isAndroid) {
           return 'http://127.0.0.1:8085/api';
