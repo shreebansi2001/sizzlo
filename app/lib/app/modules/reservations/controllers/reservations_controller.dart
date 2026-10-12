@@ -32,9 +32,29 @@ class ReservationsController extends GetxController {
   final RxString selectedBookingDay = 'Today'.obs; // Today, Tomorrow
   final RxString selectedTimeSlot = '8:00 PM'.obs;
   final RxInt guestCount = 2.obs; // Defaults cleanly to 2 covers (Couple)
+  final guestCountController = TextEditingController(text: '2');
   final RxString selectedOccasion = 'Regular'.obs; // Birthday, Anniversary, Business, Regular
   final RxBool isVipTable = true.obs;
   final specialNotesController = TextEditingController();
+
+  void incrementGuests() {
+    guestCount.value++;
+    guestCountController.text = guestCount.value.toString();
+  }
+
+  void decrementGuests() {
+    if (guestCount.value > 1) {
+      guestCount.value--;
+      guestCountController.text = guestCount.value.toString();
+    }
+  }
+
+  void onGuestCountInputChanged(String val) {
+    final parsed = int.tryParse(val.trim());
+    if (parsed != null && parsed > 0) {
+      guestCount.value = parsed;
+    }
+  }
 
   void goToStep1() {
     currentBookingStep.value = 1;
@@ -48,6 +68,7 @@ class ReservationsController extends GetxController {
     selectedBookingDay.value = 'Today';
     customBookingDate.value = DateTime.now();
     guestCount.value = 2;
+    guestCountController.text = '2';
     _initDefaultSlot();
     currentBookingStep.value = 2;
   }
@@ -186,11 +207,22 @@ class ReservationsController extends GetxController {
     } catch (_) {}
   }
 
-  /// Rule: Reservations must be made at least 1 hour in advance (not anytime)
+  /// Rule: On Today, user can only see and book time slots after the current time
   bool isSlotBookable(String slotStr, [String? day]) {
-    final chosenDay = day ?? selectedBookingDay.value;
-    if (chosenDay != 'Today') {
-      return true; // Tomorrow/future dates are always >= 1 hr in advance
+    final chosenDay = (day ?? selectedBookingDay.value).trim().toLowerCase();
+    
+    // Check if the chosen day is Today
+    bool isToday = chosenDay.startsWith('today');
+    if (!isToday && customBookingDate.value != null) {
+      final now = DateTime.now();
+      final cd = customBookingDate.value!;
+      if (cd.year == now.year && cd.month == now.month && cd.day == now.day) {
+        isToday = true;
+      }
+    }
+
+    if (!isToday) {
+      return true; // Tomorrow/future dates are always bookable
     }
 
     try {
@@ -205,9 +237,9 @@ class ReservationsController extends GetxController {
       if (!isPm && hour == 12) hour = 0;
 
       final slotDateTime = DateTime(now.year, now.month, now.day, hour, minute);
-      final minAllowedTime = now.add(const Duration(hours: 1));
 
-      return slotDateTime.isAfter(minAllowedTime);
+      // Must be strictly after current time
+      return slotDateTime.isAfter(now);
     } catch (_) {
       return true;
     }
@@ -220,7 +252,7 @@ class ReservationsController extends GetxController {
         return;
       }
     }
-    // If all today's slots are within 1 hr or past, default to Tomorrow
+    // If all today's slots have passed, default to Tomorrow
     selectedBookingDay.value = 'Tomorrow';
     if (timeSlots.isNotEmpty) {
       selectedTimeSlot.value = timeSlots.first;
@@ -230,8 +262,8 @@ class ReservationsController extends GetxController {
   void selectSlot(String slot) {
     if (!isSlotBookable(slot)) {
       Get.snackbar(
-        '1-Hour Advance Required',
-        'In accordance with dining policy, tables must be reserved at least 1 hour in advance. Please select a slot at least 60 minutes from now, or choose Tomorrow.',
+        'Time Slot Unavailable',
+        'This time slot has already passed for today. Please select an upcoming slot after the current time, or choose Tomorrow.',
         backgroundColor: const Color(0xFF331D12),
         colorText: const Color(0xFFE27C38),
         icon: const Icon(Icons.timer_off_outlined, color: Color(0xFFE27C38)),
@@ -740,6 +772,7 @@ class ReservationsController extends GetxController {
   @override
   void onClose() {
     _razorpay.clear();
+    guestCountController.dispose();
     specialNotesController.dispose();
     banquetDateController.dispose();
     banquetNotesController.dispose();

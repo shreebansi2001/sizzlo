@@ -391,14 +391,19 @@ class LoyaltyView extends GetView<LoyaltyController> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '${_formatNumber(currentPoints)} pts collected',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: Colors.white60,
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        '${_formatNumber(currentPoints)} pts collected',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white60,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(

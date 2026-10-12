@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -212,7 +213,7 @@ class ReservationsView extends GetView<ReservationsController> {
                             ),
                           ),
                           Text(
-                            'Table & Guests (2)',
+                            'Table & Guests',
                             style: GoogleFonts.outfit(
                               fontSize: 12,
                               fontWeight: currentStep == 2 ? FontWeight.w700 : FontWeight.w500,
@@ -790,135 +791,101 @@ class ReservationsView extends GetView<ReservationsController> {
           _buildSelectionSummaryPill(),
           const SizedBox(height: 20),
 
-          // Guest Covers (Defaulting to 2 Covers / Couple)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('GUESTS (1 TO 19 COVERS)', style: _sectionHeaderStyle()),
-              Obx(() => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.goldAccent.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.goldAccent, width: 0.8),
-                ),
-                child: Text(
-                  controller.guestCount.value == 2
-                      ? '2 Guests (Couple)'
-                      : '${controller.guestCount.value} Guests',
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.goldAccent,
-                  ),
-                ),
-              )),
-            ],
-          ),
+          // Number of Guests (Direct Text Field + Stepper)
+          Text('NUMBER OF GUESTS (COVERS)', style: _sectionHeaderStyle()),
           const SizedBox(height: 10),
-
-          // Quick Guest Chips (with 2 Couple highlighted)
-          Obx(() => SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1A16),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF332B22)),
+            ),
             child: Row(
-              children: [1, 2, 4, 6, 8, 10, 12].map((cnt) {
-                final isSelected = controller.guestCount.value == cnt;
-                final isCouple = cnt == 2;
-                return GestureDetector(
-                  onTap: () => controller.setGuestCount(cnt),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0xFF2C241B)
-                          : const Color(0xFF1E1A16),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.goldAccent
-                            : isCouple
-                                ? AppColors.goldAccent.withOpacity(0.4)
-                                : const Color(0xFF332B22),
-                        width: isSelected ? 1.6 : 1.0,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isCouple) ...[
-                          Icon(Icons.favorite_rounded, size: 12, color: isSelected ? AppColors.goldAccent : Colors.grey[400]),
-                          const SizedBox(width: 4),
-                        ],
-                        Text(
-                          cnt == 2 ? '2 (Couple)' : cnt == 4 ? '4 (Family)' : '$cnt Pax',
-                          style: GoogleFonts.outfit(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected ? AppColors.goldAccent : Colors.grey[300],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          )),
-          const SizedBox(height: 10),
-
-          // Slider for fine-tuning
-          Obx(() => SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: AppColors.goldAccent,
-              inactiveTrackColor: const Color(0xFF2C251D),
-              thumbColor: AppColors.goldAccent,
-              overlayColor: AppColors.goldAccent.withOpacity(0.2),
-              trackHeight: 3,
-            ),
-            child: Slider(
-              value: controller.guestCount.value.toDouble().clamp(1.0, 19.0),
-              min: 1.0,
-              max: 19.0,
-              divisions: 18,
-              onChanged: (val) => controller.setGuestCount(val.toInt()),
-            ),
-          )),
-          const SizedBox(height: 14),
-
-          // Seating Area Preference
-          Text('PREFERRED SEATING AREA', style: _sectionHeaderStyle()),
-          const SizedBox(height: 8),
-          Obx(() => Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: controller.seatingAreas.map((area) {
-              final isSelected = controller.selectedSeatingArea.value == area;
-              return GestureDetector(
-                onTap: () => controller.selectedSeatingArea.value = area,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF2C241B) : const Color(0xFF1E1A16),
+                    color: AppColors.goldAccent.withOpacity(0.14),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSelected ? AppColors.goldAccent : const Color(0xFF332B22),
-                      width: isSelected ? 1.5 : 1.0,
-                    ),
+                    border: Border.all(color: AppColors.goldAccent.withOpacity(0.35)),
                   ),
-                  child: Text(
-                    area,
-                    style: GoogleFonts.outfit(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? AppColors.goldAccent : Colors.grey[400],
-                    ),
+                  child: const Icon(Icons.people_alt_rounded, color: AppColors.goldAccent, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total Guests Attending',
+                        style: GoogleFonts.inter(fontSize: 10.5, color: Colors.grey[400], fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 2),
+                      TextField(
+                        controller: controller.guestCountController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(3),
+                        ],
+                        onChanged: controller.onGuestCountInputChanged,
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Enter guest count...',
+                          hintStyle: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[600],
+                          ),
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            }).toList(),
-          )),
-          const SizedBox(height: 18),
+                // Stepper - and + buttons for quick adjustment
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C241B),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF42372A)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: controller.decrementGuests,
+                        icon: const Icon(Icons.remove_rounded, color: AppColors.goldAccent, size: 18),
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        padding: EdgeInsets.zero,
+                        splashRadius: 18,
+                        tooltip: 'Decrease guests',
+                      ),
+                      Container(width: 1, height: 20, color: const Color(0xFF42372A)),
+                      IconButton(
+                        onPressed: controller.incrementGuests,
+                        icon: const Icon(Icons.add_rounded, color: AppColors.goldAccent, size: 18),
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        padding: EdgeInsets.zero,
+                        splashRadius: 18,
+                        tooltip: 'Increase guests',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
 
           // Time Slots (Categorized by Lunch & Dinner)
           Row(
@@ -998,40 +965,6 @@ class ReservationsView extends GetView<ReservationsController> {
               ],
             );
           }),
-          const SizedBox(height: 18),
-
-          // Dining Occasion
-          Text('DINING OCCASION', style: _sectionHeaderStyle()),
-          const SizedBox(height: 8),
-          Obx(() => Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: controller.occasionTags.map((tag) {
-              final isSelected = controller.selectedOccasion.value == tag;
-              return GestureDetector(
-                onTap: () => controller.selectedOccasion.value = tag,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF0E382B) : const Color(0xFF1E1A16),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSelected ? const Color(0xFF4EE3B8) : const Color(0xFF332B22),
-                      width: isSelected ? 1.5 : 1.0,
-                    ),
-                  ),
-                  child: Text(
-                    tag,
-                    style: GoogleFonts.outfit(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? const Color(0xFF4EE3B8) : Colors.grey[400],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          )),
           const SizedBox(height: 18),
 
           // Special Table Requests
