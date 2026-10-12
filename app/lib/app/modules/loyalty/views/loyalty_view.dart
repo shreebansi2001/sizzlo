@@ -87,10 +87,12 @@ class LoyaltyView extends GetView<LoyaltyController> {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 // Loyalty Hero Card
                 _buildBalanceHeroCard(),
 
@@ -143,7 +145,9 @@ class LoyaltyView extends GetView<LoyaltyController> {
               ],
             ),
           ),
-        );
+        ),
+      ),
+    );
       }),
     ),
   );

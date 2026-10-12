@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Flutter: Run on iOS Simulator",
+      "type": "shell",
+      "command": "open -a Simulator && cd app && flutter run -d apple_ios_simulator",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: Open iOS Simulator",
+      "type": "shell",
+      "command": "open -a Simulator",
+      "problemMatcher": []
+    }
+  ]
+}

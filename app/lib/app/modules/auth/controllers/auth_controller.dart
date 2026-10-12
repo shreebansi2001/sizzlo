@@ -57,15 +57,6 @@ class AuthController extends GetxController {
 
     isLoading.value = true;
     try {
-      // 1. Check if user is registered in MySQL first
-      final exists = await _apiService.checkMemberExists(phone);
-      if (!exists) {
-        isLoading.value = false;
-        _showNotRegisteredPrompt(phone);
-        return;
-      }
-
-      // 2. User exists -> request OTP and navigate to VerifyView
       final res = await _apiService.requestOtp(phone);
       if (res['success'] == true) {
         startResendTimer(force: true);
@@ -85,7 +76,7 @@ class AuthController extends GetxController {
         errorMessage.value = res['message']?.toString() ?? 'Failed to send OTP. Please try again.';
       }
     } catch (e) {
-      errorMessage.value = 'Failed to send OTP. Please try again.';
+      errorMessage.value = 'Failed to send OTP. Please check network connection.';
     } finally {
       isLoading.value = false;
     }

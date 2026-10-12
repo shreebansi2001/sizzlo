@@ -46,17 +46,22 @@ class CustomBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _navItem(0, Icons.home_rounded, 'Home'),
-              _navItem(1, Icons.confirmation_number_outlined, 'Coupons'),
-              _navItem(2, Icons.auto_awesome_rounded, 'Points'),
-              _navItem(3, Icons.notifications_none_rounded, 'Alerts'),
-              _navItem(4, Icons.person_outline_rounded, 'Profile'),
-            ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _navItem(0, Icons.home_rounded, 'Home'),
+                  _navItem(1, Icons.confirmation_number_outlined, 'Coupons'),
+                  _navItem(2, Icons.auto_awesome_rounded, 'Points'),
+                  _navItem(3, Icons.notifications_none_rounded, 'Alerts'),
+                  _navItem(4, Icons.person_outline_rounded, 'Profile'),
+                ],
+              ),
+            ),
           ),
         ),
       ),

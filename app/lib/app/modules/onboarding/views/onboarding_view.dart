@@ -51,9 +51,12 @@ class OnboardingView extends GetView<OnboardingController> {
 
           // Main Layout
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Column(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Column(
                 children: [
                   // Top Navigation Bar
                   Row(
@@ -304,6 +307,8 @@ class OnboardingView extends GetView<OnboardingController> {
               ),
             ),
           ),
+        ),
+      ),
         ],
       ),
     );

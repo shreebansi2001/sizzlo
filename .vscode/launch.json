@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter App (iPad Simulator)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "app",
+      "deviceId": "ABEA0DB5-0665-438A-A34A-9498675C3BFD"
+    },
+    {
+      "name": "Flutter App (iOS Simulator)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "app"
+    },
+    {
+      "name": "Flutter App (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "app"
+    },
+    {
+      "name": "Flutter App (Profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "app",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "Flutter App (Release)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "app",
+      "flutterMode": "release"
+    }
+  ]
+}

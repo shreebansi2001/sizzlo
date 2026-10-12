@@ -21,11 +21,14 @@ class LoginView extends GetView<AuthController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               if (Navigator.of(context).canPop()) ...[
                 GestureDetector(
                   onTap: () => Get.back(),
@@ -337,6 +340,8 @@ class LoginView extends GetView<AuthController> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

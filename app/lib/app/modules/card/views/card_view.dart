@@ -33,8 +33,11 @@ class CardView extends GetView<CardController> {
         top: false,
         child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(20, 10, 20, isTab ? 110 : 24),
-        child: Column(
-          children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 580),
+            child: Column(
+              children: [
             // Interactive 3D Flip Card
             Obx(
               () => SizzloVipCard(
@@ -247,7 +250,9 @@ class CardView extends GetView<CardController> {
         ),
       ),
     ),
-  );
+  ),
+),
+);
 }
 
   Widget _fieldBox(String label, String value) {

@@ -102,9 +102,12 @@ class HomeView extends GetView<HomeController> {
               gradient: m.headerGradient,
             ),
             padding: EdgeInsets.fromLTRB(20, topPadding > 0 ? (topPadding + 12) : 52, 20, isSub ? 72 : 24),
-            child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,7 +232,9 @@ class HomeView extends GetView<HomeController> {
             ),
           ],
         ),
-      );
+      ),
+    ),
+  );
     },
   );
 });
@@ -242,9 +247,12 @@ class HomeView extends GetView<HomeController> {
         offset: Offset(0, isSub ? -50 : 8),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               if (isSub) ...[
                 // VIP Member Card Preview matching demo_code overlapping banner
                 GestureDetector(
@@ -369,8 +377,10 @@ class HomeView extends GetView<HomeController> {
         ],
       ),
     ),
-    );
-    });
+  ),
+),
+);
+});
   }
 
   Widget _buildQuickActions() {

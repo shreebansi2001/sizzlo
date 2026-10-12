@@ -53,8 +53,11 @@ class ProfileView extends GetView<ProfileController> {
           child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Column(
+                children: [
               // User Header
               _buildUserHeader(m, isSub),
 
@@ -142,7 +145,9 @@ class ProfileView extends GetView<ProfileController> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   });
 }
 

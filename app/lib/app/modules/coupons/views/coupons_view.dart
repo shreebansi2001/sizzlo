@@ -45,7 +45,12 @@ class CouponsView extends GetView<CouponsController> {
         ),
         body: SafeArea(
           top: false,
-          child: isSub ? _buildSubscribedView() : _buildNonSubscribedView(),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: isSub ? _buildSubscribedView() : _buildNonSubscribedView(),
+            ),
+          ),
         ),
       );
     });

@@ -37,9 +37,12 @@ class ReservationsView extends GetView<ReservationsController> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               // Hero VIP Dining Header Card
               _buildHeroHeader(),
               const SizedBox(height: 18),
@@ -59,7 +62,9 @@ class ReservationsView extends GetView<ReservationsController> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   // --- HERO HEADER ---

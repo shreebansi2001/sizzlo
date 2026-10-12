@@ -32,7 +32,10 @@ class OutletsView extends GetView<OutletsController> {
       ),
       body: SafeArea(
         top: false,
-        child: Column(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
         children: [
           // Top Navigation Bar: Active vs Upcoming
           Container(
@@ -179,7 +182,9 @@ class OutletsView extends GetView<OutletsController> {
         ],
       ),
     ),
-  );
+  ),
+),
+);
 }
 
   Widget _buildActiveOutletsList() {

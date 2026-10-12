@@ -32,17 +32,22 @@ class BanquetView extends GetView<BanquetController> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Dedicated Banquet Content
-              _buildBanquetContent(context),
-              const SizedBox(height: 30),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Dedicated Banquet Content
+                  _buildBanquetContent(context),
+                  const SizedBox(height: 30),
 
-              // My Submitted Inquiries Section
-              _buildMyInquiriesSection(),
-              const SizedBox(height: 40),
-            ],
+                  // My Submitted Inquiries Section
+                  _buildMyInquiriesSection(),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
           ),
         ),
       ),
