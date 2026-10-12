@@ -19,7 +19,7 @@ import {
   Cell 
 } from 'recharts';
 import { apiClient as axios } from '../api/client';
-import { KPI, RevenuePoint, Outlet, Reservation } from '../types';
+import { KPI, RevenuePoint, Outlet, Reservation, Member, Coupon } from '../types';
 import { 
   fallbackKPIs, 
   fallbackRevenueSeries, 
@@ -50,54 +50,167 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [chartPeriod, setChartPeriod] = useState<'Daily' | 'Monthly' | 'Annually'>('Monthly');
 
   useEffect(() => {
-    // Feature-wise load: Only fetch dashboard data when this view is rendered
-    axios.get('/api/admin/dashboard')
-      .then(res => {
-        if (res.data?.success && res.data.data) {
-          const d = res.data.data;
-          if (d.kpis) setKpis(d.kpis);
-          if (d.revenueSeries) setRevenueSeries(d.revenueSeries);
-          if (d.outletPerformance) setOutlets(d.outletPerformance);
-        }
-      })
-      .catch(() => {});
+    const loadRealDashboardData = async () => {
+      try {
+        const [membersRes, paymentsRes, billsRes, resRes, couponsRes, outletsRes] = await Promise.all([
+          axios.get('/api/members').catch(() => ({ data: { success: true, data: [] } })),
+          axios.get('/api/payments/records').catch(() => ({ data: { success: true, data: [] } })),
+          axios.get('/api/bills/all').catch(() => ({ data: { success: true, data: [] } })),
+          axios.get('/api/reservations').catch(() => ({ data: { success: true, data: [] } })),
+          axios.get('/api/coupons').catch(() => ({ data: { success: true, data: [] } })),
+          axios.get('/api/outlets/all').catch(() => ({ data: { success: true, data: [] } }))
+        ]);
 
-    axios.get('/api/reservations')
-      .then(res => {
-        if (res.data?.success && res.data.data) {
-          const list: Reservation[] = res.data.data;
-          const sorted = [...list].sort((a, b) => {
-            if (a.vip && !b.vip) return -1;
-            if (!a.vip && b.vip) return 1;
-            return 0;
+        const members: Member[] = Array.isArray(membersRes.data?.data) ? membersRes.data.data : [];
+        const payments: any[] = Array.isArray(paymentsRes.data?.data) ? paymentsRes.data.data : [];
+        const bills: any[] = Array.isArray(billsRes.data?.data) ? billsRes.data.data : [];
+        const reservationList: Reservation[] = Array.isArray(resRes.data?.data) ? resRes.data.data : [];
+        const coupons: Coupon[] = Array.isArray(couponsRes.data?.data) ? couponsRes.data.data : [];
+        const outletList: Outlet[] = Array.isArray(outletsRes.data?.data) ? outletsRes.data.data : [];
+
+        // 1. Real Total Revenue: Successful payments + Approved bills
+        const paidPayments = payments.filter((p: any) => p.status === 'SUCCESS' || p.status === 'CAPTURED' || p.status === 'PAID');
+        const paidPaymentsTotal = paidPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+
+        const approvedBills = bills.filter((b: any) => b.status === 'APPROVED');
+        const approvedBillsTotal = approvedBills.reduce((sum: number, b: any) => sum + (Number(b.netPayable) || 0), 0);
+
+        const realTotalRev = paidPaymentsTotal + approvedBillsTotal;
+
+        // 2. Real Membership Revenue: Subscription purchases
+        const subPayments = payments.filter((p: any) => p.paymentType === 'SUBSCRIPTION');
+        const realSubRev = subPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+
+        // 3. Active Members: Real registered users
+        const activeMembersCount = members.filter(m => m.status === 'Active' || (m.status as string) === 'Registered').length || members.length;
+
+        // 4. Pending Payments: Unverified bills + Member dues
+        const pendingBills = bills.filter((b: any) => b.status === 'PENDING_VERIFICATION');
+        const pendingBillsTotal = pendingBills.reduce((sum: number, b: any) => sum + (Number(b.netPayable) || 0), 0);
+        const memberDuesTotal = members.reduce((sum: number, m: any) => sum + (Number(m.pendingDues) || 0), 0);
+        const realPendingTotal = pendingBillsTotal + memberDuesTotal;
+
+        // 5. Real Coupons Redeemed
+        const couponsRedeemedTotal = members.reduce((sum: number, m: any) => sum + (Number(m.couponsUsed) || 0), 0);
+
+        // 6. Real Reservations count
+        const realReservationsCount = reservationList.length;
+
+        const formatInr = (num: number) => {
+          if (num <= 0) return '₹0';
+          if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+          if (num >= 100000) return `₹${(num / 100000).toFixed(2)} Lakh`;
+          return `₹${num.toLocaleString('en-IN')}`;
+        };
+
+        const calculatedKpis: KPI[] = [
+          { 
+            label: 'Total Revenue', 
+            value: formatInr(realTotalRev), 
+            delta: realTotalRev > 0 ? '+100%' : '0%', 
+            trend: 'up' 
+          },
+          { 
+            label: 'Membership Revenue', 
+            value: formatInr(realSubRev), 
+            delta: realSubRev > 0 ? '+100%' : '0%', 
+            trend: 'up' 
+          },
+          { 
+            label: 'Active Members', 
+            value: String(activeMembersCount), 
+            delta: `+${activeMembersCount}`, 
+            trend: 'up' 
+          },
+          { 
+            label: 'Pending Payments', 
+            value: formatInr(realPendingTotal), 
+            delta: realPendingTotal > 0 ? 'Pending' : '0%', 
+            trend: realPendingTotal > 0 ? 'down' : 'up' 
+          },
+          { 
+            label: 'Coupons Redeemed', 
+            value: String(couponsRedeemedTotal), 
+            delta: String(couponsRedeemedTotal), 
+            trend: 'up' 
+          },
+          { 
+            label: 'Reservations', 
+            value: String(realReservationsCount), 
+            delta: String(realReservationsCount), 
+            trend: 'up' 
+          },
+        ];
+
+        setKpis(calculatedKpis);
+
+        // Reservations sorted
+        const sortedRes = [...reservationList].sort((a, b) => {
+          if (a.vip && !b.vip) return -1;
+          if (!a.vip && b.vip) return 1;
+          return 0;
+        });
+        setReservations(sortedRes);
+
+        // Outlets: compute actual revenue & members per outlet
+        if (outletList.length > 0) {
+          const mappedOutlets = outletList.map(o => {
+            const outletBills = approvedBills.filter((b: any) => b.outletName === o.name);
+            const outletBillTotal = outletBills.reduce((s: number, b: any) => s + (Number(b.netPayable) || 0), 0);
+            return {
+              ...o,
+              revenueLakhs: outletBillTotal > 0 ? Number((outletBillTotal / 100000).toFixed(2)) : 0,
+              activeMembers: members.filter(m => m.lastVisit?.includes(o.name)).length,
+            };
           });
-          setReservations(sorted);
+          setOutlets(mappedOutlets);
         }
-      })
-      .catch(() => {});
 
-    axios.get('/api/coupons')
-      .then(res => {
-        if (res.data?.success && res.data.data?.length) {
-          const mixMap = new Map<string, number>();
-          res.data.data.forEach((c: any) => {
-            const cleanName = (c.name || 'Special Voucher').replace(/\s*\(Visit Used\)/i, '').trim();
-            const used = Math.max(0, (c.totalCount || 1) - (c.leftCount || 0));
-            const count = used > 0 ? used : (c.totalCount || 1);
+        // Coupon Mix
+        const mixMap = new Map<string, number>();
+        coupons.forEach((c: any) => {
+          const cleanName = (c.name || 'Special Voucher').replace(/\s*\(Visit Used\)/i, '').trim();
+          const used = Math.max(0, (c.totalCount || 1) - (c.leftCount || 0));
+          const count = used > 0 ? used : 0;
+          if (count > 0) {
             mixMap.set(cleanName, (mixMap.get(cleanName) || 0) + count);
+          }
+        });
+        setCouponMix(Array.from(mixMap.entries()).map(([name, value]) => ({ name, value })));
+
+        // Real Monthly Revenue Series (12 months of current year)
+        const currentYear = new Date().getFullYear();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthlyData = monthNames.map((m, idx) => {
+          const monthBills = approvedBills.filter((b: any) => {
+            if (!b.createdAt) return false;
+            const d = new Date(b.createdAt);
+            return d.getFullYear() === currentYear && d.getMonth() === idx;
           });
-          const mapped = Array.from(mixMap.entries()).map(([name, value]) => ({ name, value }));
-          setCouponMix(mapped);
-        }
-      })
-      .catch(() => {});
+          const monthPayments = paidPayments.filter((p: any) => {
+            if (!p.createdAt) return false;
+            const d = new Date(p.createdAt);
+            return d.getFullYear() === currentYear && d.getMonth() === idx;
+          });
+          const rev = (monthBills.reduce((s: number, b: any) => s + (Number(b.netPayable) || 0), 0) +
+                       monthPayments.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0)) / 100000;
+          const mem = monthPayments.filter((p: any) => p.paymentType === 'SUBSCRIPTION')
+                                   .reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0) / 100000;
+          return { m, revenue: Number(rev.toFixed(2)), membership: Number(mem.toFixed(2)) };
+        });
+        setRevenueSeries(monthlyData);
+
+      } catch (_) {}
+    };
+
+    loadRealDashboardData();
   }, []);
 
   const displayedRevenueSeries = useMemo(() => {
     if (chartPeriod === 'Daily') {
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      const lastMonthRev = revenueSeries.length > 0 ? (revenueSeries[revenueSeries.length - 1].revenue || 50) : 50;
-      const lastMonthMem = revenueSeries.length > 0 ? (revenueSeries[revenueSeries.length - 1].membership || 30) : 30;
+      const lastMonthRev = revenueSeries.length > 0 ? (revenueSeries[revenueSeries.length - 1].revenue || 0) : 0;
+      const lastMonthMem = revenueSeries.length > 0 ? (revenueSeries[revenueSeries.length - 1].membership || 0) : 0;
       const baseRev = lastMonthRev / 30;
       const baseMem = lastMonthMem / 30;
       return days.map((d, i) => ({
@@ -110,9 +223,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       const currentYearTotal = revenueSeries.reduce((acc, curr) => acc + (curr.revenue || 0), 0);
       const currentYearMem = revenueSeries.reduce((acc, curr) => acc + (curr.membership || 0), 0);
       return [
-        { m: '2023', revenue: Math.round(currentYearTotal * 0.55), membership: Math.round(currentYearMem * 0.45) },
-        { m: '2024', revenue: Math.round(currentYearTotal * 0.75), membership: Math.round(currentYearMem * 0.68) },
-        { m: '2025', revenue: Math.round(currentYearTotal * 0.92), membership: Math.round(currentYearMem * 0.88) },
         { m: '2026 (YTD)', revenue: Math.round(currentYearTotal), membership: Math.round(currentYearMem) },
       ];
     }
