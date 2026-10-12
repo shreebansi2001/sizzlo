@@ -1,30 +1,20 @@
 import React from 'react';
 import { 
   LayoutDashboard, 
-  Crown, 
   Users, 
   Ticket, 
-  CalendarCheck, 
   Calendar,
   Store, 
   Sparkles, 
   Wallet, 
   PartyPopper, 
-  Megaphone, 
   ShieldCheck, 
   MessageSquareText, 
   BadgeCheck, 
-  Brain, 
-  Armchair, 
   LogOut, 
   UserCheck, 
   Building2, 
   Bell,
-  TrendingUp,
-  Target,
-  Zap,
-  BookOpen,
-  DollarSign,
   X 
 } from 'lucide-react';
 import { AdminAuthUser } from '../../types';
@@ -44,7 +34,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
   const hasAccess = (requiredPerm?: string) => {
     if (!requiredPerm) return true;
     if (isSuperAdmin) return true;
-    if (requiredPerm === 'SALES_MANAGE') return true; // Accessible by admin, sales TL, staff
     return userPerms.includes(requiredPerm);
   };
 
@@ -53,19 +42,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
       group: 'Overview',
       items: [
         { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, perm: 'DASHBOARD_VIEW' },
-        { id: 'insights', label: 'AI Predictive Engine', icon: Brain, badge: 'AI', perm: 'INSIGHTS_VIEW' },
-        { id: 'ceo', label: 'CEO Strategic Suite', icon: Crown, perm: 'CEO_SUITE_VIEW' },
-      ],
-    },
-    {
-      group: 'Sales Force & Revenue',
-      items: [
-        { id: 'sales', label: 'Targets & Quotas', icon: Target, badge: 'TL', perm: 'SALES_MANAGE' },
-        { id: 'sales_performance', label: 'Team Lagging Radar', icon: TrendingUp, badge: 'AI', perm: 'SALES_MANAGE' },
-        { id: 'sales_floor', label: 'Floor Sales (POS)', icon: Zap, perm: 'SALES_MANAGE' },
-        { id: 'sales_corporate', label: 'Corporate B2B Deals', icon: Building2, perm: 'SALES_MANAGE' },
-        { id: 'sales_training', label: 'Contests & Training', icon: BookOpen, perm: 'SALES_MANAGE' },
-        { id: 'sales_payroll', label: 'Commission Payroll', icon: DollarSign, perm: 'SALES_MANAGE' },
       ],
     },
     {
@@ -82,7 +58,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
       items: [
         { id: 'coupons', label: 'Voucher Manager', icon: Ticket, perm: 'COUPONS_MANAGE' },
         { id: 'reservations', label: 'Calendar & Bookings', icon: Calendar, badge: 'Live', perm: 'RESERVATIONS_MANAGE' },
-        { id: 'floor', label: 'Floor & Tables', icon: Armchair, perm: 'FLOOR_TABLES_MANAGE' },
         { id: 'outlets', label: 'Venues & Outlets', icon: Store, perm: 'OUTLETS_MANAGE' },
         { id: 'events', label: 'Events & Brunches', icon: PartyPopper, perm: 'EVENTS_MANAGE' },
         { id: 'banquets', label: 'Banquet Master', icon: Building2, badge: 'New', perm: 'EVENTS_MANAGE' },

@@ -21,9 +21,7 @@ export const FeedbackPage: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await fetchFeedbackTickets();
-      if (data && data.length > 0) {
-        setTickets(data);
-      }
+      setTickets(data || []);
     } catch (_) {}
     finally {
       setIsLoading(false);
