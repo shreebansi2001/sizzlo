@@ -170,33 +170,47 @@ class _SupportViewState extends State<SupportView> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.white.withOpacity(0.06)),
                 ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      dense: true,
-                      onTap: () {
-                        setState(() {
-                          _expandedFaq = isExpanded ? null : index;
-                        });
-                      },
-                      title: Text(
-                        faq['q']!,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
-                      ),
-                      trailing: Icon(
-                        isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                        color: const Color(0xFFDF9E5B),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      setState(() {
+                        _expandedFaq = isExpanded ? null : index;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  faq['q']!,
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                color: const Color(0xFFDF9E5B),
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                          if (isExpanded) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              faq['a']!,
+                              style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.65), height: 1.45),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    if (isExpanded)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                        child: Text(
-                          faq['a']!,
-                          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.65), height: 1.45),
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
               );
             }),
