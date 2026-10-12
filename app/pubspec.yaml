@@ -44,6 +44,7 @@ dependencies:
   image_picker: ^1.2.4
   razorpay_flutter: ^1.4.7
   url_launcher: ^6.3.3
+  connectivity_plus: ^7.3.2
 
 dev_dependencies:
   flutter_test:

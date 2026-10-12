@@ -10,6 +10,8 @@ import 'app/data/services/notification_service.dart';
 
 import 'app/data/services/local_storage_service.dart';
 
+import 'app/controllers/network_controller.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
@@ -48,6 +50,7 @@ class SizzloApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       initialRoute: AppPages.INITIAL,
       initialBinding: BindingsBuilder(() {
+        Get.put(NetworkController(), permanent: true);
         Get.put(NavigationController(), permanent: true);
         Get.put(HomeController(), permanent: true);
       }),
@@ -57,7 +60,12 @@ class SizzloApp extends StatelessWidget {
         return GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-          child: child ?? const SizedBox.shrink(),
+          child: Stack(
+            children: [
+              child ?? const SizedBox.shrink(),
+              const NetworkStatusOverlay(),
+            ],
+          ),
         );
       },
     );
