@@ -445,31 +445,6 @@ class BanquetView extends GetView<BanquetController> {
               }),
               const SizedBox(height: 16),
 
-              // Catering / Buffet Package
-              Text('CATERING & BUFFET PACKAGE', style: _fieldSectionStyle()),
-              const SizedBox(height: 8),
-              Obx(() => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: _fieldBoxDecoration(),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: controller.packageOptions.contains(controller.banquetPackage.value)
-                        ? controller.banquetPackage.value
-                        : controller.packageOptions.first,
-                    dropdownColor: const Color(0xFF1E1A16),
-                    isExpanded: true,
-                    icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.goldAccent),
-                    items: controller.packageOptions.map((pkg) => DropdownMenuItem(
-                      value: pkg,
-                      child: Text(pkg, style: GoogleFonts.outfit(fontSize: 12, color: Colors.white)),
-                    )).toList(),
-                    onChanged: (val) {
-                      if (val != null) controller.banquetPackage.value = val;
-                    },
-                  ),
-                ),
-              )),
-              const SizedBox(height: 16),
 
               // Special Requirements / AV Notes
               Text('SPECIAL SETUP / AV REQUIREMENTS', style: _fieldSectionStyle()),
