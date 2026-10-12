@@ -318,7 +318,7 @@ class PlansController extends GetxController {
     try {
       // 1. Create Live Order via Backend Razorpay API (calls https://api.razorpay.com/v1/orders)
       final order = await _apiService.createRazorpayOrder(
-        type: 'SUBSCRIPTION',
+        type: 'MEMBERSHIP',
         planId: planId,
         amount: amountInRupees,
       );

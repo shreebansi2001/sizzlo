@@ -165,7 +165,7 @@ class PlansView extends GetView<PlansController> {
                           final id = p['id']?.toString() ?? 'signature';
                           final name = p['name']?.toString() ?? 'Subscription';
                           final desc = p['description']?.toString() ?? '';
-                          final priceNum = p['price'] ?? 10000;
+                          final priceNum = p['price'] ?? (id == 'classic' ? 1 : id == 'signature' ? 2 : 3);
                           final priceStr = '₹${priceNum.toString()}';
                           final offerLabel = (p['offerLabel']?.toString() ?? '').toUpperCase();
                           final highlights = List<String>.from(p['highlights'] ?? []);
