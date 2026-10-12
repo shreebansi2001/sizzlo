@@ -182,14 +182,8 @@ class OdcInquiryView extends GetView<BanquetController> {
               ),
               const SizedBox(height: 16),
 
-              // Full-Width Venue / Lawn Address
-              Text('VENUE / LAWN ADDRESS', style: _fieldSectionStyle()),
-              const SizedBox(height: 8),
-              _buildTextField(
-                controller: controller.odcVenueLocationController,
-                hint: 'e.g. Rancharda Farmhouse, Sindhu Bhavan Road, Bodakdev',
-                icon: Icons.location_on_outlined,
-              ),
+              // Full-Width Venue / Lawn Address with Google Places Autocomplete
+              _buildVenueAddressWithPlacesAutocomplete(context),
               const SizedBox(height: 16),
 
               // Occasion Type
@@ -321,8 +315,8 @@ class OdcInquiryView extends GetView<BanquetController> {
               const SizedBox(height: 16),
 
 
-              // Special Requirements / Dietary Requests
-              Text('SPECIAL SETUP / LAWN REQUIREMENTS', style: _fieldSectionStyle()),
+              // Notes
+              Text('NOTES', style: _fieldSectionStyle()),
               const SizedBox(height: 8),
               TextField(
                 controller: controller.odcNotesController,
@@ -493,6 +487,153 @@ class OdcInquiryView extends GetView<BanquetController> {
       color: const Color(0xFF1E1A16),
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: const Color(0xFF332B22)),
+    );
+  }
+
+  Widget _buildVenueAddressWithPlacesAutocomplete(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('VENUE / LAWN ADDRESS', style: _fieldSectionStyle()),
+            Row(
+              children: [
+                const Icon(Icons.place_rounded, size: 12, color: Color(0xFF4EE3B8)),
+                const SizedBox(width: 4),
+                Text(
+                  'Google Places Search',
+                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF4EE3B8)),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Obx(() {
+          final isSearching = controller.isSearchingPlaces.value;
+          final predictions = controller.placePredictions;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: controller.odcVenueLocationController,
+                onChanged: controller.searchPlaces,
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Search venue, farmhouse, lawn or area...',
+                  hintStyle: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
+                  prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFF4EE3B8)),
+                  suffixIcon: isSearching
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF4EE3B8),
+                            ),
+                          ),
+                        )
+                      : (controller.odcVenueLocationController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 16, color: Colors.grey),
+                              onPressed: controller.clearPlaceSearch,
+                            )
+                          : null),
+                  filled: true,
+                  fillColor: const Color(0xFF1E1A16),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF332B22))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF332B22))),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4EE3B8))),
+                ),
+              ),
+
+              // Autocomplete suggestions list
+              if (predictions.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 220),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF181512),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF3B3125)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: predictions.length,
+                    separatorBuilder: (_, __) => const Divider(color: Color(0xFF26201A), height: 1),
+                    itemBuilder: (context, index) {
+                      final pred = predictions[index];
+                      final mainText = pred['main_text'] as String;
+                      final secondaryText = pred['secondary_text'] as String;
+
+                      return InkWell(
+                        onTap: () {
+                          controller.selectPlace(pred);
+                          FocusScope.of(context).unfocus();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 2),
+                                child: Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF4EE3B8)),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      mainText,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    if (secondaryText.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        secondaryText,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          color: Colors.grey[400],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          );
+        }),
+      ],
     );
   }
 

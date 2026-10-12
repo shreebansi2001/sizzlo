@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +12,12 @@ import '../../../core/theme/app_colors.dart';
 
 class BanquetController extends GetxController {
   final ApiService _apiService = ApiService();
+
+  // Google Places Autocomplete for ODC Venue
+  static const String googlePlacesApiKey = 'AIzaSyD2UZTVZ7aAm2VCZjvGk2rWgAUSlvmZRHI';
+  final RxList<Map<String, dynamic>> placePredictions = <Map<String, dynamic>>[].obs;
+  final RxBool isSearchingPlaces = false.obs;
+  Timer? _placesDebounceTimer;
 
   // Tab: 0 = Banquet Hall, 1 = Outdoor Catering (ODC)
   final RxInt activeTab = 0.obs;
@@ -432,8 +441,57 @@ class BanquetController extends GetxController {
     );
   }
 
+  void searchPlaces(String query) {
+    _placesDebounceTimer?.cancel();
+    final q = query.trim();
+    if (q.length < 2) {
+      placePredictions.clear();
+      isSearchingPlaces.value = false;
+      return;
+    }
+    _placesDebounceTimer = Timer(const Duration(milliseconds: 300), () async {
+      isSearchingPlaces.value = true;
+      try {
+        final url = Uri.parse(
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(q)}&key=$googlePlacesApiKey&components=country:in',
+        );
+        final res = await http.get(url).timeout(const Duration(seconds: 4));
+        if (res.statusCode == 200) {
+          final data = json.decode(res.body);
+          if (data['status'] == 'OK' && data['predictions'] != null) {
+            final List preds = data['predictions'];
+            placePredictions.value = preds.map((e) => {
+              'description': e['description'] ?? '',
+              'main_text': e['structured_formatting']?['main_text'] ?? e['description'] ?? '',
+              'secondary_text': e['structured_formatting']?['secondary_text'] ?? '',
+              'place_id': e['place_id'] ?? '',
+            }).toList();
+            return;
+          }
+        }
+        placePredictions.clear();
+      } catch (_) {
+        placePredictions.clear();
+      } finally {
+        isSearchingPlaces.value = false;
+      }
+    });
+  }
+
+  void selectPlace(Map<String, dynamic> prediction) {
+    final desc = prediction['description'] ?? '';
+    odcVenueLocationController.text = desc;
+    placePredictions.clear();
+  }
+
+  void clearPlaceSearch() {
+    odcVenueLocationController.clear();
+    placePredictions.clear();
+  }
+
   @override
   void onClose() {
+    _placesDebounceTimer?.cancel();
     banquetNameController.dispose();
     banquetPhoneController.dispose();
     banquetNotesController.dispose();
