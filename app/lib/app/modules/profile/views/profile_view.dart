@@ -309,7 +309,7 @@ class ProfileView extends GetView<ProfileController> {
 
   Widget _buildSubscriptionBanner(MemberModel m, bool isSub) {
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.SUBSCRIPTION_DETAILS),
+      onTap: () => Get.toNamed(isSub ? AppRoutes.SUBSCRIPTION_DETAILS : AppRoutes.PLANS),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
@@ -387,7 +387,7 @@ class ProfileView extends GetView<ProfileController> {
         'title': 'Subscription Details',
         'subtitle': isSub ? '${m.membershipType} · ${m.membershipId}' : 'No active subscription · Tap to join',
         'icon': Icons.workspace_premium_outlined,
-        'action': () => Get.toNamed(AppRoutes.SUBSCRIPTION_DETAILS),
+        'action': () => Get.toNamed(isSub ? AppRoutes.SUBSCRIPTION_DETAILS : AppRoutes.PLANS),
       },
       {
         'title': 'Coupon Summary',
