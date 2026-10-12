@@ -241,25 +241,20 @@ class ReservationsView extends GetView<ReservationsController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // VIP Dining Header Card
-        _buildHeroHeader(),
-        const SizedBox(height: 18),
+        // VIP Dining Header (Compact luxury badge if member)
+        _buildVipPerkBadge(),
 
-        // Hero "TODAY" Highlight Card (Tap opens Step 2 defaulting to 2 guests)
-        _buildTodayHeroCard(),
-        const SizedBox(height: 22),
-
-        // Interactive 30-Day Calendar Date Strip
-        _buildCalendarDateStrip(context),
+        // Unified, elegant Date Selection (Calendar Carousel + Selected Date status)
+        _buildDateSelectionSection(context),
         const SizedBox(height: 22),
 
         // Branch / Outlet Selection ("Which branch")
         _buildBranchSelectionSection(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 22),
 
         // Proceed to Step 2 CTA Button
         SizzloButton(
-          text: 'Continue to Table & Guests (2 Covers) →',
+          text: 'Continue to Table & Guests →',
           onPressed: controller.goToStep2,
         ),
         const SizedBox(height: 26),
@@ -274,43 +269,39 @@ class ReservationsView extends GetView<ReservationsController> {
     );
   }
 
-  // --- HERO HEADER ---
-  Widget _buildHeroHeader() {
+  // --- VIP DINING PERK BADGE (COMPACT LUXURY BADGE) ---
+  Widget _buildVipPerkBadge() {
     return Obx(() {
       final isSub = controller.isSubscribedMember.value;
+      if (!isSub) return const SizedBox.shrink();
       return Container(
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isSub
-                ? [const Color(0xFF2E2214), const Color(0xFF141312)]
-                : [const Color(0xFF1E1A16), const Color(0xFF121110)],
+          gradient: const LinearGradient(
+            colors: [Color(0xFF261D13), Color(0xFF161412)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isSub ? AppColors.goldAccent.withOpacity(0.5) : const Color(0xFF332B22),
-          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.goldAccent.withOpacity(0.4)),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: isSub ? AppColors.goldAccent.withOpacity(0.15) : const Color(0xFF26201A),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSub ? AppColors.goldAccent.withOpacity(0.3) : const Color(0xFF3B3228),
-                ),
+                color: AppColors.goldAccent.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.goldAccent.withOpacity(0.3)),
               ),
-              child: Icon(
-                isSub ? Icons.workspace_premium_rounded : Icons.table_restaurant_rounded,
-                color: isSub ? AppColors.goldAccent : Colors.grey[300],
-                size: 26,
+              child: const Icon(
+                Icons.workspace_premium_rounded,
+                color: AppColors.goldAccent,
+                size: 16,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,40 +309,36 @@ class ReservationsView extends GetView<ReservationsController> {
                   Row(
                     children: [
                       Text(
-                        isSub ? 'VIP PRIORITY DINING' : 'TABLE RESERVATIONS',
+                        'VIP PRIORITY DINING',
                         style: GoogleFonts.outfit(
-                          fontSize: 13,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w800,
-                          color: isSub ? AppColors.goldAccent : Colors.white,
+                          color: AppColors.goldAccent,
                           letterSpacing: 0.8,
                         ),
                       ),
-                      if (isSub) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.goldAccent.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'UNLOCKED',
-                            style: GoogleFonts.outfit(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.goldAccent,
-                            ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: AppColors.goldAccent.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'UNLOCKED',
+                          style: GoogleFonts.outfit(
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.goldAccent,
                           ),
                         ),
-                      ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
-                    isSub
-                        ? 'Active subscriber perk: Complimentary priority seating & VIP booth greeting.'
-                        : 'Select date & branch to check live table availability across House of Yanki.',
-                    style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400], height: 1.3),
+                    'Complimentary priority seating & VIP booth greeting applied.',
+                    style: GoogleFonts.inter(fontSize: 10.5, color: Colors.grey[400]),
                   ),
                 ],
               ),
@@ -362,182 +349,60 @@ class ReservationsView extends GetView<ReservationsController> {
     });
   }
 
-  // --- HERO "TODAY" CARD (WHAT IS TODAY & TAP TO BOOK TODAY FOR 2 GUESTS) ---
-  Widget _buildTodayHeroCard() {
-    final now = DateTime.now();
-    final todayDayName = DateFormat('EEEE').format(now);
-    final todayFullDate = DateFormat('d MMMM yyyy').format(now);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2E2214), Color(0xFF161311)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.goldAccent.withOpacity(0.6), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.goldAccent.withOpacity(0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.goldAccent.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.goldAccent, width: 0.8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF4EE3B8),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'TODAY\'S DINING',
-                      style: GoogleFonts.outfit(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.goldAccent,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Obx(() => Text(
-                controller.selectedOutlet.value.split(' ').take(2).join(' '),
-                style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400]),
-              )),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Today: $todayDayName',
-            style: GoogleFonts.outfit(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            todayFullDate,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.goldAccent,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Live dining tables open today for Lunch and Dinner. Tap below to reserve instantly for 2 guests.',
-            style: GoogleFonts.inter(fontSize: 11.5, color: Colors.grey[300], height: 1.4),
-          ),
-          const SizedBox(height: 16),
-          // Interactive Action: Tapping opens Step 2 defaulting to 2 guests
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: controller.selectTodayAndProceed,
-              borderRadius: BorderRadius.circular(14),
-              child: Ink(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFE5A65E), Color(0xFFDF9E5B)],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.goldAccent.withOpacity(0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.touch_app_rounded, color: Colors.black, size: 19),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Book Today (2 Guests / Couple) →',
-                      style: GoogleFonts.outfit(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- CALENDAR DATE STRIP (30 DAYS) ---
-  Widget _buildCalendarDateStrip(BuildContext context) {
+  // --- UNIFIED LUXURY DATE SELECTION SECTION ---
+  Widget _buildDateSelectionSection(BuildContext context) {
     final dates = List.generate(30, (index) => DateTime.now().add(Duration(days: index)));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section Header Row: Title & Calendar Picker
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('OR SELECT UPCOMING DATE', style: _sectionHeaderStyle()),
-            GestureDetector(
-              onTap: () => controller.pickCustomDate(context),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_month_rounded, size: 13, color: AppColors.goldAccent),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Calendar Picker',
-                    style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.goldAccent),
+            Text('SELECT DINING DATE', style: _sectionHeaderStyle()),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => controller.pickCustomDate(context),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_month_rounded, size: 14, color: AppColors.goldAccent),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Calendar Picker',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.goldAccent,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
+
+        // Horizontal Date Selector (Sleek modern pill cards)
         SizedBox(
-          height: 88,
+          height: 80,
           child: Obx(() {
             controller.selectedBookingDay.value;
             controller.customBookingDate.value;
 
-            return ListView(
+            return ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
-              children: dates.asMap().entries.map((entry) {
-                final index = entry.key;
-                final date = entry.value;
+              itemCount: dates.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 9),
+              itemBuilder: (context, index) {
+                final date = dates[index];
                 final isSelected = controller.isDateSelected(date);
                 final isToday = index == 0;
                 final isTomorrow = index == 1;
@@ -551,37 +416,34 @@ class ReservationsView extends GetView<ReservationsController> {
                 final monthStr = DateFormat('MMM').format(date).toUpperCase();
 
                 return GestureDetector(
-                  onTap: () {
-                    if (isToday) {
-                      controller.selectTodayAndProceed();
-                    } else {
-                      controller.selectDateAndProceed(date);
-                    }
-                  },
+                  onTap: () => controller.selectDate(date),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 68,
-                    margin: const EdgeInsets.only(right: 10),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    duration: const Duration(milliseconds: 200),
+                    width: 64,
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0xFF2C241B)
-                          : const Color(0xFF161412),
-                      borderRadius: BorderRadius.circular(14),
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              colors: [Color(0xFFE5A65E), Color(0xFFC78842)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            )
+                          : null,
+                      color: isSelected ? null : const Color(0xFF171412),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected
                             ? AppColors.goldAccent
                             : isToday
-                                ? AppColors.goldAccent.withOpacity(0.5)
-                                : const Color(0xFF2B251E),
-                        width: isSelected ? 1.8 : 1.0,
+                                ? AppColors.goldAccent.withOpacity(0.4)
+                                : const Color(0xFF2C241B),
+                        width: isSelected ? 1.6 : 1.0,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: AppColors.goldAccent.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                                color: AppColors.goldAccent.withOpacity(0.32),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
                               ),
                             ]
                           : null,
@@ -595,19 +457,21 @@ class ReservationsView extends GetView<ReservationsController> {
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: isSelected
-                                ? AppColors.goldAccent
+                                ? const Color(0xFF141312)
                                 : isToday
-                                    ? const Color(0xFF4EE3B8)
+                                    ? AppColors.goldAccent
                                     : Colors.grey[500],
+                            letterSpacing: 0.4,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
                           dateNum,
                           style: GoogleFonts.outfit(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: isSelected ? Colors.white : Colors.grey[200],
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: isSelected ? const Color(0xFF141312) : Colors.white,
+                            height: 1.1,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -615,18 +479,87 @@ class ReservationsView extends GetView<ReservationsController> {
                           monthStr,
                           style: GoogleFonts.inter(
                             fontSize: 9.5,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected ? AppColors.goldAccent : Colors.grey[500],
+                            fontWeight: FontWeight.w700,
+                            color: isSelected
+                                ? const Color(0xFF141312).withOpacity(0.85)
+                                : Colors.grey[400],
                           ),
                         ),
                       ],
                     ),
                   ),
                 );
-              }).toList(),
+              },
             );
           }),
         ),
+
+        // Selected Date Summary Bar with Live Availability Indicator
+        const SizedBox(height: 12),
+        Obx(() {
+          final formatted = controller.formattedSelectedDateText;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF191613),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF2E241B)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.event_available_rounded,
+                  size: 16,
+                  color: AppColors.goldAccent,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Selected: ',
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[400]),
+                ),
+                Text(
+                  formatted,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.goldAccent,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4EE3B8).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF4EE3B8).withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF4EE3B8),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Tables Open',
+                        style: GoogleFonts.outfit(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF4EE3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
