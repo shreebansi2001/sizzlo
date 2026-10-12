@@ -238,8 +238,9 @@ class ReservationsController extends GetxController {
 
       final slotDateTime = DateTime(now.year, now.month, now.day, hour, minute);
 
-      // Must be strictly after current time
-      return slotDateTime.isAfter(now);
+      // Must be at least 30 minutes in advance from current time
+      final minAllowedTime = now.add(const Duration(minutes: 30));
+      return slotDateTime.isAfter(minAllowedTime);
     } catch (_) {
       return true;
     }
@@ -371,8 +372,8 @@ class ReservationsController extends GetxController {
 
     if (!isSlotBookable(selectedTimeSlot.value)) {
       Get.snackbar(
-        '1-Hour Advance Required',
-        'Reservations must be booked at least 1 hour in advance. Please choose a slot at least 60 minutes from now.',
+        '30-Minute Advance Notice Required',
+        'Reservations must be booked at least 30 minutes in advance. Please select an upcoming slot.',
         backgroundColor: const Color(0xFF331D12),
         colorText: const Color(0xFFE27C38),
         duration: const Duration(seconds: 4),
@@ -391,7 +392,9 @@ class ReservationsController extends GetxController {
       guests: guestCount.value,
       isVip: isVipTable.value,
       bookingCharge: nominalCharge,
-      specialRequests: '${selectedOccasion.value} occasion. ${specialNotesController.text}',
+      specialRequests: specialNotesController.text.trim().isNotEmpty
+          ? specialNotesController.text.trim()
+          : 'Standard dining reservation',
       onConfirm: _launchRazorpayTableBooking,
     );
   }
