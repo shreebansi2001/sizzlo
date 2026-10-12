@@ -446,8 +446,8 @@ class BanquetView extends GetView<BanquetController> {
               const SizedBox(height: 16),
 
 
-              // Special Requirements / AV Notes
-              Text('SPECIAL SETUP / AV REQUIREMENTS', style: _fieldSectionStyle()),
+              // Notes
+              Text('NOTES', style: _fieldSectionStyle()),
               const SizedBox(height: 8),
               TextField(
                 controller: controller.banquetNotesController,
