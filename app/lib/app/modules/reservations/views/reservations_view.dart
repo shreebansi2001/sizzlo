@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../widgets/sizzlo_button.dart';
 import '../../../data/models/reservation_model.dart';
 import '../../../routes/app_routes.dart';
+import '../../../core/values/app_constants.dart';
 
 class ReservationsView extends GetView<ReservationsController> {
   final bool isTab;
@@ -1088,8 +1089,8 @@ class ReservationsView extends GetView<ReservationsController> {
                         const SizedBox(height: 2),
                         Text(
                           isSub
-                              ? 'Priority host seating on admin console. Nominal ₹99 cover charge is 100% deducted from your dining bill.'
-                              : 'Open Monday to Friday with 30-min notice. Nominal ₹99 cover is 100% deducted from your dining bill. VIP members receive weekend access & top priority seating.',
+                              ? 'Priority host seating on admin console. Nominal ₹${AppConstants.isDevMode ? '1' : '99'} cover charge is 100% deducted from your dining bill.'
+                              : 'Open Monday to Friday with 30-min notice. Nominal ₹${AppConstants.isDevMode ? '1' : '99'} cover is 100% deducted from your dining bill. VIP members receive weekend access & top priority seating.',
                           style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[400]),
                         ),
                       ],
@@ -1106,8 +1107,8 @@ class ReservationsView extends GetView<ReservationsController> {
             text: controller.isSubmitting.value
                 ? 'Reserving Table...'
                 : controller.isSubscribedMember.value
-                    ? 'Book VIP Priority Table • ₹99 Advance Cover'
-                    : 'Book Table (Weekday) • ₹99 Advance Cover',
+                    ? 'Book VIP Priority Table • ₹${AppConstants.isDevMode ? '1' : '99'} Advance Cover'
+                    : 'Book Table (Weekday) • ₹${AppConstants.isDevMode ? '1' : '99'} Advance Cover',
             isLoading: controller.isSubmitting.value,
             onPressed: controller.confirmAndBookTable,
           )),

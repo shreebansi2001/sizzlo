@@ -410,7 +410,7 @@ class ReservationsController extends GetxController {
 
     final isSub = isSubscribedMember.value;
     final bookingTimeLabel = '${selectedBookingDay.value}, ${selectedTimeSlot.value}';
-    const nominalCharge = 99.0;
+    final nominalCharge = AppConstants.isDevMode ? 1.0 : 99.0;
     SizzloDialogs.showBookTableConfirm(
       outlet: selectedOutlet.value,
       time: bookingTimeLabel,
@@ -433,11 +433,14 @@ class ReservationsController extends GetxController {
         ? AppConstants.currentUserName
         : 'VIP Diner';
 
+    final int testAmountPaise = AppConstants.isDevMode ? 100 : 9900;
+    final double testAmountRupees = AppConstants.isDevMode ? 1.0 : 99.0;
+
     var options = {
       'key': 'rzp_live_S5dgGJ3fEPa3fO',
-      'amount': 9900, // ₹99 nominal cover charge in paise
+      'amount': testAmountPaise, // ₹1 in dev mode (100 paise), ₹99 in live production (9900 paise)
       'name': 'House of Yanki · Sizzlo',
-      'description': 'Table Booking Cover Charge · ₹99 (${selectedOutlet.value})',
+      'description': 'Table Booking Cover Charge · ₹${testAmountRupees.toInt()} (${selectedOutlet.value})',
       'prefill': {
         'contact': userMobile,
         'email': AppConstants.currentUserEmail.isNotEmpty ? AppConstants.currentUserEmail : 'user@sizzlo.com',
@@ -450,6 +453,19 @@ class ReservationsController extends GetxController {
         'wallets': ['paytm'],
       },
     };
+
+    if (AppConstants.isDevMode) {
+      // In local testing/dev: attempt opening sheet, and automatically mark as booked so testing proceeds seamlessly
+      try {
+        _razorpay.open(options);
+      } catch (e) {
+        debugPrint('Razorpay local checkout notice: $e');
+      }
+      _executeBooking(
+        paymentId: 'pay_test_${DateTime.now().millisecondsSinceEpoch}',
+      );
+      return;
+    }
 
     try {
       _razorpay.open(options);
@@ -471,6 +487,10 @@ class ReservationsController extends GetxController {
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
+    if (AppConstants.isDevMode) {
+      // In local dev/testing, closing test payment sheet must not discard the booking
+      return;
+    }
     isSubmitting.value = false;
     debugPrint('Table Booking Razorpay Failure: ${response.code} - ${response.message}');
     Get.snackbar(
@@ -634,6 +654,7 @@ class ReservationsController extends GetxController {
       final isSub = isSubscribedMember.value;
       final bookingTimeLabel = '${selectedBookingDay.value}, ${selectedTimeSlot.value}';
       final bookingRef = 'REF-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+      final double coverCharge = AppConstants.isDevMode ? 1.0 : 99.0;
 
       await _apiService.bookReservation(
         name: AppConstants.currentUserName.isNotEmpty ? AppConstants.currentUserName : (isSub ? 'VIP Guest' : 'Guest Diner'),
@@ -645,7 +666,7 @@ class ReservationsController extends GetxController {
         tierPriorityTag: isSub ? 'VIP Priority' : 'Non-Subscriber',
         occasionTag: selectedOccasion.value,
         specialRequests: specialNotesController.text,
-        bookingAdvance: 99.0,
+        bookingAdvance: coverCharge,
         advancePaid: true,
       );
 
@@ -656,7 +677,7 @@ class ReservationsController extends GetxController {
         guests: guestCount.value,
         occasion: selectedOccasion.value,
         bookingReference: bookingRef,
-        advancePaid: 99.0,
+        advancePaid: coverCharge,
         paymentId: paymentId,
       );
 
@@ -708,7 +729,7 @@ class ReservationsController extends GetxController {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Table for ${guestCount.value} at ${selectedOutlet.value} ($bookingTimeLabel) is confirmed.\n\n₹99 cover charge paid (Txn: $shortTxn) and 100% credited to your dining bill.\n\nReminders are scheduled 30m & 15m before your arrival!',
+                  'Table for ${guestCount.value} at ${selectedOutlet.value} ($bookingTimeLabel) is confirmed.\n\n₹${coverCharge.toInt()} cover charge paid (Txn: $shortTxn) and 100% credited to your dining bill.\n\nReminders are scheduled 30m & 15m before your arrival!',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[300], height: 1.4),
                 ),

@@ -29,6 +29,9 @@ class AppConstants {
     return 'https://cheeragskitchen.in/Sizzlo/api';
   }
 
+  /// True when running locally against 127.0.0.1 or in debug mode
+  static bool get isDevMode => kDebugMode || baseUrl.contains('127.0.0.1') || baseUrl.contains('localhost');
+
   static const String defaultMembershipId = '';
   static const String defaultUserMobile = '';
   static const String defaultUserName = 'Guest';

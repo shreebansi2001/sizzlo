@@ -83,46 +83,7 @@ interface UpcomingItem {
 
 const DEFAULT_MOCK_BOOKINGS: UpcomingItem[] = [];
 
-// ==============================================================
-// Web Audio API: Zomato / Swiggy-Style Order Notification Chime
-// ==============================================================
-const playZomatoAlertSound = () => {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
-
-    const playTone = (freq: number, start: number, duration: number, type: OscillatorType = 'sine', gainVal = 0.35) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, start);
-      gain.gain.setValueAtTime(gainVal, start);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + duration);
-    };
-
-    const now = ctx.currentTime;
-    // Signature Zomato / Swiggy restaurant order chime:
-    // Chime 1: Rising 3-note arpeggio (D5 -> A5 -> D6)
-    playTone(587.33, now, 0.14, 'sine', 0.4);
-    playTone(880.00, now + 0.14, 0.14, 'sine', 0.45);
-    playTone(1174.66, now + 0.28, 0.38, 'triangle', 0.5);
-
-    // Chime 2 repeat (after 0.35s gap)
-    playTone(587.33, now + 0.68, 0.14, 'sine', 0.4);
-    playTone(880.00, now + 0.82, 0.14, 'sine', 0.45);
-    playTone(1174.66, now + 0.96, 0.55, 'triangle', 0.55);
-  } catch (err) {
-    console.error('Audio alert playback error:', err);
-  }
-};
+import { playZomatoAlertSound } from '../utils/audioAlert';
 
 export interface BanquetBookingItem {
   id: string;
@@ -190,6 +151,10 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
       return true;
     }
   });
+  const soundEnabledRef = useRef(soundEnabled);
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
   const [newInquiryNotice, setNewInquiryNotice] = useState<{
     count: number;
     latestName: string;
@@ -198,8 +163,25 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     isVip?: boolean;
     tierTag?: string;
   } | null>(null);
+  const [isAlarmActive, setIsAlarmActive] = useState<boolean>(false);
   const prevIdsRef = useRef<Set<number | string>>(new Set());
   const isFirstLoadRef = useRef(true);
+
+  // Swiggy/Zomato style continuous alarm: beeps every 3.5s until assigned, accepted, or dismissed
+  useEffect(() => {
+    if (!isAlarmActive) return;
+
+    // Immediately trigger first chime
+    playZomatoAlertSound();
+
+    const alarmTimer = setInterval(() => {
+      if (soundEnabledRef.current) {
+        playZomatoAlertSound();
+      }
+    }, 3500);
+
+    return () => clearInterval(alarmTimer);
+  }, [isAlarmActive]);
 
   // Table Settlement & Queue Assignment States
   const [availableFloorTables, setAvailableFloorTables] = useState<any[]>([]);
@@ -288,9 +270,6 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
         if (!isFirstLoadRef.current) {
           const newArrivals = incoming.filter(r => !prevIdsRef.current.has(r.id));
           if (newArrivals.length > 0) {
-            if (soundEnabled) {
-              playZomatoAlertSound();
-            }
             const firstNew = newArrivals[0];
             const isVip = Boolean(firstNew.vip) || (firstNew.tierPriorityTag !== 'Non-Subscriber' && firstNew.tierPriorityTag !== 'GUEST' && Boolean(firstNew.tierPriorityTag));
             setNewInquiryNotice({
@@ -301,6 +280,8 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
               isVip,
               tierTag: firstNew.tierPriorityTag || (isVip ? 'VIP Priority' : 'Non-Subscriber')
             });
+            // Start continuous alarm loop until host assigns table or accepts
+            setIsAlarmActive(true);
           }
         } else {
           isFirstLoadRef.current = false;
@@ -375,6 +356,8 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     try {
       const cleanNum = selectedTableToAssign.replace(/[^0-9]/g, '');
       await axios.post(`/api/reservations/${settlingItem.dbId}/assign-table?tableNumber=${cleanNum}&state=${tableAssignState}`);
+      setIsAlarmActive(false);
+      setNewInquiryNotice(null);
       setSettlingItem(null);
       setSelectedTableToAssign('');
       await pollLiveReservations();
@@ -497,6 +480,8 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     if (!targetItem) return;
 
     setUpcomingList(prev => prev.map(u => u.dbId === targetItem.dbId ? { ...u, status: newStatus } : u));
+    setIsAlarmActive(false);
+    setNewInquiryNotice(null);
     try {
       await axios.patch(`/api/reservations/${targetItem.dbId}/status?status=${newStatus}`);
       if (onRefresh) onRefresh();
@@ -802,10 +787,28 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {isAlarmActive && (
+              <span style={{
+                fontSize: 11,
+                padding: '5px 10px',
+                borderRadius: 8,
+                background: 'rgba(239, 68, 68, 0.2)',
+                color: '#EF4444',
+                fontWeight: 800,
+                border: '1px solid rgba(239, 68, 68, 0.45)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#EF4444' }} />
+                Beeping until assigned...
+              </span>
+            )}
             <button
               onClick={() => {
                 const target = upcomingList.find(u => u.customer === newInquiryNotice.latestName) || incomingInquiries[0];
                 if (target) setSettlingItem(target);
+                setIsAlarmActive(false);
                 setNewInquiryNotice(null);
               }}
               className="btn btn-primary"
@@ -815,10 +818,13 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             </button>
             <button 
               className="btn btn-outline"
-              onClick={() => setNewInquiryNotice(null)}
+              onClick={() => {
+                setIsAlarmActive(false);
+                setNewInquiryNotice(null);
+              }}
               style={{ padding: '8px 14px', fontSize: 12 }}
             >
-              Dismiss
+              🔕 Mute Alarm
             </button>
           </div>
         </div>

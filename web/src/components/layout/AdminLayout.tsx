@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { GlobalBookingAlarm } from './GlobalBookingAlarm';
 
 import { AdminAuthUser } from '../../types';
 
@@ -60,6 +61,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           onLogout={onLogout}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onTabChange={onTabChange}
+        />
+        <GlobalBookingAlarm 
+          onNavigateToReservations={() => handleTabChange('reservations')}
+          onRefresh={onRefresh}
         />
         <main className="admin-content">
           {children}

@@ -302,7 +302,9 @@ class BillingController extends GetxController {
 
       final orderId = order?['orderId']?.toString() ?? 'order_rzp_bill_${DateTime.now().millisecondsSinceEpoch}';
       final keyId = order?['keyId']?.toString() ?? 'rzp_live_S5dgGJ3fEPa3fO';
-      final amountInPaise = order?['amount'] is num ? (order!['amount'] as num).toInt() : (amountInRupees * 100).toInt();
+      final amountInPaise = AppConstants.isDevMode 
+          ? 100 // ₹1 in dev test mode
+          : (order?['amount'] is num ? (order!['amount'] as num).toInt() : (amountInRupees * 100).toInt());
       _activeOrderId = orderId;
 
       // 2. Launch Native Razorpay Checkout Modal
@@ -323,6 +325,19 @@ class BillingController extends GetxController {
           'wallets': ['paytm'],
         },
       };
+
+      if (AppConstants.isDevMode) {
+        // In local testing/dev: attempt opening sheet, and automatically confirm/settle bill so user can test seamlessly
+        try {
+          _razorpay.open(options);
+        } catch (e) {
+          debugPrint('Razorpay local checkout notice: $e');
+        }
+        await _executeSettlementBackend(
+          razorpayPaymentId: 'pay_test_bill_${DateTime.now().millisecondsSinceEpoch}',
+        );
+        return;
+      }
 
       try {
         _razorpay.open(options);
@@ -352,6 +367,10 @@ class BillingController extends GetxController {
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
+    if (AppConstants.isDevMode) {
+      // In local dev/testing, closing test payment sheet must not cancel bill settlement
+      return;
+    }
     isSubmitting.value = false;
     debugPrint('Razorpay Bill Payment Error: ${response.code} - ${response.message}');
     Get.snackbar(
