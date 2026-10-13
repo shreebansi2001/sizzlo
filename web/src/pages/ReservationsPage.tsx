@@ -205,20 +205,6 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
   const [isSavingSlot, setIsSavingSlot] = useState(false);
   const [slotNotice, setSlotNotice] = useState<string | null>(null);
 
-  // ==============================================================
-  // DYNAMIC BANQUET MASTER & RESERVATIONS STATE
-  // ==============================================================
-  const [bookingServiceType, setBookingServiceType] = useState<'dining' | 'banquet'>('dining');
-  const [banquetHallsList, setBanquetHallsList] = useState<BanquetHall[]>([]);
-  const [banquetEventsList, setBanquetEventsList] = useState<BanquetBookingItem[]>([]);
-  const [showBanquetMasterModal, setShowBanquetMasterModal] = useState(false);
-  const [editingHall, setEditingHall] = useState<Partial<BanquetHall> | null>(null);
-  const [isSavingHall, setIsSavingHall] = useState(false);
-  const [banquetMasterSearch, setBanquetMasterSearch] = useState('');
-  const [banquetMasterOutletFilter, setBanquetMasterOutletFilter] = useState('All');
-  const [banquetNotice, setBanquetNotice] = useState<string | null>(null);
-  const [selectedBanquetBooking, setSelectedBanquetBooking] = useState<BanquetBookingItem | null>(null);
-
   // Interactive Calendar State ("what is today and which branch, history & future")
   const [viewMode, setViewMode] = useState<'calendar' | 'desk' | 'ledger'>('calendar');
   const [currentCalMonth, setCurrentCalMonth] = useState<Date>(new Date());
@@ -241,13 +227,6 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     try {
       const data = await fetchAllTimeSlots();
       setSlotsList(data);
-    } catch (_) {}
-  };
-
-  const loadBanquetHalls = async () => {
-    try {
-      const data = await fetchBanquetHalls();
-      setBanquetHallsList(data || []);
     } catch (_) {}
   };
 
@@ -297,7 +276,6 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     pollLiveReservations();
     loadFloorTables();
     loadSlots();
-    loadBanquetHalls();
     fetchOutlets().then((data) => {
       if (data && data.length > 0) setAvailableOutlets(data);
     }).catch(() => {});
@@ -430,49 +408,69 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     }
   };
 
-  // Banquet Hall CRUD operations
-  const handleSaveHall = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingHall || !editingHall.name || !editingHall.outletName) {
-      setBanquetNotice('Please provide hall name and associated outlet.');
-      return;
-    }
-    setIsSavingHall(true);
+  // Quick Accept: assigns available table, confirms status, silences alarm,
+  // and moves inquiry straight into the confirmed bookings ledger!
+  const handleQuickAccept = async (inq: UpcomingItem) => {
     try {
-      if (editingHall.id) {
-        const updated = await updateBanquetHall(editingHall.id, editingHall);
-        setBanquetHallsList(prev => prev.map(h => h.id === editingHall.id ? { ...h, ...updated } : h));
-        setBanquetNotice(`Hall "${updated.name}" updated successfully.`);
+      let cleanNum = '1';
+      if (inq.tableAssigned) {
+        cleanNum = inq.tableAssigned.replace(/[^0-9]/g, '') || '1';
       } else {
-        const created = await createBanquetHall(editingHall);
-        setBanquetHallsList(prev => [...prev, created]);
-        setBanquetNotice(`Banquet hall "${created.name}" created for ${created.outletName}!`);
+        const freeTable = availableFloorTables.find(t => t.state === 'Available');
+        if (freeTable) {
+          cleanNum = String(freeTable.tableNumber);
+        }
       }
-      setEditingHall(null);
-    } catch (_) {
-      setBanquetNotice('Error saving banquet hall.');
-    } finally {
-      setIsSavingHall(false);
-      setTimeout(() => setBanquetNotice(null), 3500);
+
+      // 1. Mark acknowledged in sessionStorage so neither this page nor layout alarms re-beep
+      try {
+        const stored = sessionStorage.getItem('sizzlo_ack_booking_ids');
+        const set = stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+        set.add(Number(inq.dbId));
+        sessionStorage.setItem('sizzlo_ack_booking_ids', JSON.stringify(Array.from(set)));
+      } catch (_) {}
+
+      // 2. Stop alarm immediately
+      setIsAlarmActive(false);
+      setNewInquiryNotice(null);
+
+      // 3. Optimistic local update: mark Confirmed & assign table so it leaves inquiries immediately
+      // and appears in the confirmed bookings ledger
+      setUpcomingList(prev => prev.map(u => {
+        if (u.dbId === inq.dbId) {
+          return {
+            ...u,
+            status: 'Confirmed',
+            tableAssigned: `T${cleanNum}`
+          };
+        }
+        return u;
+      }));
+
+      // 4. Update floor table state locally
+      setAvailableFloorTables(prev => prev.map(t => {
+        if (String(t.tableNumber) === String(cleanNum)) {
+          return {
+            ...t,
+            state: 'Reserved',
+            guest: `${inq.customer} (${inq.guests} guests)`
+          };
+        }
+        return t;
+      }));
+
+      // 5. Call backend APIs to persist table assignment and Confirmed status
+      await axios.post(`/api/reservations/${inq.dbId}/assign-table?tableNumber=${cleanNum}&state=Reserved`);
+      await axios.patch(`/api/reservations/${inq.dbId}/status?status=Confirmed`);
+
+      // 6. Refresh state from server
+      await pollLiveReservations();
+      await loadFloorTables();
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      console.error('Error accepting reservation:', err);
+      await pollLiveReservations();
     }
-  };
-
-  const handleDeleteHall = async (id: number | string, name: string) => {
-    if (!window.confirm(`Delete "${name}" from Banquet Master?`)) return;
-    try {
-      await deleteBanquetHall(id);
-      setBanquetHallsList(prev => prev.filter(h => h.id !== id));
-      setBanquetNotice(`Hall "${name}" deleted.`);
-      setTimeout(() => setBanquetNotice(null), 3000);
-    } catch (_) {}
-  };
-
-  const handleToggleHallStatus = async (hall: BanquetHall) => {
-    const nextStatus = hall.status === 'Active' ? 'Maintenance' : 'Active';
-    try {
-      await updateBanquetHall(hall.id, { ...hall, status: nextStatus as any });
-      setBanquetHallsList(prev => prev.map(h => h.id === hall.id ? { ...h, status: nextStatus as any } : h));
-    } catch (_) {}
   };
 
   const updateUpcomingStatus = async (target: UpcomingItem | string | number, newStatus: 'Confirmed' | 'Completed' | 'Cancelled') => {
@@ -645,62 +643,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     return true;
   });
 
-  // Dynamic map of outlets that have banquet halls
-  const activeHallsForSelectedBranch = React.useMemo(() => {
-    if (calBranchFilter === 'All') {
-      return banquetHallsList.filter(h => h.status !== 'Inactive');
-    }
-    return banquetHallsList.filter(h => h.outletName.toLowerCase() === calBranchFilter.toLowerCase() && h.status !== 'Inactive');
-  }, [banquetHallsList, calBranchFilter]);
 
-  const isBranchBanquetEnabled = activeHallsForSelectedBranch.length > 0;
-
-  // Check banquet events for any specific calendar date
-  const getBanquetEventsForDate = (targetDate: Date, branch: string) => {
-    return banquetEventsList.filter(item => {
-      if (branch !== 'All' && item.outlet !== branch && !item.outlet.toLowerCase().includes(branch.toLowerCase())) {
-        return false;
-      }
-      const [y, m, d] = item.date.split('-').map(Number);
-      const evDate = new Date(y, m - 1, d);
-      return isSameDay(evDate, targetDate);
-    });
-  };
-
-  // Check banquet events for any time range preset
-  const getBanquetEventsForPreset = (preset: typeof calTimeRangePreset, branch: string) => {
-    return banquetEventsList.filter(item => {
-      if (branch !== 'All' && item.outlet !== branch && !item.outlet.toLowerCase().includes(branch.toLowerCase())) {
-        return false;
-      }
-      const [y, m, d] = item.date.split('-').map(Number);
-      const evDate = new Date(y, m - 1, d);
-      if (preset === 'today') return isSameDay(evDate, today);
-      if (preset === 'tomorrow') return isSameDay(evDate, tomorrow);
-      if (preset === 'this_week') return evDate >= startOfThisWeek && evDate <= endOfThisWeek;
-      if (preset === 'last_week') {
-        return (evDate >= startOfLastWeek && evDate <= endOfLastWeek) || (evDate >= rolling7DaysAgo && evDate < todayZeroHour);
-      }
-      if (preset === 'this_month') return evDate.getFullYear() === currentCalMonth.getFullYear() && evDate.getMonth() === currentCalMonth.getMonth();
-      if (preset === 'past_history') return evDate < todayZeroHour || item.status === 'Completed';
-      if (preset === 'future') return evDate > todayEndHour;
-      if (preset === 'custom_date') return selectedCalDate ? isSameDay(evDate, selectedCalDate) : true;
-      return true;
-    });
-  };
-
-  const todayBanquetEvents = getBanquetEventsForDate(today, calBranchFilter);
-  const todayBanquetGuests = todayBanquetEvents.reduce((sum, b) => sum + b.guests, 0);
-
-  const presetBanquetEvents = getBanquetEventsForPreset(calTimeRangePreset, calBranchFilter);
-  const filteredSelectedBanquetEvents = presetBanquetEvents.filter(ev => {
-    const [y, m, d] = ev.date.split('-').map(Number);
-    const evDate = new Date(y, m - 1, d);
-    if (calHistoryFilter === 'past' && !(evDate < todayZeroHour || ev.status === 'Completed')) return false;
-    if (calHistoryFilter === 'today' && !isSameDay(evDate, today)) return false;
-    if (calHistoryFilter === 'future' && !(evDate > todayEndHour)) return false;
-    return true;
-  });
 
   // Calendar Month Grid construction
   const calYear = currentCalMonth.getFullYear();
@@ -807,14 +750,34 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             <button
               onClick={() => {
                 const target = upcomingList.find(u => u.customer === newInquiryNotice.latestName) || incomingInquiries[0];
+                if (target) handleQuickAccept(target);
+              }}
+              className="btn btn-primary"
+              style={{
+                padding: '8px 18px',
+                fontSize: 12,
+                fontWeight: 800,
+                background: '#10B981',
+                color: '#070A09',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <CheckCircle2 size={15} /> Accept Booking
+            </button>
+            <button
+              onClick={() => {
+                const target = upcomingList.find(u => u.customer === newInquiryNotice.latestName) || incomingInquiries[0];
                 if (target) setSettlingItem(target);
                 setIsAlarmActive(false);
                 setNewInquiryNotice(null);
               }}
-              className="btn btn-primary"
-              style={{ padding: '8px 18px', fontSize: 12, fontWeight: 800 }}
+              className="btn btn-outline"
+              style={{ padding: '8px 16px', fontSize: 12, fontWeight: 700 }}
             >
-              <Armchair size={14} /> Settle Table Now
+              <Armchair size={14} /> Assign Table...
             </button>
             <button 
               className="btn btn-outline"
@@ -979,8 +942,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
           {/* Manage Banquet Master */}
           <button
             onClick={() => {
-              setEditingHall(null);
-              setShowBanquetMasterModal(true);
+              window.location.hash = 'banquets';
             }}
             className="btn btn-outline"
             style={{
@@ -994,10 +956,10 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
               color: 'var(--gold)',
               background: 'rgba(201, 162, 77, 0.08)'
             }}
-            title="Configure banquet halls dynamically per outlet"
+            title="Open Dedicated Banquets & Grand Halls Management"
           >
             <Building2 size={15} color="var(--gold)" />
-            <span>Banquet Master ({banquetHallsList.length} Halls)</span>
+            <span>Banquets & Grand Halls ↗</span>
           </button>
 
           {/* Manual Refresh */}
@@ -1020,131 +982,10 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
       {/* ============================================================== */}
       {viewMode === 'calendar' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* SERVICE CATEGORY SWITCHER: Table Dining vs Banquet Events */}
+          {/* HERO TODAY & BRANCH BANNER: TABLE DINING SEATING RADAR */}
           <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(20, 18, 16, 0.95), rgba(30, 26, 22, 0.95))',
-            border: '1.5px solid rgba(201, 162, 77, 0.35)',
-            borderRadius: 18,
-            padding: '12px 20px',
-            flexWrap: 'wrap',
-            gap: 12
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: bookingServiceType === 'banquet' ? 'rgba(201, 162, 77, 0.22)' : 'rgba(255, 138, 0, 0.22)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                {bookingServiceType === 'banquet' ? <Building2 size={22} color="var(--gold)" /> : <UtensilsCrossed size={22} color="var(--primary)" />}
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {bookingServiceType === 'banquet' ? '🏛️ Banquet Halls & Grand Events Radar' : '🍽️ Table Dining & Couple Booths Radar'}
-                  <span style={{
-                    fontSize: 10,
-                    padding: '2px 8px',
-                    borderRadius: 8,
-                    background: bookingServiceType === 'banquet' ? 'rgba(201, 162, 77, 0.18)' : 'rgba(255, 138, 0, 0.18)',
-                    color: bookingServiceType === 'banquet' ? 'var(--gold)' : 'var(--primary)',
-                    fontWeight: 800,
-                    textTransform: 'uppercase'
-                  }}>
-                    {bookingServiceType === 'banquet' ? `${banquetHallsList.length} Dynamic Halls` : 'Floor Seating Engine'}
-                  </span>
-                </div>
-                <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-muted)' }}>
-                  {bookingServiceType === 'banquet'
-                    ? 'Dynamic outlet scoping: only configured branches have banquet facilities. Configure halls in Banquet Master.'
-                    : 'Real-time restaurant table seatings, couple booths priority & host settlement queue.'}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                display: 'flex',
-                background: 'rgba(0, 0, 0, 0.45)',
-                padding: 4,
-                borderRadius: 12,
-                border: '1px solid rgba(255, 255, 255, 0.08)'
-              }}>
-                <button
-                  onClick={() => setBookingServiceType('dining')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    fontWeight: 800,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: bookingServiceType === 'dining' ? 'var(--primary)' : 'transparent',
-                    color: bookingServiceType === 'dining' ? '#070A09' : 'var(--text-muted)',
-                    transition: 'all 0.18s'
-                  }}
-                >
-                  <UtensilsCrossed size={14} />
-                  Table Dining
-                </button>
-                <button
-                  onClick={() => setBookingServiceType('banquet')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    fontWeight: 800,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: bookingServiceType === 'banquet' ? 'var(--gold)' : 'transparent',
-                    color: bookingServiceType === 'banquet' ? '#070A09' : 'var(--text-muted)',
-                    transition: 'all 0.18s'
-                  }}
-                >
-                  <Building2 size={14} />
-                  Banquet Halls & Events
-                </button>
-              </div>
-
-              <button
-                onClick={() => {
-                  setEditingHall(null);
-                  setShowBanquetMasterModal(true);
-                }}
-                className="btn btn-outline"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '8px 14px',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  borderColor: 'rgba(201, 162, 77, 0.6)',
-                  color: 'var(--gold)'
-                }}
-                title="Open Dynamic Banquet Master Desk"
-              >
-                <Settings size={14} />
-                Banquet Master
-              </button>
-            </div>
-          </div>
-
-          {/* HERO TODAY & BRANCH BANNER */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(201, 162, 77, 0.18) 0%, rgba(20, 18, 16, 0.98) 100%)',
-            border: '1.5px solid rgba(201, 162, 77, 0.5)',
+            background: 'linear-gradient(135deg, rgba(255, 138, 0, 0.12) 0%, rgba(20, 18, 16, 0.98) 100%)',
+            border: '1.5px solid rgba(255, 138, 0, 0.35)',
             borderRadius: 20,
             padding: '24px 28px',
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6)',
@@ -1158,31 +999,29 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: 'rgba(201, 162, 77, 0.22)',
-                  border: '1px solid rgba(201, 162, 77, 0.55)',
+                  background: 'rgba(255, 138, 0, 0.18)',
+                  border: '1px solid rgba(255, 138, 0, 0.45)',
                   padding: '4px 10px',
                   borderRadius: 8,
                   marginBottom: 8
                 }}>
                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }}></span>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--gold)', letterSpacing: 0.8 }}>
-                    {bookingServiceType === 'banquet' ? 'BANQUET RADAR ACTIVE' : 'LIVE CALENDAR RADAR'}
+                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', letterSpacing: 0.8 }}>
+                    LIVE TABLE DINING RADAR
                   </span>
                 </div>
                 <h2 style={{ fontSize: 24, fontWeight: 900, color: '#FFFFFF', margin: 0, letterSpacing: -0.3 }}>
                   Today: {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </h2>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-                  {bookingServiceType === 'banquet'
-                    ? `Showing banquet event sessions & hall allocations for ${calBranchFilter === 'All' ? 'all banquet-enabled branches' : calBranchFilter}.`
-                    : 'Live table reservations, guest covers & outlet allocations. Tap on Today to inspect bookings.'}
+                  Live restaurant table reservations, guest covers & outlet allocations. Tap on Today to inspect bookings.
                 </p>
               </div>
 
-              {/* Branch / Outlet Filter ("which branch") with Dynamic Banquet Indicators */}
+              {/* Branch / Outlet Filter ("which branch") */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 280 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--gold)', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                  <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', letterSpacing: 0.8, textTransform: 'uppercase' }}>
                     SELECT BRANCH / OUTLET
                   </label>
                   {calBranchFilter !== 'All' && (
@@ -1191,10 +1030,10 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                       fontWeight: 800,
                       padding: '1px 6px',
                       borderRadius: 6,
-                      background: isBranchBanquetEnabled ? 'rgba(201, 162, 77, 0.2)' : 'rgba(255, 255, 255, 0.08)',
-                      color: isBranchBanquetEnabled ? 'var(--gold)' : 'var(--text-muted)'
+                      background: 'rgba(255, 138, 0, 0.15)',
+                      color: 'var(--primary)'
                     }}>
-                      {isBranchBanquetEnabled ? `🏛️ ${activeHallsForSelectedBranch.length} Hall${activeHallsForSelectedBranch.length > 1 ? 's' : ''}` : '🍽️ Dining Only'}
+                      🍽️ Seating Active
                     </span>
                   )}
                 </div>
@@ -1203,7 +1042,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                   onChange={(e) => setCalBranchFilter(e.target.value)}
                   style={{
                     background: '#1A1714',
-                    border: '1.5px solid rgba(201, 162, 77, 0.5)',
+                    border: '1.5px solid rgba(255, 138, 0, 0.4)',
                     color: '#FFFFFF',
                     padding: '10px 14px',
                     borderRadius: 12,
@@ -1214,21 +1053,16 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                   }}
                 >
                   <option value="All">All Branches (Consolidated Group)</option>
-                  {availableOutlets.map(o => {
-                    const count = banquetHallsList.filter(h => h.outletName === o.name && h.status !== 'Inactive').length;
-                    return (
-                      <option key={o.id} value={o.name}>
-                        {o.name} {count > 0 ? `(🏛️ ${count} Banquet Hall${count > 1 ? 's' : ''})` : '(🍽️ Dining Only)'}
-                      </option>
-                    );
-                  })}
+                  {availableOutlets.map(o => (
+                    <option key={o.id} value={o.name}>{o.name}</option>
+                  ))}
                   {availableOutlets.length === 0 && (
                     <>
-                      <option value="House of Yanki Banquets Bopal">House of Yanki Banquets Bopal (🏛️ 2 Banquet Halls)</option>
-                      <option value="Yanki Sizzlerr SG Highway">Yanki Sizzlerr SG Highway (🏛️ 1 Banquet Hall)</option>
-                      <option value="Yanki Sizzlerr Bodakdev">Yanki Sizzlerr Bodakdev (🍽️ Dining Bistro Only)</option>
-                      <option value="Dough by Yanki CG Road">Dough by Yanki CG Road (☕ Bakery Café Only)</option>
-                      <option value="Yanki Sizzlerr Vastrapur Lake">Yanki Sizzlerr Vastrapur Lake (🍽️ Dining Bistro Only)</option>
+                      <option value="House of Yanki Banquets Bopal">House of Yanki Banquets Bopal</option>
+                      <option value="Yanki Sizzlerr SG Highway">Yanki Sizzlerr SG Highway</option>
+                      <option value="Yanki Sizzlerr Bodakdev">Yanki Sizzlerr Bodakdev</option>
+                      <option value="Dough by Yanki CG Road">Dough by Yanki CG Road</option>
+                      <option value="Yanki Sizzlerr Vastrapur Lake">Yanki Sizzlerr Vastrapur Lake</option>
                     </>
                   )}
                 </select>
@@ -1236,348 +1070,61 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             </div>
 
             {/* Quick KPI stats & Tap to open Today */}
-            {bookingServiceType === 'dining' ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total Bookings Today</span>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--primary)', marginTop: 2 }}>
-                    {todayCalBookings.length} Parties
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total Covers (Guests)</span>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#FFFFFF', marginTop: 2 }}>
-                    {todayCalCovers} Guests
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(201, 162, 77, 0.25)' }}>
-                  <span style={{ fontSize: 11, color: 'var(--gold)', textTransform: 'uppercase', fontWeight: 700 }}>2 Guests (Couple Tables)</span>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--gold)', marginTop: 2 }}>
-                    ♥ {todayCalCoupleBookings.length} Couple Tables
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <button
-                    onClick={() => {
-                      const t = new Date();
-                      setSelectedCalDate(t);
-                      setCurrentCalMonth(t);
-                      setCalTimeRangePreset('today');
-                      setCalPartyFilter('couple');
-                      setCalHistoryFilter('all');
-                      const yyyy = t.getFullYear();
-                      const mm = String(t.getMonth() + 1).padStart(2, '0');
-                      const dd = String(t.getDate()).padStart(2, '0');
-                      setDatePickerInput(`${yyyy}-${mm}-${dd}`);
-                      const el = document.getElementById('day-bookings-terminal');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="btn btn-primary"
-                    style={{
-                      width: '100%',
-                      padding: '14px 18px',
-                      fontSize: 13,
-                      fontWeight: 800,
-                      borderRadius: 14,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      boxShadow: '0 4px 15px rgba(255, 138, 0, 0.35)'
-                    }}
-                  >
-                    <Calendar size={16} />
-                    <span>View Today's Bookings (2 Covers) →</span>
-                  </button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total Bookings Today</span>
+                <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--primary)', marginTop: 2 }}>
+                  {todayCalBookings.length} Parties
                 </div>
               </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Banquet Events Today</span>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--gold)', marginTop: 2 }}>
-                    {todayBanquetEvents.length} Events
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Banquet Guests Today</span>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#FFFFFF', marginTop: 2 }}>
-                    {todayBanquetGuests} Pax
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(201, 162, 77, 0.25)' }}>
-                  <span style={{ fontSize: 11, color: 'var(--gold)', textTransform: 'uppercase', fontWeight: 700 }}>Halls Active at Branch</span>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--gold)', marginTop: 2 }}>
-                    {activeHallsForSelectedBranch.length} Halls
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <button
-                    onClick={() => {
-                      const t = new Date();
-                      setSelectedCalDate(t);
-                      setCurrentCalMonth(t);
-                      setCalTimeRangePreset('today');
-                      setCalHistoryFilter('all');
-                      const yyyy = t.getFullYear();
-                      const mm = String(t.getMonth() + 1).padStart(2, '0');
-                      const dd = String(t.getDate()).padStart(2, '0');
-                      setDatePickerInput(`${yyyy}-${mm}-${dd}`);
-                      const el = document.getElementById('day-bookings-terminal');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="btn btn-primary"
-                    style={{
-                      width: '100%',
-                      padding: '14px 18px',
-                      fontSize: 13,
-                      fontWeight: 800,
-                      borderRadius: 14,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      boxShadow: '0 4px 15px rgba(255, 138, 0, 0.35)'
-                    }}
-                  >
-                    <Building2 size={16} />
-                    <span>View Today's Banquet Events ({todayBanquetGuests} Pax) →</span>
-                  </button>
+              <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total Covers (Guests)</span>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#FFFFFF', marginTop: 2 }}>
+                  {todayCalCovers} Guests
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* DYNAMIC BANQUET FACILITY ADVISORY OR HALLS OVERVIEW DECK */}
-          {bookingServiceType === 'banquet' && (
-            <div>
-              {!isBranchBanquetEnabled && calBranchFilter !== 'All' ? (
-                /* OUTLET DOES NOT HAVE BANQUETS ADVISORY */
-                <div style={{
-                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(201, 162, 77, 0.08))',
-                  border: '1.5px solid rgba(201, 162, 77, 0.4)',
-                  borderRadius: 18,
-                  padding: '24px 28px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 14
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      background: 'rgba(201, 162, 77, 0.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <Building2 size={24} color="var(--gold)" />
-                    </div>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#FFFFFF' }}>
-                        Notice: "{calBranchFilter}" is a Dining-Only Branch (No Banquet Halls Configured)
-                      </h3>
-                      <p style={{ margin: '4px 0 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>
-                        In this restaurant group, not every outlet has banquet facilities. This outlet operates strictly as a dining restaurant. Banquet facilities are active at House of Yanki Banquets Bopal and SG Highway, or you can register a hall for this location in Banquet Master.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 4 }}>
-                    <span style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 800 }}>Quick Actions:</span>
-                    <button
-                      onClick={() => setCalBranchFilter('House of Yanki Banquets Bopal')}
-                      className="btn btn-primary"
-                      style={{ padding: '8px 16px', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <Building2 size={14} /> Switch to House of Yanki Banquets Bopal (2 Halls)
-                    </button>
-                    <button
-                      onClick={() => setCalBranchFilter('Yanki Sizzlerr SG Highway')}
-                      className="btn btn-outline"
-                      style={{ padding: '8px 16px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <Building2 size={14} /> Switch to SG Highway (1 Hall)
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingHall({
-                          outletName: calBranchFilter,
-                          name: `${calBranchFilter.replace('Yanki Sizzlerr ', '').replace('Dough by Yanki ', '')} Celebration Banquet`,
-                          minCapacity: 50,
-                          maxCapacity: 200,
-                          ratePerPlate: 950,
-                          slotRentalPrice: 35000,
-                          supportedSessions: 'Morning,Evening',
-                          amenities: 'Stage,Central AC,Audio/Visual,Private Buffet Line',
-                          status: 'Active'
-                        });
-                        setShowBanquetMasterModal(true);
-                      }}
-                      className="btn btn-outline"
-                      style={{ padding: '8px 16px', fontSize: 12, fontWeight: 700, borderColor: 'var(--gold)', color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <Plus size={14} /> + Configure Banquet Hall for {calBranchFilter} in Master
-                    </button>
-                  </div>
+              <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(201, 162, 77, 0.25)' }}>
+                <span style={{ fontSize: 11, color: 'var(--gold)', textTransform: 'uppercase', fontWeight: 700 }}>2 Guests (Couple Tables)</span>
+                <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--gold)', marginTop: 2 }}>
+                  ♥ {todayCalCoupleBookings.length} Couple Tables
                 </div>
-              ) : (
-                /* OUTLET HAS BANQUET HALLS: DISPLAY DYNAMIC HALLS DECK */
-                <div style={{
-                  background: 'var(--surface)',
-                  borderRadius: 18,
-                  border: '1px solid var(--border)',
-                  padding: 20,
-                  boxShadow: 'var(--shadow-card)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Building2 size={18} color="var(--gold)" />
-                      <h3 style={{ fontSize: 15, fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                        Active Banquet Halls at {calBranchFilter === 'All' ? 'Consolidated Group' : calBranchFilter} ({activeHallsForSelectedBranch.length})
-                      </h3>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setEditingHall({
-                          outletName: calBranchFilter === 'All' ? 'House of Yanki Banquets Bopal' : calBranchFilter,
-                          name: '',
-                          minCapacity: 50,
-                          maxCapacity: 250,
-                          ratePerPlate: 950,
-                          slotRentalPrice: 35000,
-                          supportedSessions: 'Morning,Evening',
-                          amenities: 'Stage,Sound System,Central AC,Valet Parking',
-                          status: 'Active'
-                        });
-                        setShowBanquetMasterModal(true);
-                      }}
-                      className="btn btn-outline"
-                      style={{ padding: '6px 12px', fontSize: 11.5, fontWeight: 700, borderColor: 'var(--gold)', color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <Plus size={13} /> Add Hall in Banquet Master
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
-                    {activeHallsForSelectedBranch.map(hall => (
-                      <div
-                        key={hall.id}
-                        style={{
-                          background: 'var(--surface-alt)',
-                          border: '1.5px solid rgba(201, 162, 77, 0.35)',
-                          borderRadius: 14,
-                          padding: 16,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          gap: 12
-                        }}
-                      >
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                            <div>
-                              <h4 style={{ fontSize: 15, fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                                {hall.name}
-                              </h4>
-                              <span style={{ fontSize: 11, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                                <MapPin size={11} /> {hall.outletName}
-                              </span>
-                            </div>
-                            <span style={{
-                              fontSize: 10,
-                              fontWeight: 800,
-                              padding: '2px 8px',
-                              borderRadius: 6,
-                              background: hall.status === 'Active' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(234, 179, 8, 0.2)',
-                              color: hall.status === 'Active' ? '#10B981' : '#EAB308'
-                            }}>
-                              ● {hall.status}
-                            </span>
-                          </div>
-
-                          {/* Capacity & Rates */}
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
-                            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                              <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Capacity Range</span>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: '#FFFFFF', marginTop: 1 }}>
-                                👥 {hall.minCapacity} – {hall.maxCapacity} Pax
-                              </div>
-                            </div>
-                            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                              <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Pricing Matrix</span>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--gold)', marginTop: 1 }}>
-                                ₹{hall.ratePerPlate || 950}/p · ₹{(hall.slotRentalPrice || 35000) / 1000}k
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Supported Sessions */}
-                          <div style={{ marginTop: 10 }}>
-                            <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
-                              Sessions: <strong style={{ color: '#FFFFFF' }}>{hall.supportedSessions || 'Morning, Evening, Full Day'}</strong>
-                            </span>
-                          </div>
-
-                          {/* Amenities chips */}
-                          {hall.amenities && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                              {hall.amenities.split(',').slice(0, 4).map((amenity, idx) => (
-                                <span
-                                  key={idx}
-                                  style={{
-                                    fontSize: 9.5,
-                                    padding: '2px 6px',
-                                    borderRadius: 4,
-                                    background: 'rgba(201, 162, 77, 0.12)',
-                                    color: 'var(--gold)',
-                                    fontWeight: 600
-                                  }}
-                                >
-                                  {amenity.trim()}
-                                </span>
-                              ))}
-                              {hall.amenities.split(',').length > 4 && (
-                                <span style={{ fontSize: 9.5, padding: '2px 5px', color: 'var(--text-muted)' }}>
-                                  +{hall.amenities.split(',').length - 4} more
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, paddingTop: 10, borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                            Zero loyalty points policy enforced
-                          </span>
-                          <button
-                            onClick={() => {
-                              setEditingHall(hall);
-                              setShowBanquetMasterModal(true);
-                            }}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--gold)',
-                              fontSize: 11.5,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4
-                            }}
-                          >
-                            <Edit3 size={12} /> Edit Hall
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <button
+                  onClick={() => {
+                    const t = new Date();
+                    setSelectedCalDate(t);
+                    setCurrentCalMonth(t);
+                    setCalTimeRangePreset('today');
+                    setCalPartyFilter('all');
+                    setCalHistoryFilter('all');
+                    const yyyy = t.getFullYear();
+                    const mm = String(t.getMonth() + 1).padStart(2, '0');
+                    const dd = String(t.getDate()).padStart(2, '0');
+                    setDatePickerInput(`${yyyy}-${mm}-${dd}`);
+                    const el = document.getElementById('day-bookings-terminal');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="btn btn-primary"
+                  style={{
+                    width: '100%',
+                    padding: '14px 18px',
+                    fontSize: 13,
+                    fontWeight: 800,
+                    borderRadius: 14,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: '0 4px 15px rgba(255, 138, 0, 0.35)'
+                  }}
+                >
+                  <Calendar size={16} />
+                  <span>View Today's Bookings ({todayCalCovers} Covers) →</span>
+                </button>
+              </div>
             </div>
-          )}
+          </div>
 
           {/* MONTHLY CALENDAR GRID & TIMELINE CONTROLS */}
           <div style={{
@@ -1834,11 +1381,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                 const bookingsForDay = getBookingsForDate(date, calBranchFilter);
                 const coversCount = bookingsForDay.reduce((sum, b) => sum + (b.guests || 2), 0);
                 const hasCouples = bookingsForDay.some(b => b.guests === 2);
-
-                const bqEventsForDay = getBanquetEventsForDate(date, calBranchFilter);
-                const bqGuestsForDay = bqEventsForDay.reduce((sum, e) => sum + e.guests, 0);
-
-                const hasDayRecords = bookingServiceType === 'banquet' ? bqEventsForDay.length > 0 : bookingsForDay.length > 0;
+                const hasDayRecords = bookingsForDay.length > 0;
 
                 return (
                   <div
@@ -1915,68 +1458,40 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                       )}
                     </div>
 
-                    {/* Bookings / Events Indicator */}
-                    {bookingServiceType === 'banquet' ? (
-                      bqEventsForDay.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 4 }}>
-                          <div style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            padding: '2px 6px',
-                            borderRadius: 6,
-                            background: 'rgba(201, 162, 77, 0.22)',
-                            color: 'var(--gold)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                          }}>
-                            <span>🏛️ {bqEventsForDay.length} Event{bqEventsForDay.length > 1 ? 's' : ''}</span>
-                            <span>{bqGuestsForDay}p</span>
-                          </div>
-                          <div style={{ fontSize: 9, color: '#FFFFFF', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {bqEventsForDay[0].hallName.replace('The ', '')}
-                          </div>
+                    {/* Bookings Indicator */}
+                    {bookingsForDay.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 4 }}>
+                        <div style={{
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: 6,
+                          background: isPastDay ? 'rgba(148, 163, 184, 0.18)' : 'rgba(255, 138, 0, 0.18)',
+                          color: isPastDay ? '#94A3B8' : 'var(--primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between'
+                        }}>
+                          <span>{bookingsForDay.length} {isPastDay ? 'Past' : 'Booked'}</span>
+                          <span>{coversCount}p</span>
                         </div>
-                      ) : (
-                        <div style={{ fontSize: 9.5, color: 'var(--text-dim)', marginTop: 'auto' }}>
-                          {isPastDay ? 'No events' : 'Hall Available'}
-                        </div>
-                      )
-                    ) : (
-                      bookingsForDay.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 4 }}>
+                        {hasCouples && (
                           <div style={{
-                            fontSize: 10.5,
+                            fontSize: 9.5,
                             fontWeight: 700,
-                            padding: '2px 6px',
-                            borderRadius: 6,
-                            background: isPastDay ? 'rgba(148, 163, 184, 0.18)' : 'rgba(255, 138, 0, 0.18)',
-                            color: isPastDay ? '#94A3B8' : 'var(--primary)',
+                            color: isPastDay ? '#C9A24D' : 'var(--gold)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'space-between'
+                            gap: 2
                           }}>
-                            <span>{bookingsForDay.length} {isPastDay ? 'Past' : 'Booked'}</span>
-                            <span>{coversCount}p</span>
+                            ♥ Couple tables
                           </div>
-                          {hasCouples && (
-                            <div style={{
-                              fontSize: 9.5,
-                              fontWeight: 700,
-                              color: isPastDay ? '#C9A24D' : 'var(--gold)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 2
-                            }}>
-                              ♥ Couple tables
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 'auto' }}>
-                          {isPastDay ? 'No records' : 'No bookings'}
-                        </div>
-                      )
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 'auto' }}>
+                        {isPastDay ? 'No records' : 'No bookings'}
+                      </div>
                     )}
                   </div>
                 );
@@ -2000,38 +1515,25 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 14 }}>
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {bookingServiceType === 'banquet' ? <Building2 size={20} color="var(--gold)" /> : <Calendar size={20} color="var(--gold)" />}
-                  {bookingServiceType === 'banquet' ? (
-                    calTimeRangePreset === 'last_week' ? `⏮️ Last Week's Completed Banquet Events (${startOfLastWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} – ${endOfLastWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })})` :
-                    calTimeRangePreset === 'past_history' ? '⏳ Past Banquet Events History' :
-                    calTimeRangePreset === 'future' ? '🔮 Upcoming Scheduled Banquet Events' :
-                    calTimeRangePreset === 'this_month' ? `📆 Banquet Events for ${currentCalMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}` :
-                    calTimeRangePreset === 'this_week' ? `🗓️ This Week's Banquet Events` :
-                    calTimeRangePreset === 'tomorrow' ? `🌅 Tomorrow's Scheduled Banquet Events` :
-                    calTimeRangePreset === 'today' ? `⚡ Today's Live Banquet Events: ${today.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}` :
-                    calTimeRangePreset === 'custom_date' && selectedCalDate ? `📅 Banquet Events for ${selectedCalDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}` :
-                    '🏛️ Consolidated Banquet Events & Leads'
-                  ) : (
-                    calTimeRangePreset === 'last_week' ? `⏮️ Last Week's Historical Bookings (${startOfLastWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} – ${endOfLastWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })})` :
-                    calTimeRangePreset === 'past_history' ? '⏳ All Past Dining History & Completed Bookings' :
-                    calTimeRangePreset === 'future' ? '🔮 Upcoming Future Scheduled Bookings' :
-                    calTimeRangePreset === 'this_month' ? `📆 All Bookings for ${currentCalMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}` :
-                    calTimeRangePreset === 'this_week' ? `🗓️ This Week's Bookings (${startOfThisWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} – ${endOfThisWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })})` :
-                    calTimeRangePreset === 'tomorrow' ? `🌅 Tomorrow's Scheduled Bookings (${tomorrow.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })})` :
-                    calTimeRangePreset === 'today' ? `⚡ Today's Live Bookings: ${today.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}` :
-                    calTimeRangePreset === 'custom_date' && selectedCalDate ? `📅 Bookings for ${selectedCalDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}` :
-                    '🌟 Consolidated Reservations Pipeline (History & Future)'
-                  )}
+                  <Calendar size={20} color="var(--gold)" />
+                  {calTimeRangePreset === 'last_week' ? `⏮️ Last Week's Historical Bookings (${startOfLastWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} – ${endOfLastWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })})` :
+                   calTimeRangePreset === 'past_history' ? '⏳ All Past Dining History & Completed Bookings' :
+                   calTimeRangePreset === 'future' ? '🔮 Upcoming Future Scheduled Bookings' :
+                   calTimeRangePreset === 'this_month' ? `📆 All Bookings for ${currentCalMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}` :
+                   calTimeRangePreset === 'this_week' ? `🗓️ This Week's Bookings (${startOfThisWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} – ${endOfThisWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })})` :
+                   calTimeRangePreset === 'tomorrow' ? `🌅 Tomorrow's Scheduled Bookings (${tomorrow.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })})` :
+                   calTimeRangePreset === 'today' ? `⚡ Today's Live Bookings: ${today.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}` :
+                   calTimeRangePreset === 'custom_date' && selectedCalDate ? `📅 Bookings for ${selectedCalDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}` :
+                   '🌟 Consolidated Reservations Pipeline (History & Future)'}
                 </h3>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-                  Branch: <strong style={{ color: 'var(--gold)' }}>{calBranchFilter === 'All' ? 'All Outlets' : calBranchFilter}</strong> · Showing <strong style={{ color: '#FFFFFF' }}>{bookingServiceType === 'banquet' ? filteredSelectedBanquetEvents.length : filteredSelectedCalBookings.length}</strong> {bookingServiceType === 'banquet' ? 'banquet events' : 'parties'} matching active filters
+                  Branch: <strong style={{ color: 'var(--gold)' }}>{calBranchFilter === 'All' ? 'All Outlets' : calBranchFilter}</strong> · Showing <strong style={{ color: '#FFFFFF' }}>{filteredSelectedCalBookings.length}</strong> parties matching active filters
                 </p>
               </div>
 
               {/* Filter Row: Party Size & Timeline Scope */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                {bookingServiceType === 'dining' && (
-                  <div style={{ display: 'flex', gap: 6, background: 'var(--surface-alt)', padding: 4, borderRadius: 10, border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', gap: 6, background: 'var(--surface-alt)', padding: 4, borderRadius: 10, border: '1px solid var(--border)' }}>
                     <button
                       onClick={() => setCalPartyFilter('all')}
                       style={{
@@ -2078,7 +1580,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                       Family / 4+ Covers ({presetBookings.filter(b => b.guests >= 3).length})
                     </button>
                   </div>
-                )}
+
 
                 {/* Timeline History Filter */}
                 <div style={{ display: 'flex', gap: 6, background: 'var(--surface-alt)', padding: 3, borderRadius: 8, border: '1px solid var(--border)' }}>
@@ -2110,195 +1612,7 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
             </div>
 
             {/* List of bookings for the selected date / range */}
-            {bookingServiceType === 'banquet' ? (
-              filteredSelectedBanquetEvents.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--text-muted)', background: 'var(--surface-alt)', borderRadius: 14 }}>
-                  <Building2 size={36} color="var(--gold)" style={{ opacity: 0.6, marginBottom: 8 }} />
-                  <h4 style={{ fontSize: 15, color: '#FFFFFF', margin: '0 0 4px 0' }}>No Banquet Events Scheduled for this Filter</h4>
-                  <p style={{ fontSize: 12, margin: '0 0 14px 0' }}>
-                    Halls are open and available for event bookings. You can register inquiries from the Event Desk or lead pipeline.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setEditingHall(null);
-                      setShowBanquetMasterModal(true);
-                    }}
-                    className="btn btn-outline"
-                    style={{ padding: '7px 16px', fontSize: 12, fontWeight: 700, borderColor: 'var(--gold)', color: 'var(--gold)' }}
-                  >
-                    <Building2 size={14} /> Open Banquet Master Desk
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
-                  {filteredSelectedBanquetEvents.map(ev => {
-                    const [y, m, d] = ev.date.split('-').map(Number);
-                    const evDate = new Date(y, m - 1, d);
-                    const isPast = evDate < todayZeroHour || ev.status === 'Completed';
-                    const isTodayEv = isSameDay(evDate, today);
-
-                    return (
-                      <div
-                        key={ev.id}
-                        style={{
-                          background: 'var(--surface-alt)',
-                          borderRadius: 16,
-                          padding: 18,
-                          border: '1.5px solid rgba(201, 162, 77, 0.4)',
-                          boxShadow: '0 0 16px rgba(201, 162, 77, 0.1)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          gap: 12
-                        }}
-                      >
-                        <div>
-                          {/* Event Header */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                            <div>
-                              <h4 style={{ fontSize: 15, fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                                {ev.eventName}
-                              </h4>
-                              <div style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                                <Building2 size={13} /> {ev.hallName}
-                              </div>
-                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                Host: {ev.hostName} · {ev.mobile}
-                              </span>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                              <span style={{
-                                fontSize: 10,
-                                fontWeight: 800,
-                                padding: '2px 8px',
-                                borderRadius: 6,
-                                background: ev.status === 'Confirmed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(148, 163, 184, 0.2)',
-                                color: ev.status === 'Confirmed' ? '#10B981' : '#94A3B8'
-                              }}>
-                                ● {ev.status}
-                              </span>
-                              <span style={{
-                                fontSize: 9.5,
-                                fontWeight: 800,
-                                padding: '2px 7px',
-                                borderRadius: 6,
-                                background: 'rgba(201, 162, 77, 0.15)',
-                                color: 'var(--gold)'
-                              }}>
-                                👥 {ev.guests} Guests
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Session & Date */}
-                          <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                            <span style={{
-                              fontSize: 11,
-                              padding: '3px 8px',
-                              borderRadius: 6,
-                              background: 'rgba(255, 255, 255, 0.05)',
-                              color: '#FFFFFF',
-                              fontWeight: 700
-                            }}>
-                              🕒 {ev.session} ({ev.timeSlot})
-                            </span>
-                            <span style={{
-                              fontSize: 11,
-                              padding: '3px 8px',
-                              borderRadius: 6,
-                              background: 'rgba(255, 255, 255, 0.05)',
-                              color: 'var(--text-muted)'
-                            }}>
-                              📅 {ev.displayDate}
-                            </span>
-                            <span style={{
-                              fontSize: 11,
-                              padding: '3px 8px',
-                              borderRadius: 6,
-                              background: 'rgba(201, 162, 77, 0.12)',
-                              color: 'var(--gold)',
-                              fontWeight: 700
-                            }}>
-                              🥗 {ev.cateringType}
-                            </span>
-                          </div>
-
-                          {/* Financial Snapshot */}
-                          <div style={{
-                            background: 'rgba(0, 0, 0, 0.25)',
-                            borderRadius: 10,
-                            padding: '10px 12px',
-                            marginTop: 10,
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(3, 1fr)',
-                            gap: 8
-                          }}>
-                            <div>
-                              <span style={{ fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Per Plate</span>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: '#FFFFFF' }}>₹{ev.ratePerPlate}</div>
-                            </div>
-                            <div>
-                              <span style={{ fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Est. Total</span>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--gold)' }}>₹{(ev.totalEstimatedAmount / 1000).toFixed(0)}k</div>
-                            </div>
-                            <div>
-                              <span style={{ fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Advance</span>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: '#10B981' }}>₹{(ev.advancePaid / 1000).toFixed(0)}k</div>
-                            </div>
-                          </div>
-
-                          {/* Notes */}
-                          {ev.notes && (
-                            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '8px 0 0 0', fontStyle: 'italic' }}>
-                              "{ev.notes}"
-                            </p>
-                          )}
-
-                          {/* Amenities tags */}
-                          {ev.amenitiesRequested && ev.amenitiesRequested.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                              {ev.amenitiesRequested.map((tag, i) => (
-                                <span
-                                  key={i}
-                                  style={{
-                                    fontSize: 9,
-                                    padding: '1px 5px',
-                                    borderRadius: 4,
-                                    background: 'rgba(255, 255, 255, 0.04)',
-                                    color: 'var(--text-dim)'
-                                  }}
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Zero Points Policy compliance tag */}
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          paddingTop: 8,
-                          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-                          fontSize: 10.5
-                        }}>
-                          <span style={{ color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
-                            <ShieldCheck size={13} /> Zero Loyalty Points Policy (SRS 7.2)
-                          </span>
-                          <span style={{ color: 'var(--text-muted)' }}>
-                            {ev.outlet.replace('House of Yanki Banquets ', '').replace('Yanki Sizzlerr ', '')}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            ) : filteredSelectedCalBookings.length === 0 ? (
+            {filteredSelectedCalBookings.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--text-muted)', background: 'var(--surface-alt)', borderRadius: 14 }}>
                 <CheckCircle2 size={36} color="var(--gold)" style={{ opacity: 0.6, marginBottom: 8 }} />
                 <h4 style={{ fontSize: 15, color: '#FFFFFF', margin: '0 0 4px 0' }}>No Bookings for this Range / Filter</h4>
@@ -2597,24 +1911,47 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                     )}
                   </div>
 
-                  {/* Actions: Settle Table | Send to Queue | Decline */}
-                  <div style={{ display: 'flex', gap: 8, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                  {/* Actions: Accept | Settle Table | Send to Queue | Decline */}
+                  <div style={{ display: 'flex', gap: 8, paddingTop: 10, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => handleQuickAccept(inq)}
+                      className="btn btn-primary"
+                      style={{
+                        flex: 1.2,
+                        padding: '7px 12px',
+                        fontSize: 11.5,
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 5,
+                        background: '#10B981',
+                        color: '#070A09',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                      title="Accept & Confirm booking directly into ledger"
+                    >
+                      <CheckCircle2 size={14} /> Accept
+                    </button>
+
                     <button
                       onClick={() => {
                         setSettlingItem(inq);
                         const match = availableFloorTables.find(t => t.state === 'Available');
                         if (match) setSelectedTableToAssign(`T${match.tableNumber}`);
                       }}
-                      className="btn btn-primary"
-                      style={{ flex: 1.2, padding: '7px 10px', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                      className="btn btn-outline"
+                      style={{ flex: 1, padding: '7px 10px', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                      title="Manually pick and settle specific table"
                     >
-                      <Armchair size={13} /> Settle Table
+                      <Armchair size={13} /> Table
                     </button>
 
                     <button
                       onClick={() => setQueuingItem(inq)}
                       className="btn btn-outline"
-                      style={{ flex: 1, padding: '7px 10px', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, borderColor: 'rgba(201, 162, 77, 0.4)', color: 'var(--gold)' }}
+                      style={{ padding: '7px 10px', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, borderColor: 'rgba(201, 162, 77, 0.4)', color: 'var(--gold)' }}
                       title="Move party to live waitlist queue if dining tables are full"
                     >
                       <ListOrdered size={13} /> Queue
@@ -3665,549 +3002,6 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
         </div>
       )}
 
-      {/* ============================================================== */}
-      {/* MODAL 4: Dynamic Banquet Master Configuration Modal            */}
-      {/* ============================================================== */}
-      {showBanquetMasterModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
-          backdropFilter: 'blur(6px)',
-          display: 'grid',
-          placeItems: 'center',
-          zIndex: 120,
-          padding: 20
-        }}>
-          <div style={{
-            background: 'var(--surface)',
-            width: 860,
-            maxWidth: '100%',
-            borderRadius: 22,
-            padding: 28,
-            border: '1.5px solid rgba(201, 162, 77, 0.4)',
-            boxShadow: '0 24px 60px rgba(0, 0, 0, 0.7)',
-            maxHeight: '88vh',
-            overflowY: 'auto'
-          }}>
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18, borderBottom: '1px solid var(--border)', paddingBottom: 16 }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Building2 size={22} color="var(--gold)" />
-                  <h3 style={{ fontSize: 20, fontWeight: 900, color: '#FFFFFF', margin: 0 }}>
-                    Dynamic Banquet Master Desk
-                  </h3>
-                </div>
-                <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-                  Manage banquet halls dynamically per outlet. Not all outlets have banquet halls (e.g. Bodakdev is dining-only, while Bopal has grand ballrooms). Add, edit, or reassign halls anytime.
-                </p>
-              </div>
-              <button 
-                onClick={() => {
-                  setShowBanquetMasterModal(false);
-                  setEditingHall(null);
-                }}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 6 }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Notification Notice */}
-            {banquetNotice && (
-              <div style={{
-                background: 'rgba(16, 185, 129, 0.14)',
-                border: '1px solid #10B981',
-                color: '#10B981',
-                padding: '10px 14px',
-                borderRadius: 10,
-                fontSize: 12.5,
-                fontWeight: 700,
-                marginBottom: 16
-              }}>
-                {banquetNotice}
-              </div>
-            )}
-
-            {/* Top Toolbar: Search, Filter, +Add Hall */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
-                {/* Search */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '8px 12px',
-                  borderRadius: 10,
-                  background: 'var(--surface-alt)',
-                  border: '1px solid var(--border)',
-                  minWidth: 220
-                }}>
-                  <Search size={14} color="var(--text-muted)" />
-                  <input
-                    type="text"
-                    placeholder="Search halls by name or amenity..."
-                    value={banquetMasterSearch}
-                    onChange={(e) => setBanquetMasterSearch(e.target.value)}
-                    style={{
-                      border: 'none',
-                      background: 'transparent',
-                      outline: 'none',
-                      fontSize: 12,
-                      width: '100%',
-                      color: 'var(--text-main)'
-                    }}
-                  />
-                </div>
-
-                {/* Outlet Filter */}
-                <select
-                  value={banquetMasterOutletFilter}
-                  onChange={(e) => setBanquetMasterOutletFilter(e.target.value)}
-                  style={{
-                    background: 'var(--surface-alt)',
-                    border: '1px solid var(--border)',
-                    color: '#FFFFFF',
-                    padding: '8px 12px',
-                    borderRadius: 10,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    outline: 'none'
-                  }}
-                >
-                  <option value="All">All Outlets</option>
-                  {availableOutlets.map(o => (
-                    <option key={o.id} value={o.name}>{o.name}</option>
-                  ))}
-                  {availableOutlets.length === 0 && (
-                    <>
-                      <option value="House of Yanki Banquets Bopal">House of Yanki Banquets Bopal</option>
-                      <option value="Yanki Sizzlerr SG Highway">Yanki Sizzlerr SG Highway</option>
-                      <option value="Yanki Sizzlerr Bodakdev">Yanki Sizzlerr Bodakdev</option>
-                      <option value="Dough by Yanki CG Road">Dough by Yanki CG Road</option>
-                    </>
-                  )}
-                </select>
-              </div>
-
-              {!editingHall && (
-                <button
-                  onClick={() => setEditingHall({
-                    name: '',
-                    outletName: banquetMasterOutletFilter !== 'All' ? banquetMasterOutletFilter : 'House of Yanki Banquets Bopal',
-                    minCapacity: 50,
-                    maxCapacity: 250,
-                    ratePerPlate: 950,
-                    slotRentalPrice: 35000,
-                    supportedSessions: 'Morning,Evening',
-                    amenities: 'Stage,Central AC,Audio/Visual,Valet Parking',
-                    status: 'Active'
-                  })}
-                  className="btn btn-primary"
-                  style={{ padding: '8px 16px', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  <Plus size={15} /> Add New Banquet Hall
-                </button>
-              )}
-            </div>
-
-            {/* ADD / EDIT HALL FORM DRAWER */}
-            {editingHall && (
-              <form 
-                onSubmit={handleSaveHall} 
-                style={{
-                  background: 'var(--surface-alt)',
-                  border: '1.5px solid rgba(201, 162, 77, 0.5)',
-                  borderRadius: 16,
-                  padding: 20,
-                  marginBottom: 20,
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <h4 style={{ fontSize: 15, fontWeight: 800, color: 'var(--gold)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Building2 size={16} /> {editingHall.id ? `Edit Hall: ${editingHall.name}` : 'Register New Banquet Hall'}
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setEditingHall(null)}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 12 }}>
-                  {/* Hall Name */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Hall Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. The Imperial Grand Ballroom"
-                      value={editingHall.name || ''}
-                      onChange={(e) => setEditingHall({ ...editingHall, name: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: 'var(--background)',
-                        border: '1px solid var(--border)',
-                        color: '#FFFFFF',
-                        borderRadius: 8,
-                        fontSize: 12
-                      }}
-                    />
-                  </div>
-
-                  {/* Outlet */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Associated Outlet / Branch *
-                    </label>
-                    <select
-                      value={editingHall.outletName || ''}
-                      onChange={(e) => setEditingHall({ ...editingHall, outletName: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: 'var(--background)',
-                        border: '1px solid var(--border)',
-                        color: '#FFFFFF',
-                        borderRadius: 8,
-                        fontSize: 12
-                      }}
-                    >
-                      {availableOutlets.map(o => (
-                        <option key={o.id} value={o.name}>{o.name}</option>
-                      ))}
-                      {availableOutlets.length === 0 && (
-                        <>
-                          <option value="House of Yanki Banquets Bopal">House of Yanki Banquets Bopal</option>
-                          <option value="Yanki Sizzlerr SG Highway">Yanki Sizzlerr SG Highway</option>
-                          <option value="Yanki Sizzlerr Bodakdev">Yanki Sizzlerr Bodakdev</option>
-                          <option value="Dough by Yanki CG Road">Dough by Yanki CG Road</option>
-                          <option value="Yanki Sizzlerr Vastrapur Lake">Yanki Sizzlerr Vastrapur Lake</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-
-                  {/* Min Capacity */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Min Pax (Guests)
-                    </label>
-                    <input
-                      type="number"
-                      min={10}
-                      max={1000}
-                      value={editingHall.minCapacity || 50}
-                      onChange={(e) => setEditingHall({ ...editingHall, minCapacity: parseInt(e.target.value) || 10 })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: 'var(--background)',
-                        border: '1px solid var(--border)',
-                        color: '#FFFFFF',
-                        borderRadius: 8,
-                        fontSize: 12
-                      }}
-                    />
-                  </div>
-
-                  {/* Max Capacity */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Max Pax (Guests)
-                    </label>
-                    <input
-                      type="number"
-                      min={20}
-                      max={2000}
-                      value={editingHall.maxCapacity || 300}
-                      onChange={(e) => setEditingHall({ ...editingHall, maxCapacity: parseInt(e.target.value) || 50 })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: 'var(--background)',
-                        border: '1px solid var(--border)',
-                        color: '#FFFFFF',
-                        borderRadius: 8,
-                        fontSize: 12
-                      }}
-                    />
-                  </div>
-
-                  {/* Per Plate Rate */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Rate Per Plate (₹)
-                    </label>
-                    <input
-                      type="number"
-                      min={300}
-                      value={editingHall.ratePerPlate || 950}
-                      onChange={(e) => setEditingHall({ ...editingHall, ratePerPlate: parseInt(e.target.value) || 0 })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: 'var(--background)',
-                        border: '1px solid var(--border)',
-                        color: '#FFFFFF',
-                        borderRadius: 8,
-                        fontSize: 12
-                      }}
-                    />
-                  </div>
-
-                  {/* Slot Rental Price */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Slot Rental Price (₹)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={editingHall.slotRentalPrice || 35000}
-                      onChange={(e) => setEditingHall({ ...editingHall, slotRentalPrice: parseInt(e.target.value) || 0 })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: 'var(--background)',
-                        border: '1px solid var(--border)',
-                        color: '#FFFFFF',
-                        borderRadius: 8,
-                        fontSize: 12
-                      }}
-                    />
-                  </div>
-
-                  {/* Supported Sessions */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Supported Sessions
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Morning, Evening, Full Day"
-                      value={editingHall.supportedSessions || 'Morning,Evening'}
-                      onChange={(e) => setEditingHall({ ...editingHall, supportedSessions: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: 'var(--background)',
-                        border: '1px solid var(--border)',
-                        color: '#FFFFFF',
-                        borderRadius: 8,
-                        fontSize: 12
-                      }}
-                    />
-                  </div>
-
-                  {/* Status */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      Operational Status
-                    </label>
-                    <select
-                      value={editingHall.status || 'Active'}
-                      onChange={(e) => setEditingHall({ ...editingHall, status: e.target.value as any })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: 'var(--background)',
-                        border: '1px solid var(--border)',
-                        color: '#FFFFFF',
-                        borderRadius: 8,
-                        fontSize: 12
-                      }}
-                    >
-                      <option value="Active">Active (Accepting Bookings)</option>
-                      <option value="Maintenance">Under Maintenance</option>
-                      <option value="Inactive">Inactive / Hidden</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Amenities */}
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
-                    Amenities & Facilities (comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Grand Stage, Audio/Visual, Bridal Green Room, Central AC, Valet Parking"
-                    value={editingHall.amenities || ''}
-                    onChange={(e) => setEditingHall({ ...editingHall, amenities: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      background: 'var(--background)',
-                      border: '1px solid var(--border)',
-                      color: '#FFFFFF',
-                      borderRadius: 8,
-                      fontSize: 12
-                    }}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() => setEditingHall(null)}
-                    className="btn btn-outline"
-                    style={{ padding: '8px 14px', fontSize: 12 }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSavingHall}
-                    className="btn btn-primary"
-                    style={{ padding: '8px 20px', fontSize: 12, fontWeight: 800 }}
-                  >
-                    {isSavingHall ? 'Saving...' : (editingHall.id ? 'Save Changes' : 'Create Banquet Hall')}
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* REGISTERED BANQUET HALLS LIST */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {banquetHallsList
-                .filter(h => {
-                  const matchesSearch = !banquetMasterSearch || 
-                    h.name.toLowerCase().includes(banquetMasterSearch.toLowerCase()) ||
-                    h.outletName.toLowerCase().includes(banquetMasterSearch.toLowerCase()) ||
-                    (h.amenities && h.amenities.toLowerCase().includes(banquetMasterSearch.toLowerCase()));
-                  const matchesOutlet = banquetMasterOutletFilter === 'All' || h.outletName === banquetMasterOutletFilter;
-                  return matchesSearch && matchesOutlet;
-                })
-                .map(hall => (
-                  <div
-                    key={hall.id}
-                    style={{
-                      background: 'var(--surface-alt)',
-                      borderRadius: 14,
-                      padding: 16,
-                      border: '1px solid var(--border)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: 16,
-                      flexWrap: 'wrap'
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 260 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <h4 style={{ fontSize: 15, fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                          {hall.name}
-                        </h4>
-                        <span style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: 6,
-                          background: hall.status === 'Active' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(234, 179, 8, 0.2)',
-                          color: hall.status === 'Active' ? '#10B981' : '#EAB308'
-                        }}>
-                          ● {hall.status}
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                          <MapPin size={12} /> {hall.outletName}
-                        </span>
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                          👥 {hall.minCapacity} – {hall.maxCapacity} Pax
-                        </span>
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                          ₹{hall.ratePerPlate || 950}/plate · ₹{(hall.slotRentalPrice || 35000).toLocaleString('en-IN')} rental
-                        </span>
-                      </div>
-
-                      {hall.amenities && (
-                        <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '6px 0 0 0' }}>
-                          Amenities: {hall.amenities}
-                        </p>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <button
-                        onClick={() => handleToggleHallStatus(hall)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: 8,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          border: 'none',
-                          cursor: 'pointer',
-                          background: hall.status === 'Active' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(234, 179, 8, 0.18)',
-                          color: hall.status === 'Active' ? '#10B981' : '#EAB308'
-                        }}
-                      >
-                        {hall.status === 'Active' ? 'ACTIVE' : 'MAINTENANCE'}
-                      </button>
-                      <button
-                        onClick={() => setEditingHall(hall)}
-                        className="btn btn-outline"
-                        style={{ padding: '6px 10px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
-                        title="Edit hall details"
-                      >
-                        <Edit3 size={13} /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteHall(hall.id, hall.name)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: 'var(--danger)',
-                          cursor: 'pointer',
-                          padding: 6
-                        }}
-                        title="Delete hall"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-              {banquetHallsList.filter(h => {
-                const matchesSearch = !banquetMasterSearch || 
-                  h.name.toLowerCase().includes(banquetMasterSearch.toLowerCase()) ||
-                  h.outletName.toLowerCase().includes(banquetMasterSearch.toLowerCase());
-                const matchesOutlet = banquetMasterOutletFilter === 'All' || h.outletName === banquetMasterOutletFilter;
-                return matchesSearch && matchesOutlet;
-              }).length === 0 && (
-                <div style={{ textAlign: 'center', padding: '30px 16px', color: 'var(--text-muted)' }}>
-                  <Building2 size={32} color="var(--gold)" style={{ opacity: 0.5, marginBottom: 8 }} />
-                  <p style={{ margin: 0, fontSize: 13 }}>No banquet halls matching the current filter.</p>
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-              <button 
-                className="btn btn-primary" 
-                onClick={() => {
-                  setShowBanquetMasterModal(false);
-                  setEditingHall(null);
-                }}
-                style={{ padding: '8px 24px', fontWeight: 800 }}
-              >
-                Close & Return
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

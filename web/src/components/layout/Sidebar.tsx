@@ -56,11 +56,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
     {
       group: 'Operations',
       items: [
-        { id: 'coupons', label: 'Voucher Manager', icon: Ticket, perm: 'COUPONS_MANAGE' },
-        { id: 'reservations', label: 'Calendar & Bookings', icon: Calendar, badge: 'Live', perm: 'RESERVATIONS_MANAGE' },
-        { id: 'outlets', label: 'Venues & Outlets', icon: Store, perm: 'OUTLETS_MANAGE' },
+        { id: 'reservations', label: 'Table Reservations', icon: Calendar, badge: 'Live', perm: 'RESERVATIONS_MANAGE' },
+        { id: 'banquets', label: 'Banquets & Grand Halls', icon: Building2, badge: 'Halls', perm: 'EVENTS_MANAGE' },
         { id: 'events', label: 'Events & Brunches', icon: PartyPopper, perm: 'EVENTS_MANAGE' },
-        { id: 'banquets', label: 'Banquet Master', icon: Building2, badge: 'New', perm: 'EVENTS_MANAGE' },
+        { id: 'outlets', label: 'Venues & Outlets', icon: Store, perm: 'OUTLETS_MANAGE' },
+        { id: 'coupons', label: 'Voucher Manager', icon: Ticket, perm: 'COUPONS_MANAGE' },
       ],
     },
     {

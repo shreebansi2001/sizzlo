@@ -183,13 +183,13 @@ export function App() {
       case 'coupons':
         return { title: 'Voucher Management', subtitle: 'Create, issue and track dining privilege vouchers' };
       case 'reservations':
-        return { title: 'Interactive Calendar & Bookings', subtitle: 'Monthly calendar view, branch scoping, 2-guest couple tables, and host settlement desk' };
+        return { title: 'Table Reservations & Seating Terminal', subtitle: 'Live table dining reservations, couple booths, floor seating engine & host settlement desk' };
       case 'outlets':
         return { title: 'Venues & Dining Concepts', subtitle: 'Compare venue revenues, ABV, and ratings' };
       case 'events':
         return { title: 'Exclusive Events & Sunday Brunches', subtitle: 'Manage Sunday Brunches, Chef Table passes, guest capacities, attendee lists and banquet desk' };
       case 'banquets':
-        return { title: 'Banquet Master & Halls Management', subtitle: 'Manage banquet venues, capacity ranges, per-plate pricing, slot rentals, and dynamic app visibility' };
+        return { title: 'Banquets & Grand Halls Management', subtitle: 'Dedicated banquet venues, capacity ranges, per-plate pricing, slot rentals & hall facilities' };
       case 'notifications':
       case 'marketing':
         return { title: 'Broadcast & Push Notifications', subtitle: 'Compose and dispatch instant push notifications, WhatsApp alerts, and subscriber broadcasts' };
