@@ -14,13 +14,19 @@ class NotificationsController extends GetxController {
     loadNotifications();
   }
 
-  Future<void> loadNotifications() async {
-    isLoading.value = true;
+  Future<void> loadNotifications({bool silent = false}) async {
+    if (!silent) {
+      isLoading.value = true;
+    }
     try {
       final list = await _apiService.getNotifications();
       notifications.assignAll(list);
+    } catch (_) {
+      // Ignore background errors
     } finally {
-      isLoading.value = false;
+      if (!silent) {
+        isLoading.value = false;
+      }
     }
   }
 

@@ -15,6 +15,7 @@ import { StaffPage } from './pages/StaffPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { BanquetsPage } from './pages/BanquetsPage';
 import { LoginPage } from './pages/LoginPage';
+import { AdminProfileModal } from './components/profile/AdminProfileModal';
 
 import { AdminAuthUser } from './types';
 
@@ -205,6 +206,7 @@ export function App() {
   const { title, subtitle } = getPageInfo();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const handleInitiateLogout = () => {
     setShowLogoutConfirm(true);
@@ -244,6 +246,7 @@ export function App() {
           onRefresh={handleRefresh}
           isLoading={false}
           onLogout={handleInitiateLogout}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
         >
           {currentTab === 'dashboard' && (
             <DashboardPage key={`dashboard-${refreshKey}`} />
@@ -454,6 +457,14 @@ export function App() {
           </div>
         </div>
       )}
+
+      {/* Admin Profile & Settings Modal */}
+      <AdminProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentUser={currentUser}
+        onUpdateUser={(updated) => setCurrentUser(updated)}
+      />
     </ErrorBoundary>
   );
 }

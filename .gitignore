@@ -36,8 +36,13 @@ release/
 cookies.txt
 *.zip
 *.apk
+*.ipa
+*.log
 backend/data/
+data/
+*.db
 
 # IDE files
 .idea/libraries/
 .idea/caches/
+.vscode/

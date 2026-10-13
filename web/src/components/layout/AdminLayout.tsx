@@ -14,6 +14,7 @@ interface AdminLayoutProps {
   onRefresh?: () => void;
   isLoading?: boolean;
   onLogout?: () => void;
+  onOpenProfile?: () => void;
   children: React.ReactNode;
 }
 
@@ -26,6 +27,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onRefresh,
   isLoading,
   onLogout,
+  onOpenProfile,
   children,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
@@ -50,6 +52,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         currentUser={currentUser}
         onLogout={onLogout}
         onClose={() => setIsSidebarOpen(false)}
+        onOpenProfile={onOpenProfile}
       />
       <div className="admin-main">
         <Header 
@@ -61,6 +64,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           onLogout={onLogout}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onTabChange={onTabChange}
+          onOpenProfile={onOpenProfile}
         />
         <GlobalBookingAlarm 
           onNavigateToReservations={() => handleTabChange('reservations')}

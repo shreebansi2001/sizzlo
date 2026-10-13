@@ -46,8 +46,10 @@ class HomeController extends GetxController {
     );
   }
 
-  Future<void> loadDashboardData() async {
-    isLoading.value = true;
+  Future<void> loadDashboardData({bool silent = false}) async {
+    if (!silent) {
+      isLoading.value = true;
+    }
     try {
       final fetchedMember = await _apiService.getMemberProfile();
       if (fetchedMember.fullName.isNotEmpty && fetchedMember.fullName != 'Guest') {
@@ -90,8 +92,12 @@ class HomeController extends GetxController {
 
       // Clear any static reviews - only show when live reviews exist
       customerReviews.clear();
+    } catch (e) {
+      // Silent error logging to preserve current UI state on background refresh
     } finally {
-      isLoading.value = false;
+      if (!silent) {
+        isLoading.value = false;
+      }
     }
   }
 

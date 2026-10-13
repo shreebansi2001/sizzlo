@@ -437,18 +437,22 @@ export interface ShiftSummaryDTO {
 
 export interface BanquetLeadDTO {
   id: number;
-  userId: number;
+  userId?: number;
   customerName: string;
   customerMobile: string;
-  customerEmail: string;
+  customerEmail?: string;
+  email?: string;
   eventCategory: string;
-  targetDate: string;
-  shift: string;
-  paxCount: number;
+  targetDate?: string;
+  eventDate?: string;
+  shift?: string;
+  eventShift?: string;
+  paxCount?: number;
+  estimatedPax?: number;
   customRequirements?: string;
   status: string;
   assignedTo?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface CorporateLeadDTO {
@@ -543,6 +547,20 @@ export async function assignBanquetLead(id: number, assignedTo: string) {
 
 export async function updateBanquetLeadStatus(id: number, status: string) {
   const res = await apiClient.put(`/banquets/leads/${id}/status?status=${encodeURIComponent(status)}`);
+  return res.data;
+}
+
+export async function createBanquetInquiry(inquiry: {
+  customerName: string;
+  customerMobile: string;
+  email?: string;
+  eventCategory: string;
+  eventDate: string;
+  eventShift: string;
+  estimatedPax: number;
+  customRequirements?: string;
+}): Promise<any> {
+  const res = await apiClient.post('/banquets/inquiry', inquiry);
   return res.data;
 }
 

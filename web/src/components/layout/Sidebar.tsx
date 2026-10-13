@@ -25,9 +25,10 @@ interface SidebarProps {
   currentUser?: AdminAuthUser | null;
   onLogout?: () => void;
   onClose?: () => void;
+  onOpenProfile?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, currentUser, onLogout, onClose }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, currentUser, onLogout, onClose, onOpenProfile }) => {
   const isSuperAdmin = currentUser?.roleCode === 'SUPER_ADMIN';
   const userPerms = currentUser?.permissions || [];
 
@@ -183,7 +184,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+          <div 
+            onClick={onOpenProfile}
+            role="button"
+            tabIndex={0}
+            title="Click to view & edit admin profile details"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 8, 
+              overflow: 'hidden',
+              cursor: onOpenProfile ? 'pointer' : 'default',
+              padding: '4px 6px',
+              borderRadius: 8,
+              transition: 'all 0.2s ease',
+              flex: 1,
+            }}
+            onMouseEnter={(e) => {
+              if (onOpenProfile) (e.currentTarget as HTMLElement).style.background = 'rgba(201, 162, 77, 0.12)';
+            }}
+            onMouseLeave={(e) => {
+              if (onOpenProfile) (e.currentTarget as HTMLElement).style.background = 'transparent';
+            }}
+          >
             <div style={{
               width: 28,
               height: 28,
@@ -196,12 +219,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
             }}>
               <UserCheck size={14} color="var(--gold)" />
             </div>
-            <div style={{ overflow: 'hidden' }}>
+            <div style={{ overflow: 'hidden', flex: 1 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                 {currentUser?.fullName || currentUser?.email || 'admin@sizzlo.com'}
               </div>
               <div style={{ fontSize: 9, color: 'var(--gold)', letterSpacing: 0.5 }}>
-                {currentUser?.roleName || 'Super Admin'}
+                {currentUser?.roleName || 'Super Admin'} • Edit
               </div>
             </div>
           </div>

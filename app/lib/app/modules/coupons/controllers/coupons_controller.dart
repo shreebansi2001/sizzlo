@@ -41,8 +41,10 @@ class CouponsController extends GetxController {
     });
   }
 
-  void loadCoupons() async {
-    isLoading.value = true;
+  void loadCoupons({bool silent = false}) async {
+    if (!silent) {
+      isLoading.value = true;
+    }
     try {
       final isSub = Get.isRegistered<HomeController>()
           ? Get.find<HomeController>().member.value.isSubscriber
@@ -56,9 +58,14 @@ class CouponsController extends GetxController {
       }
 
       final member = Get.find<HomeController>().member.value;
-      coupons.value = await _apiService.getCoupons(member.membershipId, member.mobile);
+      final freshCoupons = await _apiService.getCoupons(member.membershipId, member.mobile);
+      coupons.assignAll(freshCoupons);
+    } catch (_) {
+      // Ignore background errors
     } finally {
-      isLoading.value = false;
+      if (!silent) {
+        isLoading.value = false;
+      }
     }
   }
 

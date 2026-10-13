@@ -32,13 +32,13 @@ class AppConstants {
   /// True when running locally against 127.0.0.1 or in debug mode
   static bool get isDevMode => kDebugMode || baseUrl.contains('127.0.0.1') || baseUrl.contains('localhost');
 
-  static const String defaultMembershipId = '';
-  static const String defaultUserMobile = '';
-  static const String defaultUserName = 'Guest';
+  static const String defaultMembershipId = 'YSM-2024-9153';
+  static const String defaultUserMobile = '+91 9099137653';
+  static const String defaultUserName = 'bansi';
 
   // Dynamic session state updated upon live registration / authentication
-  static String currentMembershipId = '';
-  static String currentUserMobile = '';
+  static String currentMembershipId = defaultMembershipId;
+  static String currentUserMobile = defaultUserMobile;
   static String currentUserName = defaultUserName;
   static String currentUserEmail = '';
   static String currentUserProfilePic = '';

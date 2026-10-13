@@ -16,13 +16,19 @@ class LoyaltyController extends GetxController {
     loadLoyaltyData();
   }
 
-  void loadLoyaltyData() async {
-    isLoading.value = true;
+  void loadLoyaltyData({bool silent = false}) async {
+    if (!silent) {
+      isLoading.value = true;
+    }
     try {
       member.value = await _apiService.getMemberProfile();
       transactions.value = await _apiService.getLoyaltyHistory();
+    } catch (_) {
+      // Ignore background errors
     } finally {
-      isLoading.value = false;
+      if (!silent) {
+        isLoading.value = false;
+      }
     }
   }
 }

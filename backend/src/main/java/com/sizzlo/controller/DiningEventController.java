@@ -39,15 +39,21 @@ public class DiningEventController {
     }
 
     /**
-     * Fetch all active dining events (seeds demo events if database is empty).
+     * Fetch all active dining events.
      */
     @GetMapping
     public ResponseEntity<ApiResponse<List<DiningEvent>>> getEvents() {
         List<DiningEvent> list = eventRepository.findAllByOrderByCreatedAtDesc();
-        if (list.isEmpty()) {
-            list = seedInitialEvents();
-        }
         return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
+    /**
+     * Admin: Optional endpoint to seed initial demo events on demand.
+     */
+    @PostMapping("/seed")
+    public ResponseEntity<ApiResponse<List<DiningEvent>>> seedEvents() {
+        List<DiningEvent> seeded = seedInitialEvents();
+        return ResponseEntity.ok(ApiResponse.success("Demo dining events seeded", seeded));
     }
 
     /**

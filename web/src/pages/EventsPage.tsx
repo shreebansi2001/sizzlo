@@ -319,9 +319,38 @@ export const EventsPage: React.FC<EventsPageProps> = () => {
             </div>
           </div>
 
-          {/* Events Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 20 }}>
-            {diningEvents.map((ev) => {
+          {/* Events Grid or Empty State */}
+          {diningEvents.length === 0 ? (
+            <div style={{
+              background: 'var(--surface)',
+              border: '1px dashed var(--border)',
+              borderRadius: 16,
+              padding: '48px 24px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12
+            }}>
+              <Calendar size={36} color="var(--gold)" style={{ opacity: 0.8 }} />
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)' }}>
+                No Active Dining Events Scheduled
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 440, margin: 0 }}>
+                You currently have 0 scheduled events. Click below to publish your first Sunday Brunch, Chef Table masterclass, or special culinary experience.
+              </p>
+              <button
+                onClick={handleOpenCreateEvent}
+                className="btn-primary"
+                style={{ marginTop: 8 }}
+              >
+                <Plus size={16} /> Publish New Event
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 20 }}>
+              {diningEvents.map((ev) => {
               const booked = ev.bookedSeats || 0;
               const total = ev.totalSeats || 50;
               const remaining = Math.max(0, total - booked);
@@ -475,6 +504,7 @@ export const EventsPage: React.FC<EventsPageProps> = () => {
               );
             })}
           </div>
+          )}
         </div>
       )}
 

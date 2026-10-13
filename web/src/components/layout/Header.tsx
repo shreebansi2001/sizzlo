@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, LogOut, Menu, Building2 } from 'lucide-react';
+import { Search, LogOut, Menu, Building2, User } from 'lucide-react';
 import { fetchOutlets } from '../../api/client';
 import { AdminAuthUser, Outlet } from '../../types';
 import { NotificationCenter } from './NotificationCenter';
@@ -13,6 +13,7 @@ interface HeaderProps {
   onLogout?: () => void;
   onToggleSidebar?: () => void;
   onTabChange?: (tab: string) => void;
+  onOpenProfile?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -23,7 +24,8 @@ export const Header: React.FC<HeaderProps> = ({
   isLoading, 
   onLogout, 
   onToggleSidebar,
-  onTabChange 
+  onTabChange,
+  onOpenProfile 
 }) => {
   const isSuperAdmin = currentUser?.roleCode === 'SUPER_ADMIN';
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -115,6 +117,34 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Notification Center */}
         <NotificationCenter onTabChange={onTabChange} />
+
+        {/* My Profile Button */}
+        {currentUser && onOpenProfile && (
+          <button
+            onClick={onOpenProfile}
+            title="My Profile & Settings"
+            style={{
+              height: 38,
+              padding: '0 12px',
+              borderRadius: 12,
+              background: 'rgba(201, 162, 77, 0.12)',
+              border: '1px solid rgba(201, 162, 77, 0.35)',
+              color: 'var(--gold)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <User size={14} color="var(--gold)" />
+            <span style={{ maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {currentUser.fullName || currentUser.username}
+            </span>
+          </button>
+        )}
 
         {/* Header Logout Button */}
         {onLogout && (

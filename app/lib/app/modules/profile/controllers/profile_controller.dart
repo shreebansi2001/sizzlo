@@ -20,12 +20,18 @@ class ProfileController extends GetxController {
     loadProfile();
   }
 
-  void loadProfile() async {
-    isLoading.value = true;
+  void loadProfile({bool silent = false}) async {
+    if (!silent) {
+      isLoading.value = true;
+    }
     try {
       member.value = await _apiService.getMemberProfile();
+    } catch (_) {
+      // Ignore background errors
     } finally {
-      isLoading.value = false;
+      if (!silent) {
+        isLoading.value = false;
+      }
     }
   }
 

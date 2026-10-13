@@ -62,7 +62,26 @@ public class CouponController {
             return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
         }
 
-        List<Coupon> userCoupons = couponRepository.findByMembershipId(profile.getMembershipId());
+        List<Coupon> userCoupons = new java.util.ArrayList<>(couponRepository.findByMembershipId(profile.getMembershipId()));
+        java.util.Set<String> existingCodes = userCoupons.stream()
+                .map(c -> c.getCode() != null ? c.getCode().toUpperCase() : "")
+                .collect(java.util.stream.Collectors.toSet());
+
+        // Include plan-matching template vouchers published from Web Admin
+        List<Coupon> templateCoupons = couponRepository.findByStatus("available");
+        for (Coupon tc : templateCoupons) {
+            if (tc.getMembershipId() == null || tc.getMembershipId().trim().isEmpty()) {
+                String aud = tc.getTargetAudience() != null ? tc.getTargetAudience().toUpperCase() : "ALL";
+                boolean matchesTier = "ALL".equals(aud) || "COMMON".equals(aud) || "SUBSCRIBERS_ONLY".equals(aud)
+                        || "ALL_PLANS".equals(aud) || aud.equalsIgnoreCase(tier);
+
+                String code = tc.getCode() != null ? tc.getCode().toUpperCase() : "";
+                if (matchesTier && !existingCodes.contains(code)) {
+                    userCoupons.add(tc);
+                    existingCodes.add(code);
+                }
+            }
+        }
         return ResponseEntity.ok(ApiResponse.success(userCoupons));
     }
 
@@ -99,7 +118,25 @@ public class CouponController {
             return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
         }
 
-        List<Coupon> available = couponRepository.findByMembershipIdAndStatus(profile.getMembershipId(), "available");
+        List<Coupon> available = new java.util.ArrayList<>(couponRepository.findByMembershipIdAndStatus(profile.getMembershipId(), "available"));
+        java.util.Set<String> existingCodes = available.stream()
+                .map(c -> c.getCode() != null ? c.getCode().toUpperCase() : "")
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<Coupon> templateCoupons = couponRepository.findByStatus("available");
+        for (Coupon tc : templateCoupons) {
+            if (tc.getMembershipId() == null || tc.getMembershipId().trim().isEmpty()) {
+                String aud = tc.getTargetAudience() != null ? tc.getTargetAudience().toUpperCase() : "ALL";
+                boolean matchesTier = "ALL".equals(aud) || "COMMON".equals(aud) || "SUBSCRIBERS_ONLY".equals(aud)
+                        || "ALL_PLANS".equals(aud) || aud.equalsIgnoreCase(tier);
+
+                String code = tc.getCode() != null ? tc.getCode().toUpperCase() : "";
+                if (matchesTier && !existingCodes.contains(code)) {
+                    available.add(tc);
+                    existingCodes.add(code);
+                }
+            }
+        }
         return ResponseEntity.ok(ApiResponse.success(available));
     }
 

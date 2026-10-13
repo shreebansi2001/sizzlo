@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../core/theme/app_colors.dart';
 import '../data/models/coupon_model.dart';
+import '../modules/home/controllers/home_controller.dart';
 
 class CouponTicket extends StatelessWidget {
   final CouponModel coupon;
@@ -18,6 +20,22 @@ class CouponTicket extends StatelessWidget {
   Widget build(BuildContext context) {
     final isGold = coupon.color == 'gold';
     final isAvailable = coupon.isAvailable;
+
+    final homeCtrl = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : null;
+    final isSubscriber = homeCtrl?.member.value.isSubscriber ?? false;
+    final userTier = (homeCtrl?.member.value.subscriptionTier ?? '').toUpperCase();
+    final target = (coupon.targetAudience ?? '').toUpperCase();
+
+    bool isLocked = false;
+    if (!isSubscriber) {
+      isLocked = coupon.isVipExclusive;
+    } else {
+      if (target.isNotEmpty && target != 'ALL' && target != 'COMMON' && target != 'SUBSCRIBERS_ONLY' && target != 'ALL_PLANS') {
+        isLocked = (target != userTier);
+      } else {
+        isLocked = false;
+      }
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -53,16 +71,16 @@ class CouponTicket extends StatelessWidget {
                       color: const Color(0xFF1B221E),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: coupon.isVipExclusive
+                        color: isLocked
                             ? AppColors.gold.withOpacity(0.5)
                             : (isGold ? AppColors.gold.withOpacity(0.3) : Colors.white.withOpacity(0.06)),
                       ),
                     ),
                     child: Icon(
-                      coupon.isVipExclusive
+                      isLocked
                           ? Icons.lock_outline_rounded
                           : (isGold ? Icons.cake_outlined : Icons.confirmation_number_outlined),
-                      color: coupon.isVipExclusive
+                      color: isLocked
                           ? AppColors.gold
                           : (isGold ? AppColors.gold : AppColors.flame),
                       size: 24,
@@ -93,7 +111,7 @@ class CouponTicket extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                                  if (coupon.isVipExclusive) ...[
+                                  if (isLocked) ...[
                                     const SizedBox(width: 6),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -106,6 +124,24 @@ class CouponTicket extends StatelessWidget {
                                         'VIP',
                                         style: TextStyle(
                                           color: AppColors.gold,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else if (coupon.targetAudience != null && coupon.targetAudience!.isNotEmpty && coupon.targetAudience != 'ALL') ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF163E33),
+                                        borderRadius: BorderRadius.circular(5),
+                                        border: Border.all(color: const Color(0xFF286D5A), width: 0.7),
+                                      ),
+                                      child: Text(
+                                        coupon.targetAudience!,
+                                        style: const TextStyle(
+                                          color: Color(0xFF4EE3B8),
                                           fontSize: 9,
                                           fontWeight: FontWeight.w800,
                                         ),
@@ -238,12 +274,12 @@ class CouponTicket extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: coupon.isVipExclusive
+                          color: isLocked
                               ? const Color(0xFF38290D)
                               : const Color(0xFF163E33),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: coupon.isVipExclusive
+                            color: isLocked
                                 ? AppColors.gold.withOpacity(0.8)
                                 : const Color(0xFF286D5A),
                           ),
@@ -251,14 +287,14 @@ class CouponTicket extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (coupon.isVipExclusive) ...[
+                            if (isLocked) ...[
                               const Icon(Icons.lock_outline_rounded, size: 12, color: AppColors.gold),
                               const SizedBox(width: 4),
                             ],
                             Text(
-                              coupon.isVipExclusive ? 'Unlock VIP' : 'Apply to Bill',
+                              isLocked ? 'Unlock VIP' : 'Apply to Bill',
                               style: TextStyle(
-                                color: coupon.isVipExclusive ? AppColors.gold : const Color(0xFF4EE3B8),
+                                color: isLocked ? AppColors.gold : const Color(0xFF4EE3B8),
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),

@@ -124,7 +124,51 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons: initialCoupon
     }
   };
 
+  // Filter out one-off burned POS receipts from master voucher management
+  const validVouchers = couponList.filter(c => {
+    const code = (c.code || '').toUpperCase();
+    return !code.includes('-USED-') && c.status !== 'used';
+  });
+
+  // Deduplicate master templates so admin doesn't see multiple redundant member seeds
+  const uniqueMasterVouchers: Coupon[] = [];
+  const seenKeys = new Set<string>();
+  for (const c of validVouchers) {
+    const normName = (c.name || '').trim().toLowerCase();
+    const baseCode = (c.code || '').replace(/-\d+.*$/, '').replace(/-[A-Z0-9]{4,10}$/, '').trim().toUpperCase();
+    const key = `${baseCode}::${normName}`;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      uniqueMasterVouchers.push(c);
+    }
+  }
+
   const getCategoryBadge = (category: 'COMMON' | 'CLASSIC' | 'SIGNATURE' | 'ELITE' | 'NON_SUBSCRIBED') => {
+    if (activePlanFilter === 'CLASSIC' && category === 'COMMON') {
+      return {
+        label: '🌟 Common (Included in Classic)',
+        background: 'rgba(232, 184, 74, 0.15)',
+        color: 'var(--gold)',
+        border: '1px solid rgba(232, 184, 74, 0.4)',
+      };
+    }
+    if (activePlanFilter === 'SIGNATURE' && category === 'COMMON') {
+      return {
+        label: '🌟 Common (Included in Signature)',
+        background: 'rgba(78, 227, 184, 0.15)',
+        color: '#4EE3B8',
+        border: '1px solid rgba(78, 227, 184, 0.4)',
+      };
+    }
+    if (activePlanFilter === 'ELITE' && (category === 'COMMON' || category === 'SIGNATURE')) {
+      return {
+        label: `🌟 Included in Elite (${category === 'SIGNATURE' ? 'Signature' : 'Common'})`,
+        background: 'rgba(255, 184, 0, 0.18)',
+        color: '#FFB800',
+        border: '1px solid rgba(255, 184, 0, 0.5)',
+      };
+    }
+
     switch (category) {
       case 'COMMON':
         return {
@@ -135,21 +179,21 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons: initialCoupon
         };
       case 'CLASSIC':
         return {
-          label: '🥉 Classic Plan',
+          label: '🥉 Classic Plan Only',
           background: 'rgba(223, 194, 125, 0.15)',
           color: '#DFC27D',
           border: '1px solid rgba(223, 194, 125, 0.4)',
         };
       case 'SIGNATURE':
         return {
-          label: '🥈 Signature Plan',
+          label: '🥈 Signature Plan Only',
           background: 'rgba(78, 227, 184, 0.15)',
           color: '#4EE3B8',
           border: '1px solid rgba(78, 227, 184, 0.4)',
         };
       case 'ELITE':
         return {
-          label: '🥇 Elite VIP Plan',
+          label: '🥇 Elite VIP Plan Only',
           background: 'rgba(255, 184, 0, 0.18)',
           color: '#FFB800',
           border: '1px solid rgba(255, 184, 0, 0.5)',
@@ -166,15 +210,26 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons: initialCoupon
   };
 
   // Counts for each category
-  const commonCount = couponList.filter(c => getVoucherCategory(c) === 'COMMON').length;
-  const classicCount = couponList.filter(c => getVoucherCategory(c) === 'CLASSIC').length;
-  const signatureCount = couponList.filter(c => getVoucherCategory(c) === 'SIGNATURE').length;
-  const eliteCount = couponList.filter(c => getVoucherCategory(c) === 'ELITE').length;
-  const nonSubCount = couponList.filter(c => getVoucherCategory(c) === 'NON_SUBSCRIBED').length;
+  const commonCoupons = uniqueMasterVouchers.filter(c => getVoucherCategory(c) === 'COMMON');
+  const classicExclusive = uniqueMasterVouchers.filter(c => getVoucherCategory(c) === 'CLASSIC');
+  const signatureExclusive = uniqueMasterVouchers.filter(c => getVoucherCategory(c) === 'SIGNATURE');
+  const eliteExclusive = uniqueMasterVouchers.filter(c => getVoucherCategory(c) === 'ELITE');
+  const nonSubExclusive = uniqueMasterVouchers.filter(c => getVoucherCategory(c) === 'NON_SUBSCRIBED');
 
-  const filteredCoupons = couponList.filter(c => {
+  // Plan-inclusive counts (a subscriber receives their tier vouchers + universal common vouchers)
+  const classicTotal = classicExclusive.length + commonCoupons.length;
+  const signatureTotal = signatureExclusive.length + commonCoupons.length;
+  const eliteTotal = eliteExclusive.length + signatureExclusive.length + commonCoupons.length;
+
+  const filteredCoupons = uniqueMasterVouchers.filter(c => {
+    const cat = getVoucherCategory(c);
     if (activePlanFilter === 'ALL') return true;
-    return getVoucherCategory(c) === activePlanFilter;
+    if (activePlanFilter === 'COMMON') return cat === 'COMMON';
+    if (activePlanFilter === 'CLASSIC') return cat === 'CLASSIC' || cat === 'COMMON';
+    if (activePlanFilter === 'SIGNATURE') return cat === 'SIGNATURE' || cat === 'COMMON';
+    if (activePlanFilter === 'ELITE') return cat === 'ELITE' || cat === 'SIGNATURE' || cat === 'COMMON';
+    if (activePlanFilter === 'NON_SUBSCRIBED') return cat === 'NON_SUBSCRIBED';
+    return true;
   });
 
   return (
@@ -207,7 +262,14 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons: initialCoupon
           </p>
         </div>
 
-        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+        <button className="btn btn-primary" onClick={() => {
+          if (activePlanFilter !== 'ALL') {
+            setNewTargetCategory(activePlanFilter as any);
+          } else {
+            setNewTargetCategory('COMMON');
+          }
+          setShowAddModal(true);
+        }}>
           <Plus size={16} />
           Create New Voucher
         </button>
@@ -226,12 +288,12 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({ coupons: initialCoupon
         flexWrap: 'wrap'
       }}>
         {[
-          { id: 'ALL', label: `All Vouchers (${couponList.length})` },
-          { id: 'COMMON', label: `🌟 Common in All 3 Plans (${commonCount})` },
-          { id: 'CLASSIC', label: `🥉 Classic Plan (${classicCount})` },
-          { id: 'SIGNATURE', label: `🥈 Signature Plan (${signatureCount})` },
-          { id: 'ELITE', label: `🥇 Elite VIP (${eliteCount})` },
-          { id: 'NON_SUBSCRIBED', label: `👥 Non-Subscribed / All Guests (${nonSubCount})` },
+          { id: 'ALL', label: `All Vouchers (${uniqueMasterVouchers.length})` },
+          { id: 'COMMON', label: `🌟 Common in All 3 Plans (${commonCoupons.length})` },
+          { id: 'CLASSIC', label: `🥉 Classic Plan (${classicTotal})` },
+          { id: 'SIGNATURE', label: `🥈 Signature Plan (${signatureTotal})` },
+          { id: 'ELITE', label: `🥇 Elite VIP (${eliteTotal})` },
+          { id: 'NON_SUBSCRIBED', label: `👥 Non-Subscribed / All Guests (${nonSubExclusive.length})` },
         ].map(f => (
           <button
             key={f.id}
