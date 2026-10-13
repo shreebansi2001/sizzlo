@@ -204,6 +204,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     };
 
     loadRealDashboardData();
+    const interval = setInterval(loadRealDashboardData, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const displayedRevenueSeries = useMemo(() => {
