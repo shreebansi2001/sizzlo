@@ -45,6 +45,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [modeFilter, setModeFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'WEEK'>('ALL');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -122,6 +123,25 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Compute Today and Yesterday payment counts
+  const todayCount = useMemo(() => {
+    const todayZero = new Date();
+    todayZero.setHours(0, 0, 0, 0);
+    return paymentRecords.filter(p => p.createdAt && new Date(p.createdAt) >= todayZero).length;
+  }, [paymentRecords]);
+
+  const yesterdayCount = useMemo(() => {
+    const now = new Date();
+    const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yestZero = new Date(todayZero);
+    yestZero.setDate(todayZero.getDate() - 1);
+    return paymentRecords.filter(p => {
+      if (!p.createdAt) return false;
+      const d = new Date(p.createdAt);
+      return d >= yestZero && d < todayZero;
+    }).length;
+  }, [paymentRecords]);
+
   // Filtered Payments computation
   const filteredPayments = useMemo(() => {
     return paymentRecords.filter((p) => {
@@ -149,14 +169,33 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = () => {
 
       const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
 
-      return matchesSearch && matchesTab && matchesMode && matchesStatus;
+      let matchesDate = true;
+      if (dateFilter !== 'ALL' && p.createdAt) {
+        const itemDate = new Date(p.createdAt);
+        const now = new Date();
+        const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yestZero = new Date(todayZero);
+        yestZero.setDate(todayZero.getDate() - 1);
+
+        if (dateFilter === 'TODAY') {
+          matchesDate = itemDate >= todayZero;
+        } else if (dateFilter === 'YESTERDAY') {
+          matchesDate = itemDate >= yestZero && itemDate < todayZero;
+        } else if (dateFilter === 'WEEK') {
+          const weekZero = new Date(todayZero);
+          weekZero.setDate(todayZero.getDate() - 7);
+          matchesDate = itemDate >= weekZero;
+        }
+      }
+
+      return matchesSearch && matchesTab && matchesMode && matchesStatus && matchesDate;
     });
-  }, [paymentRecords, activeTab, searchTerm, modeFilter, statusFilter]);
+  }, [paymentRecords, activeTab, searchTerm, modeFilter, statusFilter, dateFilter]);
 
   // Reset pagination on filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeTab, modeFilter, statusFilter, pageSize]);
+  }, [searchTerm, activeTab, modeFilter, statusFilter, dateFilter, pageSize]);
 
   // Pagination Computations
   const totalItems = filteredPayments.length;
@@ -520,6 +559,33 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = () => {
                 </button>
               ))}
             </div>
+
+            {/* Date Preset Filter */}
+            <div style={{ display: 'flex', gap: 4, background: 'var(--surface-alt)', padding: 4, borderRadius: 12, border: '1px solid var(--border)' }}>
+              {[
+                { id: 'ALL', label: 'All Dates' },
+                { id: 'TODAY', label: `⚡ Today (${todayCount})` },
+                { id: 'YESTERDAY', label: `⏮️ Yesterday (${yesterdayCount})` },
+                { id: 'WEEK', label: '🗓️ Last 7 Days' }
+              ].map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => setDateFilter(d.id as any)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: 'none',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: dateFilter === d.id ? 'var(--gold)' : 'transparent',
+                    color: dateFilter === d.id ? '#070A09' : 'var(--text-muted)'
+                  }}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -640,9 +706,24 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = () => {
                         </span>
                       </td>
                       <td>
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                          {p.createdAt ? p.createdAt.replace('T', ' ').substring(0, 16) : 'Just now'}
-                        </span>
+                        <div>
+                          <span style={{ fontSize: 11, color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 600 }}>
+                            {p.createdAt ? p.createdAt.replace('T', ' ').substring(0, 16) : 'Just now'}
+                          </span>
+                          {p.createdAt && (() => {
+                            const d = new Date(p.createdAt);
+                            const now = new Date();
+                            const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                            const yestZero = new Date(todayZero);
+                            yestZero.setDate(todayZero.getDate() - 1);
+                            if (d >= todayZero) {
+                              return <span style={{ marginLeft: 6, fontSize: 9.5, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(255,138,0,0.2)', color: 'var(--primary)' }}>TODAY</span>;
+                            } else if (d >= yestZero && d < todayZero) {
+                              return <span style={{ marginLeft: 6, fontSize: 9.5, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(201,162,77,0.2)', color: 'var(--gold)' }}>YEST</span>;
+                            }
+                            return null;
+                          })()}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
