@@ -194,6 +194,15 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
   const [queueWaitMinutes, setQueueWaitMinutes] = useState<number>(15);
   const [isSubmittingQueue, setIsSubmittingQueue] = useState(false);
 
+  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<number>>(() => {
+    try {
+      const stored = sessionStorage.getItem('sizzlo_ack_booking_ids');
+      return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+    } catch {
+      return new Set<number>();
+    }
+  });
+
   // Dynamic Slots State
   const [slotsList, setSlotsList] = useState<OutletTimeSlot[]>([]);
   const [availableOutlets, setAvailableOutlets] = useState<Outlet[]>([]);
@@ -416,21 +425,11 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     }
   };
 
-  // Quick Accept: assigns available table, confirms status, silences alarm,
-  // and moves inquiry straight into the confirmed bookings ledger!
+  // Quick Accept: acknowledges and confirms reservation, silences alarm,
+  // and moves inquiry straight into the bookings list without forcing table assignment!
   const handleQuickAccept = async (inq: UpcomingItem) => {
     try {
-      let cleanNum = '1';
-      if (inq.tableAssigned) {
-        cleanNum = inq.tableAssigned.replace(/[^0-9]/g, '') || '1';
-      } else {
-        const freeTable = availableFloorTables.find(t => t.state === 'Available');
-        if (freeTable) {
-          cleanNum = String(freeTable.tableNumber);
-        }
-      }
-
-      // 1. Mark acknowledged in sessionStorage so neither this page nor layout alarms re-beep
+      // 1. Mark acknowledged in sessionStorage and state so alarms stay silent and card leaves incoming desk
       try {
         const stored = sessionStorage.getItem('sizzlo_ack_booking_ids');
         const set = stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
@@ -438,40 +437,32 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
         sessionStorage.setItem('sizzlo_ack_booking_ids', JSON.stringify(Array.from(set)));
       } catch (_) {}
 
+      setAcknowledgedIds(prev => {
+        const next = new Set(prev);
+        next.add(Number(inq.dbId));
+        return next;
+      });
+
       // 2. Stop alarm immediately
       setIsAlarmActive(false);
       setNewInquiryNotice(null);
 
-      // 3. Optimistic local update: mark Confirmed & assign table so it leaves inquiries immediately
-      // and appears in the confirmed bookings ledger
+      // 3. Optimistic local update: mark Confirmed without auto-assigning table
+      // (table remains unassigned until manager seats or puts in waiting)
       setUpcomingList(prev => prev.map(u => {
         if (u.dbId === inq.dbId) {
           return {
             ...u,
-            status: 'Confirmed',
-            tableAssigned: `T${cleanNum}`
+            status: 'Confirmed'
           };
         }
         return u;
       }));
 
-      // 4. Update floor table state locally
-      setAvailableFloorTables(prev => prev.map(t => {
-        if (String(t.tableNumber) === String(cleanNum)) {
-          return {
-            ...t,
-            state: 'Reserved',
-            guest: `${inq.customer} (${inq.guests} guests)`
-          };
-        }
-        return t;
-      }));
-
-      // 5. Call backend APIs to persist table assignment and Confirmed status
-      await axios.post(`/api/reservations/${inq.dbId}/assign-table?tableNumber=${cleanNum}&state=Reserved`);
+      // 4. Update status on backend
       await axios.patch(`/api/reservations/${inq.dbId}/status?status=Confirmed`);
 
-      // 6. Refresh state from server
+      // 5. Refresh state from server
       await pollLiveReservations();
       await loadFloorTables();
       if (onRefresh) onRefresh();
@@ -507,9 +498,13 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     return matchesOutlet && matchesStatus && matchesSearch;
   });
 
-  // Incoming Inquiries requiring settlement
+  // Incoming Inquiries requiring manager action:
+  // Shows active inquiries that haven't been accepted/acknowledged by the manager yet
   const incomingInquiries = upcomingList.filter(
-    u => u.status !== 'Completed' && u.status !== 'Cancelled' && (!u.tableAssigned || u.status === 'Pending' || u.status === 'Waitlisted')
+    u => u.status !== 'Completed' && 
+         u.status !== 'Cancelled' && 
+         !acknowledgedIds.has(Number(u.dbId)) &&
+         (u.status === 'Pending' || (!u.tableAssigned && u.status !== 'Waitlisted'))
   );
 
   const vipCount = upcomingList.filter(u => u.vip).length;
@@ -2481,6 +2476,24 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                       >
                         Settle
                       </button>
+                      {!item.tableAssigned && item.status !== 'Waitlisted' && item.status !== 'Completed' && item.status !== 'Cancelled' && (
+                        <button
+                          onClick={() => setQueuingItem(item)}
+                          style={{
+                            padding: '6px 10px',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            borderRadius: 8,
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            border: '1px solid rgba(245, 158, 11, 0.35)',
+                            color: 'var(--warning)',
+                            cursor: 'pointer'
+                          }}
+                          title="Place in waitlist queue"
+                        >
+                          Waitlist
+                        </button>
+                      )}
                       {item.status !== 'Completed' && (
                         <button
                           onClick={() => updateUpcomingStatus(item.id, 'Completed')}
@@ -2570,8 +2583,35 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
                   Select Available Table *
                 </label>
                 {availableFloorTables.filter(t => t.state === 'Available').length === 0 ? (
-                  <div style={{ padding: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 10, color: 'var(--danger)', fontSize: 12 }}>
-                    All dining tables are currently occupied or reserved! You can move this party to the <strong>Live Waitlist Queue</strong> instead.
+                  <div style={{ padding: 14, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 10, color: 'var(--danger)', fontSize: 12 }}>
+                    <div style={{ marginBottom: 10, lineHeight: 1.5 }}>
+                      ⚠️ <strong>All dining tables are currently occupied or reserved!</strong>
+                      <br />
+                      No free tables are available right now. You can place this party in the <strong>Live Waitlist Queue</strong>.
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = settlingItem;
+                        setSettlingItem(null);
+                        setQueuingItem(target);
+                      }}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: 8,
+                        background: 'var(--warning)',
+                        color: '#070A09',
+                        fontWeight: 800,
+                        fontSize: 12,
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                    >
+                      <Clock size={14} /> Move Party to Live Waitlist Queue
+                    </button>
                   </div>
                 ) : (
                   <select

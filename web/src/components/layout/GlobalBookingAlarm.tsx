@@ -138,16 +138,11 @@ export const GlobalBookingAlarm: React.FC<GlobalBookingAlarmProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Handle Accept Booking: updates status to Confirmed, assigns table, turns beep off immediately!
+  // Handle Accept Booking: updates status to Confirmed, turns beep off immediately (leaves table assignment to manager)
   const handleAcceptBooking = async () => {
     if (!activeInquiry) return;
     setIsAccepting(true);
     try {
-      if (!activeInquiry.tableAssigned) {
-        try {
-          await axios.post(`/api/reservations/${activeInquiry.dbId}/assign-table?tableNumber=1&state=Reserved`);
-        } catch (_) {}
-      }
       await axios.patch(`/api/reservations/${activeInquiry.dbId}/status?status=Confirmed`);
       markIdAcknowledged(activeInquiry.dbId);
       setIsBeeping(false);
