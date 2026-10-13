@@ -334,6 +334,14 @@ export const ReservationsPage: React.FC<ReservationsPageProps> = ({ reservations
     try {
       const cleanNum = selectedTableToAssign.replace(/[^0-9]/g, '');
       await axios.post(`/api/reservations/${settlingItem.dbId}/assign-table?tableNumber=${cleanNum}&state=${tableAssignState}`);
+      // Mark acknowledged in sessionStorage so sound stays off
+      try {
+        const stored = sessionStorage.getItem('sizzlo_ack_booking_ids');
+        const set = stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+        set.add(Number(settlingItem.dbId));
+        sessionStorage.setItem('sizzlo_ack_booking_ids', JSON.stringify(Array.from(set)));
+      } catch (_) {}
+
       setIsAlarmActive(false);
       setNewInquiryNotice(null);
       setSettlingItem(null);
