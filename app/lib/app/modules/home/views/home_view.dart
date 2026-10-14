@@ -113,16 +113,33 @@ class HomeView extends GetView<HomeController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'WELCOME BACK',
-                        style: TextStyle(
-                          fontSize: 11,
-                          letterSpacing: 2.4,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.gold.withOpacity(0.95),
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/images/yanki-logo.png',
+                            height: 20,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            height: 10,
+                            width: 1,
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'WELCOME BACK',
+                            style: TextStyle(
+                              fontSize: 10,
+                              letterSpacing: 2.2,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.gold.withOpacity(0.95),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           Flexible(
@@ -338,18 +355,27 @@ class HomeView extends GetView<HomeController> {
           // Outlets Locator Tile matching demo_code
           _buildOutletsTile(),
 
-          const SizedBox(height: 24),
-
-          // Dining Events & Experiences (Club Events & Brunches)
+          // Dining Events & Experiences (Club Events & Brunches) - Only shown when events or passes exist
           Obx(() {
+            final hasEvents = controller.diningEvents.isNotEmpty;
             final hasPasses = controller.myEventBookings.isNotEmpty;
-            return SectionHeader(
-              title: 'Dining Events & Experiences',
-              actionLabel: hasPasses ? 'My Passes (${controller.myEventBookings.length})' : null,
-              onAction: hasPasses ? () => _showMyPassesModal(context) : null,
+            if (!hasEvents && !hasPasses) {
+              return const SizedBox.shrink();
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 24),
+                SectionHeader(
+                  title: 'Dining Events & Experiences',
+                  actionLabel: hasPasses ? 'My Passes (${controller.myEventBookings.length})' : null,
+                  onAction: hasPasses ? () => _showMyPassesModal(context) : null,
+                ),
+                _buildEventsSection(context),
+              ],
             );
           }),
-          _buildEventsSection(context),
 
           if (controller.customerReviews.isNotEmpty) ...[
             const SizedBox(height: 24),
