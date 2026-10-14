@@ -5,6 +5,9 @@ class AppConstants {
   static const String appName = 'Sizzlo';
   static const String appTagline = 'Exclusive Dining & Privileges';
   
+  /// Google Places & Maps API key
+  static const String googlePlacesApiKey = 'AIzaSyAHeK5LKsHVv6AxhOHGnHRPrDnstRq1geY';
+  
   static const String _envApiUrl = String.fromEnvironment('API_URL');
 
   // Set to true only if you explicitly want to run against local Mac backend (127.0.0.1:8085)

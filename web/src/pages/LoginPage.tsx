@@ -140,7 +140,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ position: 'relative', display: 'inline-block', marginBottom: 12 }}>
             <img 
-              src="/sizzlo-mascot.png" 
+              src="./sizzlo-mascot.png" 
               alt="Sizzlo" 
               className="animate-float"
               style={{ 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +7,7 @@ import '../../../../core/values/app_constants.dart';
 import '../../../../data/models/member_model.dart';
 import '../../../../data/services/api_service.dart';
 import '../../../../data/services/local_storage_service.dart';
+import '../../../../data/services/places_service.dart';
 import '../../../../widgets/profile_avatar_widget.dart';
 import '../../../../routes/app_routes.dart';
 import '../../controllers/profile_controller.dart';
@@ -28,6 +30,10 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
   late TextEditingController _birthdayController;
   late TextEditingController _spouseNameController;
   late TextEditingController _anniversaryController;
+
+  List<Map<String, dynamic>> _addressPredictions = [];
+  bool _isSearchingAddress = false;
+  Timer? _addressDebounceTimer;
 
   String _gender = 'Male';
   String _isMarried = 'No';
@@ -89,6 +95,7 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
 
   @override
   void dispose() {
+    _addressDebounceTimer?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _addressController.dispose();
@@ -96,6 +103,52 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
     _spouseNameController.dispose();
     _anniversaryController.dispose();
     super.dispose();
+  }
+
+  void _onDeliveryAddressChanged(String val) {
+    _addressDebounceTimer?.cancel();
+    final q = val.trim();
+    if (q.length < 2) {
+      if (_addressPredictions.isNotEmpty || _isSearchingAddress) {
+        setState(() {
+          _addressPredictions = [];
+          _isSearchingAddress = false;
+        });
+      }
+      return;
+    }
+
+    _addressDebounceTimer = Timer(const Duration(milliseconds: 350), () async {
+      if (!mounted) return;
+      setState(() {
+        _isSearchingAddress = true;
+      });
+      try {
+        final results = await PlacesService.searchPlaces(q);
+        if (mounted) {
+          setState(() {
+            _addressPredictions = results;
+            _isSearchingAddress = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _addressPredictions = [];
+            _isSearchingAddress = false;
+          });
+        }
+      }
+    });
+  }
+
+  void _selectDeliveryAddress(Map<String, dynamic> item) {
+    final desc = item['description'] ?? item['main_text'] ?? '';
+    setState(() {
+      _addressController.text = desc;
+      _addressPredictions = [];
+      _isSearchingAddress = false;
+    });
   }
 
   MemberModel _getMember() {
@@ -421,8 +474,88 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                         : _viewField('Email Address', (m.email.isNotEmpty && !m.email.endsWith('@sizzlo.in')) ? m.email : '-', Icons.mail_outline),
                     _divider(),
                     _isEditing
-                        ? _editField('Delivery Address', _addressController, Icons.location_on_outlined)
+                        ? _editField(
+                            'Delivery Address',
+                            _addressController,
+                            Icons.location_on_outlined,
+                            onChanged: _onDeliveryAddressChanged,
+                            isSearching: _isSearchingAddress,
+                          )
                         : _viewField('Delivery Address', m.address.isNotEmpty ? m.address : '-', Icons.location_on_outlined),
+                    if (_isEditing && _addressPredictions.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 180),
+                        margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B1F1D),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFDF9E5B).withOpacity(0.35)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          itemCount: _addressPredictions.length,
+                          separatorBuilder: (_, __) => Divider(
+                            color: Colors.white.withOpacity(0.08),
+                            height: 1,
+                          ),
+                          itemBuilder: (context, index) {
+                            final pred = _addressPredictions[index];
+                            final main = pred['main_text'] as String? ?? '';
+                            final sec = pred['secondary_text'] as String? ?? '';
+                            return InkWell(
+                              onTap: () => _selectDeliveryAddress(pred),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.location_on_rounded,
+                                      size: 15,
+                                      color: Color(0xFFDF9E5B),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            main,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          if (sec.isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              sec,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.white.withOpacity(0.6),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -605,7 +738,14 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
     return content;
   }
 
-  Widget _editField(String label, TextEditingController controller, IconData icon, {String? hint}) {
+  Widget _editField(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    String? hint,
+    ValueChanged<String>? onChanged,
+    bool isSearching = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(
@@ -630,6 +770,7 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
           Expanded(
             child: TextField(
               controller: controller,
+              onChanged: onChanged,
               style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
               textAlign: TextAlign.end,
               decoration: InputDecoration(
@@ -637,6 +778,19 @@ class _PersonalInfoViewState extends State<PersonalInfoView> {
                 border: InputBorder.none,
                 hintText: hint ?? 'Enter $label',
                 hintStyle: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 12),
+                suffixIcon: isSearching
+                    ? const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFFDF9E5B),
+                          ),
+                        ),
+                      )
+                    : null,
               ),
             ),
           ),

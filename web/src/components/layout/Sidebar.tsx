@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, curre
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
           <div style={{ position: 'relative' }}>
             <img 
-              src="/sizzlo-mascot.png" 
+              src="./sizzlo-mascot.png" 
               alt="Sizzlo" 
               className="animate-float"
               style={{ width: 44, height: 44, objectFit: 'contain', filter: 'drop-shadow(0 4px 12px rgba(255, 138, 0, 0.4))' }} 

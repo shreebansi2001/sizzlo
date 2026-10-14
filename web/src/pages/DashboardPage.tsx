@@ -279,7 +279,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <img 
-            src="/sizzlo-mascot.png" 
+            src="./sizzlo-mascot.png" 
             alt="Sizzlo" 
             className="animate-float"
             style={{ width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 4px 16px rgba(255, 138, 0, 0.4))' }} 

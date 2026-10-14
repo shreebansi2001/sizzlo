@@ -494,22 +494,7 @@ class OdcInquiryView extends GetView<BanquetController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('VENUE / LAWN ADDRESS', style: _fieldSectionStyle()),
-            Row(
-              children: [
-                const Icon(Icons.place_rounded, size: 12, color: Color(0xFF4EE3B8)),
-                const SizedBox(width: 4),
-                Text(
-                  'Google Places Search',
-                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF4EE3B8)),
-                ),
-              ],
-            ),
-          ],
-        ),
+        Text('VENUE / LAWN ADDRESS', style: _fieldSectionStyle()),
         const SizedBox(height: 8),
         Obx(() {
           final isSearching = controller.isSearchingPlaces.value;

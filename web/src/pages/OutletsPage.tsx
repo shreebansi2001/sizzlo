@@ -883,7 +883,7 @@ export const OutletsPage: React.FC<OutletsPageProps> = ({ outlets: initialOutlet
               <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.6fr', gap: 14, marginBottom: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
-                    Full Physical Address (Used by Google Maps)
+                    Full Physical Address
                   </label>
                   <input
                     type="text"

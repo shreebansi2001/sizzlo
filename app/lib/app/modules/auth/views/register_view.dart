@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -7,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../data/services/api_service.dart';
 import '../../../data/services/local_storage_service.dart';
+import '../../../data/services/places_service.dart';
 import '../../../data/models/member_model.dart';
 import '../../../core/values/app_constants.dart';
 import '../../home/controllers/home_controller.dart';
@@ -23,6 +25,10 @@ class _RegisterViewState extends State<RegisterView> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _spouseNameController = TextEditingController();
+
+  List<Map<String, dynamic>> _addressPredictions = [];
+  bool _isSearchingAddress = false;
+  Timer? _addressDebounceTimer;
 
   String? _selectedGender;
   DateTime? _birthday;
@@ -45,11 +51,58 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   void dispose() {
+    _addressDebounceTimer?.cancel();
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     _spouseNameController.dispose();
     super.dispose();
+  }
+
+  void _onAddressChanged(String val) {
+    _addressDebounceTimer?.cancel();
+    final q = val.trim();
+    if (q.length < 2) {
+      if (_addressPredictions.isNotEmpty || _isSearchingAddress) {
+        setState(() {
+          _addressPredictions = [];
+          _isSearchingAddress = false;
+        });
+      }
+      return;
+    }
+
+    _addressDebounceTimer = Timer(const Duration(milliseconds: 350), () async {
+      if (!mounted) return;
+      setState(() {
+        _isSearchingAddress = true;
+      });
+      try {
+        final results = await PlacesService.searchPlaces(q);
+        if (mounted) {
+          setState(() {
+            _addressPredictions = results;
+            _isSearchingAddress = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _addressPredictions = [];
+            _isSearchingAddress = false;
+          });
+        }
+      }
+    });
+  }
+
+  void _selectAddress(Map<String, dynamic> item) {
+    final desc = item['description'] ?? item['main_text'] ?? '';
+    setState(() {
+      _addressController.text = desc;
+      _addressPredictions = [];
+      _isSearchingAddress = false;
+    });
   }
 
   void _submit() async {
@@ -372,33 +425,138 @@ class _RegisterViewState extends State<RegisterView> {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      height: 88,
                       decoration: BoxDecoration(
                         color: AppColors.inputBackground,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: AppColors.inputBorder),
                       ),
-                      padding: const EdgeInsets.all(14),
-                      child: TextField(
-                        controller: _addressController,
-                        maxLines: 3,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 13,
-                        ),
-                        decoration: InputDecoration(
-                          hintText:
-                              'Enter your complete postal address\nHouse/Flat No., Street, Area, City, State, PIN Code',
-                          hintStyle: GoogleFonts.plusJakartaSans(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
-                            height: 1.4,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: _addressController,
+                            onChanged: _onAddressChanged,
+                            maxLines: 2,
+                            minLines: 1,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Enter your complete postal address\nHouse/Flat No., Street, Area, City, State, PIN Code',
+                              hintStyle: GoogleFonts.plusJakartaSans(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              suffixIcon: _isSearchingAddress
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.gold,
+                                        ),
+                                      ),
+                                    )
+                                  : (_addressController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear_rounded, size: 16, color: AppColors.textMuted),
+                                          onPressed: () {
+                                            setState(() {
+                                              _addressController.clear();
+                                              _addressPredictions = [];
+                                              _isSearchingAddress = false;
+                                            });
+                                          },
+                                        )
+                                      : null),
+                            ),
                           ),
-                          border: InputBorder.none,
-                          isDense: true,
-                        ),
+                        ],
                       ),
                     ),
+
+                    // Address suggestions dropdown
+                    if (_addressPredictions.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 220),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B1F1D),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.gold.withOpacity(0.35)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          itemCount: _addressPredictions.length,
+                          separatorBuilder: (_, __) => Divider(
+                            color: Colors.white.withOpacity(0.08),
+                            height: 1,
+                          ),
+                          itemBuilder: (context, index) {
+                            final pred = _addressPredictions[index];
+                            final main = pred['main_text'] as String? ?? '';
+                            final sec = pred['secondary_text'] as String? ?? '';
+                            return InkWell(
+                              onTap: () => _selectAddress(pred),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.location_on_rounded,
+                                      size: 16,
+                                      color: AppColors.gold,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            main,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          if (sec.isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              sec,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 11,
+                                                color: Colors.white60,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: 18),
 
